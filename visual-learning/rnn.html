@@ -194,11 +194,17 @@ body{padding-top:10px}
 .mat .mg{display:inline-grid;gap:2px}
 .mat .mg i{display:block;min-width:46px;padding:2px 3px;font:600 11px/16px "IBM Plex Sans",sans-serif;text-align:center;font-style:normal;border-radius:3px}
 .mat.hi .mk{color:var(--acc)}
-details.learn{background:#FAF6EA;border:1px solid #EADFB8;border-radius:8px;padding:5px 10px;margin:5px 0}
-details.learn summary{cursor:pointer;font-weight:600;font-size:13px;color:#6b5200;list-style:none}
-details.learn summary::-webkit-details-marker{display:none}
-details.learn summary:before{content:"▸ ";color:#B58B00}
-details.learn[open] summary:before{content:"▾ "}
+details.concepts{background:#FAF6EA;border:1px solid #EADFB8;border-radius:10px;padding:6px 12px;margin:8px 0}
+details.concepts>summary{cursor:pointer;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b5200;list-style:none}
+details.concepts>summary::-webkit-details-marker{display:none}
+details.concepts>summary:before{content:"▸ ";color:#B58B00}
+details.concepts[open]>summary:before{content:"▾ "}
+details.concepts>summary:after{content:" · tap to hide";font-weight:400;text-transform:none;letter-spacing:0;color:#9a8440}
+details.concepts:not([open])>summary:after{content:" · tap to read";}
+.lcard{border-top:1px solid #EADFB8;margin-top:7px;padding-top:5px}
+.lcard:first-of-type{border-top:0;margin-top:5px}
+.lcard .lh{font-weight:700;font-size:14px;color:#3d3000}
+.lcard p{margin:3px 0;font-size:13.5px;line-height:1.5}
 .tkn{display:inline-block;background:#EBE3FA;border-radius:99px;padding:1px 9px;margin:0 4px 2px 0;font-weight:600;color:#5b2fa0;font-size:12.5px}
 .vocabline{margin:8px 2px 0;font-size:13px;color:#444;line-height:1.7}
 .vocabline .vl2{margin-top:4px;color:#333}
@@ -259,11 +265,11 @@ details.learn[open] summary:before{content:"▾ "}
         <div class="k" id="kick"></div>
         <h2 id="title"></h2>
         <div class="path" id="path"></div>
+        <div id="learn"></div>
         <div id="opkey" class="opkey"></div>
         <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
         <div class="res" id="res"></div>
         <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
-        <div id="learn"></div>
       </div>
       <div class="fnav"><button id="prev2" title="Previous">◀</button><div class="trk"><div class="bar" id="bar"></div></div><span class="c2" id="cnt2"></span><button id="next2" title="Next">▶</button></div>
     </aside>
@@ -616,7 +622,7 @@ function paint(){
     const used=(r,c)=>sp&&(sp.all||(sp.rows&&sp.rows.includes(r))||(sp.cols&&sp.cols.includes(c))||(sp.idx&&sp.idx.includes(r)));
     const cells=rows.map((row,r)=>row.map((v,c)=>{const u=used(r,c);return`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`};${u?`outline:3px solid ${sp.col};outline-offset:-1px;font-weight:800`:(om?'opacity:.3':'')}">${v.toFixed(3)}</i>`;}).join('')).join('');
     return`<div class="mat ${(om?!!sp:hi.has(n))?'hi':''}" style="${om&&!sp?'opacity:.55':''}"><div class="mk">${K(tex)} · ${sh}</div><div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${cells}</div></div>`;}).join('');
-  $('#learn').innerHTML=(cur.learn||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
+  {const lr=cur.learn||[];$('#learn').innerHTML=lr.length?`<details class="concepts" ${window.__conceptsOpen===false?'':'open'}><summary>Concept${lr.length>1?'s':''} in this step</summary>${lr.map(l=>`<div class="lcard"><div class="lh">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('')}</details>`:'';}
   $('#opkey').innerHTML=(cur.ops&&cur.ops.key||[]).map(([c,t])=>`<span><i style="background:${c}"></i>${rt(t)}</span>`).join('');
   // panel
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
@@ -644,8 +650,8 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
     h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  const gl=(steps.gloss||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
-  $('#p-all').innerHTML=`<details class="gl"><summary style="cursor:pointer;font-weight:700;font-size:16px;margin:4px 0 6px">Concepts used in this lab (tap to open)</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  const gl=(steps.gloss||[]).map(l=>`<div class="lcard"><div class="lh">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('');
+  $('#p-all').innerHTML=`<details class="concepts" open><summary>All concepts used in this lab</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;
@@ -762,7 +768,7 @@ function wordCfg(o){const c=Object.assign(defaultCfg(),{act:'tanh',gran:'neuron'
   c.tok={vocab:o.vocab.slice(),seq:o.seq.map(w=>o.vocab.indexOf(w)),emb:o.emb||null};delete c.vocab;delete c.seq;delete c.emb;
   tokSync(c);if(!o.Wxh)randWeights(c,hashStr(o.vocab.join('')+o.seq.join('')));return c;}
 const WORD_PRESETS={
-  'Slides example: letters d-o-g (one-hot, 3 hidden units, predict the next letter at every step)':()=>wordCfg({vocab:['d','o','g','s'],seq:['d','o','g'],mode:'all',H:3,
+  'Slides example: the word "dogs" (letters d o g s, one-hot, 3 hidden units, next letter at every step)':()=>wordCfg({vocab:['d','o','g','s'],seq:['d','o','g','s'],mode:'all',H:3,
     Wxh:[[.6,.8,.4,.8],[.2,.2,.8,.7],[.9,.8,.1,.2]],Whh:[[.1,.5,.1],[.5,.9,.3],[.3,.2,.1]],b:[0,0,0],Why:[[.9,.8,.3],[.2,.3,.4],[.6,.9,.1],[.5,0,.3]],by:[0,0,0,0]}),
   'Next word: "I love" → AI (7 words, 2-number embeddings, 2 hidden units)':()=>wordCfg({vocab:['I','love','AI','and','learning','is','useful'],seq:['I','love','AI'],mode:'last',H:2,
     emb:[[1,0],[0,1],[1,1],[.5,.5],[.5,.5],[.5,.5],[.5,.5]],Wxh:[[.5,.2],[.1,.4]],Whh:[[.3,.1],[.2,.2]],b:[0,0],Why:[[.1,.1],[.2,.1],[1,1.2],[.3,.2],[.5,.4],[.1,.3],[.4,.5]],by:[0,0,0,0,0,0,0]}),
@@ -777,6 +783,7 @@ function updateVocabline(){const el=$('#vocabline'),cfg=S.cfg;if(!cfg.tok){el.in
     lines.push(`step ${t+1}: input <b>${esc(tk.vocab[tk.seq[t]])}</b> → predicts <b>${esc(tk.vocab[pi])}</b> (${(y[pi]*100).toFixed(1)}%), target <b>${esc(tk.vocab[ti])}</b> gets ${(y[ti]*100).toFixed(1)}%`);});
   el.innerHTML=h+(lines.length?`<div class="vl2">${lines.join('<br>')}</div>`:'');}
 const _paint=paint;paint=function(){_paint();updateVocabline();};
+$('#learn').addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('concepts'))window.__conceptsOpen=e.target.open;},true);
 /* ---------- training extras ---------- */
 function rollout(cfg,tokens,n){const tk=cfg.tok,A=ACTS[cfg.act];let h=Array(cfg.H).fill(0),seq=tokens.slice(),probs=null;
   const step=i=>{const a=mv(cfg.Wxh,tokVec(cfg,i)),r=mv(cfg.Whh,h);h=a.map((v,j)=>A.f(v+r[j]+cfg.b[j]));const u=mv(cfg.Why,h).map((v,c)=>v+cfg.by[c]),mx=Math.max(...u),e=u.map(v=>Math.exp(v-mx)),s=e.reduce((p,q)=>p+q,0);probs=e.map(v=>v/s);return probs;};
@@ -804,6 +811,9 @@ const _renderCheck=renderCheck;renderCheck=function(){_renderCheck();const cfg=S
   document.querySelectorAll('#influence span').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});};
 /* ---------- custom editor: words / letters ---------- */
 function setMsg(t,bad){$('#cmsg').innerHTML=bad?`<span class="warn">${esc(t)}</span>`:`<span class="okk">${esc(t)}</span>`;}
+function windowsInfo(sq){const N=sq.length;if(N<2)return'';
+  const rows=[];for(let L=1;L<=Math.min(N-1,4);L++){const ex=[];for(let i=0;i+L<N;i++)ex.push(`${sq.slice(i,i+L).join(' ')} → ${sq[i+L]}`);rows.push(`<tr><td>${L}</td><td><b>${N-L}</b></td><td style="text-align:left">${ex.map(esc).join(' &nbsp;·&nbsp; ')}</td></tr>`);}
+  return`<div class="fbox" style="max-width:760px"><div class="k">How many training sequences does this text give?</div><div class="note" style="margin-bottom:6px">The system slides a window over the text. A text of <b>N = ${N}</b> tokens and window length <b>L</b> gives <b>N − L</b> examples (L inputs, the next token is the answer). This lab shows <b>one</b> example at a time (the sequence you typed); real training uses all of them.</div><table class="t"><tr><th>window L</th><th>examples</th><th style="text-align:left">the examples</th></tr>${rows.join('')}</table></div>`;}
 function buildWords(){const cfg=S.cfg,tk=cfg.tok,el=$('#c-words');
   const vocab=tk?tk.vocab.join(' '):'d o g s',seq=tk?tk.seq.map(i=>tk.vocab[i]).join(' '):'d o g',emb=tk&&tk.emb?String(tk.emb[0].length):'onehot',mode=tk?cfg.mode:'all',H=tk?cfg.H:3;
   el.innerHTML=`<div class="fbox"><div class="k">Your own words or letters</div><div class="row">
@@ -814,7 +824,8 @@ function buildWords(){const cfg=S.cfg,tk=cfg.tok,el=$('#c-words');
     <label>Hidden units<input type="number" id="wh" min="1" max="5" value="${H}"></label>
     <button class="btn pri" id="wbuild">Build this example</button></div>
     <div class="note">Example: vocabulary “d o g s”, sequence “d o g” gives inputs d, o and targets o, g (the slides' example). Sequence “I love AI” with “only the token after the last input” asks: after “I love”, what comes next? (2–8 words, letters or digits only, sequence of 2–6 tokens.)</div></div>
-    <div id="wemb"></div>`;
+    <div id="wemb"></div><div id="wwin"></div>`;
+  const win=()=>{const sq=$('#ws').value.trim().split(/[\s,]+/).filter(Boolean);$('#wwin').innerHTML=windowsInfo(sq);};win();$('#ws').oninput=win;
   $('#wbuild').onclick=()=>{const tokens=s=>s.trim().split(/[\s,]+/).filter(Boolean);const vocab=tokens($('#wv').value),seq=tokens($('#ws').value),modeV=$('#wm').value,embV=$('#we').value,Hn=parseInt($('#wh').value);
     if(vocab.length<2||vocab.length>8)return setMsg('Vocabulary needs 2 to 8 different words.',1);
     if(vocab.some(w=>!/^[A-Za-z0-9'-]+$/.test(w)))return setMsg('Use only letters, digits, apostrophes or hyphens in words.',1);

@@ -29,11 +29,17 @@ body{padding-top:10px}
 .mat .mg{display:inline-grid;gap:2px}
 .mat .mg i{display:block;min-width:46px;padding:2px 3px;font:600 11px/16px "IBM Plex Sans",sans-serif;text-align:center;font-style:normal;border-radius:3px}
 .mat.hi .mk{color:var(--acc)}
-details.learn{background:#FAF6EA;border:1px solid #EADFB8;border-radius:8px;padding:5px 10px;margin:5px 0}
-details.learn summary{cursor:pointer;font-weight:600;font-size:13px;color:#6b5200;list-style:none}
-details.learn summary::-webkit-details-marker{display:none}
-details.learn summary:before{content:"▸ ";color:#B58B00}
-details.learn[open] summary:before{content:"▾ "}
+details.concepts{background:#FAF6EA;border:1px solid #EADFB8;border-radius:10px;padding:6px 12px;margin:8px 0}
+details.concepts>summary{cursor:pointer;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b5200;list-style:none}
+details.concepts>summary::-webkit-details-marker{display:none}
+details.concepts>summary:before{content:"▸ ";color:#B58B00}
+details.concepts[open]>summary:before{content:"▾ "}
+details.concepts>summary:after{content:" · tap to hide";font-weight:400;text-transform:none;letter-spacing:0;color:#9a8440}
+details.concepts:not([open])>summary:after{content:" · tap to read";}
+.lcard{border-top:1px solid #EADFB8;margin-top:7px;padding-top:5px}
+.lcard:first-of-type{border-top:0;margin-top:5px}
+.lcard .lh{font-weight:700;font-size:14px;color:#3d3000}
+.lcard p{margin:3px 0;font-size:13.5px;line-height:1.5}
 .tkn{display:inline-block;background:#EBE3FA;border-radius:99px;padding:1px 9px;margin:0 4px 2px 0;font-weight:600;color:#5b2fa0;font-size:12.5px}
 .vocabline{margin:8px 2px 0;font-size:13px;color:#444;line-height:1.7}
 .vocabline .vl2{margin-top:4px;color:#333}
@@ -94,11 +100,11 @@ details.learn[open] summary:before{content:"▾ "}
         <div class="k" id="kick"></div>
         <h2 id="title"></h2>
         <div class="path" id="path"></div>
+        <div id="learn"></div>
         <div id="opkey" class="opkey"></div>
         <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
         <div class="res" id="res"></div>
         <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
-        <div id="learn"></div>
       </div>
       <div class="fnav"><button id="prev2" title="Previous">◀</button><div class="trk"><div class="bar" id="bar"></div></div><span class="c2" id="cnt2"></span><button id="next2" title="Next">▶</button></div>
     </aside>
@@ -285,7 +291,7 @@ function paint(){
     const used=(r,c)=>sp&&(sp.all||(sp.rows&&sp.rows.includes(r))||(sp.cols&&sp.cols.includes(c))||(sp.idx&&sp.idx.includes(r)));
     const cells=rows.map((row,r)=>row.map((v,c)=>{const u=used(r,c);return`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`};${u?`outline:3px solid ${sp.col};outline-offset:-1px;font-weight:800`:(om?'opacity:.3':'')}">${v.toFixed(3)}</i>`;}).join('')).join('');
     return`<div class="mat ${(om?!!sp:hi.has(n))?'hi':''}" style="${om&&!sp?'opacity:.55':''}"><div class="mk">${K(tex)} · ${sh}</div><div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${cells}</div></div>`;}).join('');
-  $('#learn').innerHTML=(cur.learn||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
+  {const lr=cur.learn||[];$('#learn').innerHTML=lr.length?`<details class="concepts" ${window.__conceptsOpen===false?'':'open'}><summary>Concept${lr.length>1?'s':''} in this step</summary>${lr.map(l=>`<div class="lcard"><div class="lh">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('')}</details>`:'';}
   $('#opkey').innerHTML=(cur.ops&&cur.ops.key||[]).map(([c,t])=>`<span><i style="background:${c}"></i>${rt(t)}</span>`).join('');
   // panel
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
@@ -313,8 +319,8 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
     h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  const gl=(steps.gloss||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
-  $('#p-all').innerHTML=`<details class="gl"><summary style="cursor:pointer;font-weight:700;font-size:16px;margin:4px 0 6px">Concepts used in this lab (tap to open)</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  const gl=(steps.gloss||[]).map(l=>`<div class="lcard"><div class="lh">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('');
+  $('#p-all').innerHTML=`<details class="concepts" open><summary>All concepts used in this lab</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;

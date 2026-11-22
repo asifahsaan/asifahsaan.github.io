@@ -14,7 +14,7 @@ function wordCfg(o){const c=Object.assign(defaultCfg(),{act:'tanh',gran:'neuron'
   c.tok={vocab:o.vocab.slice(),seq:o.seq.map(w=>o.vocab.indexOf(w)),emb:o.emb||null};delete c.vocab;delete c.seq;delete c.emb;
   tokSync(c);if(!o.Wxh)randWeights(c,hashStr(o.vocab.join('')+o.seq.join('')));return c;}
 const WORD_PRESETS={
-  'Slides example: letters d-o-g (one-hot, 3 hidden units, predict the next letter at every step)':()=>wordCfg({vocab:['d','o','g','s'],seq:['d','o','g'],mode:'all',H:3,
+  'Slides example: the word "dogs" (letters d o g s, one-hot, 3 hidden units, next letter at every step)':()=>wordCfg({vocab:['d','o','g','s'],seq:['d','o','g','s'],mode:'all',H:3,
     Wxh:[[.6,.8,.4,.8],[.2,.2,.8,.7],[.9,.8,.1,.2]],Whh:[[.1,.5,.1],[.5,.9,.3],[.3,.2,.1]],b:[0,0,0],Why:[[.9,.8,.3],[.2,.3,.4],[.6,.9,.1],[.5,0,.3]],by:[0,0,0,0]}),
   'Next word: "I love" → AI (7 words, 2-number embeddings, 2 hidden units)':()=>wordCfg({vocab:['I','love','AI','and','learning','is','useful'],seq:['I','love','AI'],mode:'last',H:2,
     emb:[[1,0],[0,1],[1,1],[.5,.5],[.5,.5],[.5,.5],[.5,.5]],Wxh:[[.5,.2],[.1,.4]],Whh:[[.3,.1],[.2,.2]],b:[0,0],Why:[[.1,.1],[.2,.1],[1,1.2],[.3,.2],[.5,.4],[.1,.3],[.4,.5]],by:[0,0,0,0,0,0,0]}),
@@ -29,6 +29,7 @@ function updateVocabline(){const el=$('#vocabline'),cfg=S.cfg;if(!cfg.tok){el.in
     lines.push(`step ${t+1}: input <b>${esc(tk.vocab[tk.seq[t]])}</b> → predicts <b>${esc(tk.vocab[pi])}</b> (${(y[pi]*100).toFixed(1)}%), target <b>${esc(tk.vocab[ti])}</b> gets ${(y[ti]*100).toFixed(1)}%`);});
   el.innerHTML=h+(lines.length?`<div class="vl2">${lines.join('<br>')}</div>`:'');}
 const _paint=paint;paint=function(){_paint();updateVocabline();};
+$('#learn').addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('concepts'))window.__conceptsOpen=e.target.open;},true);
 /* ---------- training extras ---------- */
 function rollout(cfg,tokens,n){const tk=cfg.tok,A=ACTS[cfg.act];let h=Array(cfg.H).fill(0),seq=tokens.slice(),probs=null;
   const step=i=>{const a=mv(cfg.Wxh,tokVec(cfg,i)),r=mv(cfg.Whh,h);h=a.map((v,j)=>A.f(v+r[j]+cfg.b[j]));const u=mv(cfg.Why,h).map((v,c)=>v+cfg.by[c]),mx=Math.max(...u),e=u.map(v=>Math.exp(v-mx)),s=e.reduce((p,q)=>p+q,0);probs=e.map(v=>v/s);return probs;};
@@ -56,6 +57,9 @@ const _renderCheck=renderCheck;renderCheck=function(){_renderCheck();const cfg=S
   document.querySelectorAll('#influence span').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});};
 /* ---------- custom editor: words / letters ---------- */
 function setMsg(t,bad){$('#cmsg').innerHTML=bad?`<span class="warn">${esc(t)}</span>`:`<span class="okk">${esc(t)}</span>`;}
+function windowsInfo(sq){const N=sq.length;if(N<2)return'';
+  const rows=[];for(let L=1;L<=Math.min(N-1,4);L++){const ex=[];for(let i=0;i+L<N;i++)ex.push(`${sq.slice(i,i+L).join(' ')} → ${sq[i+L]}`);rows.push(`<tr><td>${L}</td><td><b>${N-L}</b></td><td style="text-align:left">${ex.map(esc).join(' &nbsp;·&nbsp; ')}</td></tr>`);}
+  return`<div class="fbox" style="max-width:760px"><div class="k">How many training sequences does this text give?</div><div class="note" style="margin-bottom:6px">The system slides a window over the text. A text of <b>N = ${N}</b> tokens and window length <b>L</b> gives <b>N − L</b> examples (L inputs, the next token is the answer). This lab shows <b>one</b> example at a time (the sequence you typed); real training uses all of them.</div><table class="t"><tr><th>window L</th><th>examples</th><th style="text-align:left">the examples</th></tr>${rows.join('')}</table></div>`;}
 function buildWords(){const cfg=S.cfg,tk=cfg.tok,el=$('#c-words');
   const vocab=tk?tk.vocab.join(' '):'d o g s',seq=tk?tk.seq.map(i=>tk.vocab[i]).join(' '):'d o g',emb=tk&&tk.emb?String(tk.emb[0].length):'onehot',mode=tk?cfg.mode:'all',H=tk?cfg.H:3;
   el.innerHTML=`<div class="fbox"><div class="k">Your own words or letters</div><div class="row">
@@ -66,7 +70,8 @@ function buildWords(){const cfg=S.cfg,tk=cfg.tok,el=$('#c-words');
     <label>Hidden units<input type="number" id="wh" min="1" max="5" value="${H}"></label>
     <button class="btn pri" id="wbuild">Build this example</button></div>
     <div class="note">Example: vocabulary “d o g s”, sequence “d o g” gives inputs d, o and targets o, g (the slides' example). Sequence “I love AI” with “only the token after the last input” asks: after “I love”, what comes next? (2–8 words, letters or digits only, sequence of 2–6 tokens.)</div></div>
-    <div id="wemb"></div>`;
+    <div id="wemb"></div><div id="wwin"></div>`;
+  const win=()=>{const sq=$('#ws').value.trim().split(/[\s,]+/).filter(Boolean);$('#wwin').innerHTML=windowsInfo(sq);};win();$('#ws').oninput=win;
   $('#wbuild').onclick=()=>{const tokens=s=>s.trim().split(/[\s,]+/).filter(Boolean);const vocab=tokens($('#wv').value),seq=tokens($('#ws').value),modeV=$('#wm').value,embV=$('#we').value,Hn=parseInt($('#wh').value);
     if(vocab.length<2||vocab.length>8)return setMsg('Vocabulary needs 2 to 8 different words.',1);
     if(vocab.some(w=>!/^[A-Za-z0-9'-]+$/.test(w)))return setMsg('Use only letters, digits, apostrophes or hyphens in words.',1);
