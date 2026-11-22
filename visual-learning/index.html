@@ -5,95 +5,116 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Visual Learning · Interactive AI explainers</title>
 <meta name="description" content="Free interactive visualizers that explain AI step by step: neural networks, RNNs, transformers and more. No install, no sign-up.">
+<meta name="theme-color" content="#0b1118">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme='dark'}</script>
 <style>
-:root{--bg:#0f1720;--panel:#16212d;--line:#243344;--tx:#e6edf3;--mut:#9fb0c0;--acc:#2B7A9B;--acc2:#5cc0e6;--vio:#7C4DDB;--amb:#E0A100}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:"IBM Plex Sans",Arial,sans-serif;line-height:1.55}
+:root{--bg:#0b1118;--card:rgba(255,255,255,.045);--bd:rgba(255,255,255,.09);--tx:#eef3f8;--mut:#93a4b5;--a:#5cc0e6;--b:#8b6cf0;--c:#f0b429;--glow:rgba(92,192,230,.16);--nav:rgba(11,17,24,.72)}
+[data-theme=light]{--bg:#f6f8fb;--card:rgba(255,255,255,.8);--bd:rgba(15,30,50,.1);--tx:#0e1a27;--mut:#55677a;--a:#1d7fa6;--b:#6a47d6;--c:#b97d00;--glow:rgba(29,127,166,.14);--nav:rgba(246,248,251,.78)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.65 Inter,system-ui,Arial,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
 a{color:inherit;text-decoration:none}
-nav{position:sticky;top:0;z-index:5;background:rgba(15,23,32,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-nav .in{max-width:1100px;margin:auto;padding:12px 20px;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
-nav b{font-size:17px;margin-right:auto;color:var(--acc2)}
-nav a{color:var(--mut);font-size:14px}nav a:hover{color:var(--tx)}
-header{max-width:1100px;margin:auto;padding:72px 20px 40px;text-align:center}
-h1{font-size:clamp(32px,6vw,54px);margin:0 0 12px;letter-spacing:-.5px}
-h1 span{background:linear-gradient(90deg,var(--acc2),var(--vio));-webkit-background-clip:text;background-clip:text;color:transparent}
-header p{max-width:640px;margin:0 auto 26px;color:var(--mut);font-size:18px}
-.btn{display:inline-block;background:var(--acc);color:#fff;padding:11px 22px;border-radius:999px;font-weight:600}
-.btn:hover{background:#348fb4}
-.pills{margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.pills span{border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:13px;color:var(--mut)}
-section{max-width:1100px;margin:auto;padding:36px 20px}
-h2{font-size:26px;margin:0 0 6px}
-.sub{color:var(--mut);margin:0 0 22px}
+.wrap{max-width:1120px;margin:auto;padding:0 22px}
+nav{position:fixed;inset:12px 0 auto;z-index:20;display:flex;justify-content:center;padding:0 12px}
+nav .bar{display:flex;align-items:center;gap:6px;background:var(--nav);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--bd);border-radius:999px;padding:6px 8px 6px 14px;max-width:100%}
+nav .logo{display:flex;align-items:center;gap:8px;font-weight:700;font-family:"Space Grotesk";margin-right:10px}
+nav .logo img{width:26px;height:26px}
+nav .lk{padding:7px 12px;border-radius:999px;font-size:14px;color:var(--mut);transition:.2s;white-space:nowrap}
+nav .lk:hover{color:var(--tx);background:var(--card)}
+#tg{width:34px;height:34px;border-radius:50%;border:0;background:var(--card);color:var(--tx);cursor:pointer;font-size:15px;margin-left:4px}
+@media(max-width:600px){nav .hide{display:none}}
+.hero{position:relative;padding:150px 0 50px;isolation:isolate;text-align:center}
+.hero:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(55% 60% at 50% 20%,var(--glow),transparent 70%),radial-gradient(40% 40% at 85% 70%,rgba(139,108,240,.14),transparent 70%)}
+.pill{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--bd);background:var(--card);border-radius:999px;padding:6px 14px;font-size:13.5px;color:var(--mut)}
+h1{font-size:clamp(38px,7vw,76px);line-height:1.04;margin:22px auto 18px;font-weight:700;max-width:900px}
+.grad{background:linear-gradient(100deg,var(--a),var(--b) 55%,var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(17px,2vw,20px);color:var(--mut);max-width:600px;margin:0 auto 28px}
+.btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:999px;font-weight:600;transition:transform .2s}
+.btn.p{background:linear-gradient(120deg,var(--a),var(--b));color:#fff;box-shadow:0 10px 30px -10px var(--b)}
+.btn.s{border:1px solid var(--bd);background:var(--card)}
+.btn:hover{transform:translateY(-2px)}
+.tags{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.tags span{font-size:13.5px;color:var(--mut);border:1px solid var(--bd);border-radius:999px;padding:4px 14px}
+section{padding:70px 0}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--a);font-weight:600;margin-bottom:10px}
+h2{font-size:clamp(28px,4vw,42px);line-height:1.1;margin:0 0 30px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.card{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;transition:transform .2s,border-color .2s}
-a.card:hover{transform:translateY(-4px);border-color:var(--acc2)}
-.card .tag{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:#1d3a4a;color:var(--acc2)}
-.badge.soon{background:#2b2b33;color:var(--mut)}
-.badge.v{background:#2e2350;color:#b79cf5}
-.card h3{margin:0 0 6px;font-size:19px}
-.card p{margin:0 0 14px;color:var(--mut);font-size:14.5px;flex:1}
-.card .go{color:var(--acc2);font-weight:600;font-size:14px}
-.card.soon{opacity:.6;border-style:dashed}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
-.steps div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
-.steps b{color:var(--amb)}
-footer{border-top:1px solid var(--line);margin-top:40px;padding:28px 20px;text-align:center;color:var(--mut);font-size:14px}
+.cell{background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:26px;transition:transform .25s,border-color .25s}
+.cell h3{margin:0 0 8px;font-size:21px}
+.cell p{margin:0;color:var(--mut);font-size:15px}
+.num{font:700 40px "Space Grotesk";background:linear-gradient(100deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+a.mod{display:flex;flex-direction:column;position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(92,192,230,.14),rgba(139,108,240,.16)),var(--card)}
+a.mod:hover{transform:translateY(-5px);border-color:var(--a)}
+a.mod p{flex:1;margin-bottom:16px}
+.go{font-weight:600;color:var(--a)}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 12px}
+.badges span{font-size:12px;font-weight:600;padding:3px 11px;border-radius:999px;background:rgba(92,192,230,.14);color:var(--a)}
+.badges span.v{background:rgba(139,108,240,.18);color:#a98bf5}
+[data-theme=light] .badges span.v{color:var(--b)}
+.cell.soon{opacity:.62;border-style:dashed}
+.badges span.g{background:var(--card);color:var(--mut)}
+.mini{height:70px;margin-bottom:6px;color:var(--tx)}
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+footer{padding:36px 22px;text-align:center;color:var(--mut);font-size:14px}
+footer a{color:var(--a)}
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<nav><div class="in"><b>Visual Learning</b><a href="../">&larr; Asif Ahsan</a><a href="#start">Start here</a><a href="#modules">Modules</a><a href="#about">About</a></div></nav>
+<nav><div class="bar">
+  <a class="logo" href="../"><img src="../favicon.svg" alt="AA">Asif Ahsan</a>
+  <a class="lk hide" href="#start">Start here</a><a class="lk" href="#modules">Modules</a><a class="lk" href="../">← Portfolio</a>
+  <button id="tg" aria-label="Toggle light and dark theme">◐</button>
+</div></nav>
 
-<header>
-  <h1>See how AI <span>actually works</span></h1>
-  <p>Free, interactive explainers that walk through every calculation step by step. Click, edit the numbers, and watch the network react.</p>
-  <a class="btn" href="neural-network.html">Start with Neural Networks</a>
-  <div class="pills"><span>Free forever</span><span>No sign-up</span><span>Works offline</span><span>Phone friendly</span></div>
-</header>
+<header class="hero"><div class="wrap">
+  <span class="pill">Visual Learning · by Asif Ahsan</span>
+  <h1>See how AI <span class="grad">actually works.</span></h1>
+  <p class="lead">Free, interactive explainers that walk through every calculation step by step. Click, edit the numbers, and watch the network react.</p>
+  <div class="btns"><a class="btn p" href="neural-network.html">Start with Neural Networks →</a><a class="btn s" href="#modules">All modules</a></div>
+  <div class="tags"><span>Free forever</span><span>No sign-up</span><span>Works offline</span><span>Phone friendly</span></div>
+</div></header>
 
+<main class="wrap">
 <section id="start">
-  <h2>Start here</h2>
-  <p class="sub">New to this? Learn in three moves.</p>
-  <div class="steps">
-    <div><b>1. Step through</b><br>Press the arrow keys or Play. Each click is one calculation.</div>
-    <div><b>2. Change the numbers</b><br>Edit inputs and weights. Everything recomputes instantly.</div>
-    <div><b>3. Train it</b><br>Run training and watch the loss fall and the outputs move to the target.</div>
+  <div class="eyebrow rv">Start here</div>
+  <h2 class="rv">Learn in three moves</h2>
+  <div class="three">
+    <div class="cell rv"><div class="num">1</div><h3 style="margin-top:12px">Step through</h3><p>Use the arrow keys or Play. Each click is exactly one calculation.</p></div>
+    <div class="cell rv"><div class="num">2</div><h3 style="margin-top:12px">Change the numbers</h3><p>Edit inputs and weights. Everything recomputes instantly.</p></div>
+    <div class="cell rv"><div class="num">3</div><h3 style="margin-top:12px">Train it</h3><p>Run training and watch the loss fall as the outputs move to the target.</p></div>
   </div>
 </section>
 
 <section id="modules">
-  <h2>Modules</h2>
-  <p class="sub">More are added as the lectures grow.</p>
+  <div class="eyebrow rv">Modules</div>
+  <h2 class="rv">Pick a topic</h2>
   <div class="grid">
-    <a class="card" href="neural-network.html">
-      <div class="tag"><span class="badge">Beginner</span><span class="badge v">Step by step</span><span class="badge v">Training</span></div>
+    <a class="cell mod rv" href="neural-network.html">
+      <svg class="mini" viewBox="0 0 200 70" aria-hidden="true"><g stroke="currentColor" stroke-opacity=".3" stroke-width="1.3" fill="none"><path d="M25 18L100 12M25 18L100 58M25 52L100 12M25 52L100 58M100 12L175 22M100 12L175 48M100 58L175 22M100 58L175 48"/></g><circle cx="25" cy="18" r="8" fill="#64748B"/><circle cx="25" cy="52" r="8" fill="#64748B"/><circle cx="100" cy="12" r="9" fill="#2B7A9B"/><circle cx="100" cy="58" r="9" fill="#2B7A9B"/><circle cx="175" cy="22" r="9" fill="#7C4DDB"/><circle cx="175" cy="48" r="9" fill="#7C4DDB"/><circle r="3" fill="#f0b429"><animateMotion dur="2.2s" repeatCount="indefinite" path="M25 18L100 12L175 22"/></circle></svg>
+      <div class="badges"><span>Beginner</span><span class="v">Step by step</span><span class="v">Training</span></div>
       <h3>1 · Neural Network Lab</h3>
       <p>A tiny 2-2-2 sigmoid network. Forward pass, backpropagation, gradient check and training, with every number shown.</p>
       <span class="go">Open the lab →</span>
     </a>
-    <div class="card soon">
-      <div class="tag"><span class="badge soon">Coming soon</span></div>
-      <h3>2 · RNN, LSTM and GRU</h3>
-      <p>Unrolled time steps and backpropagation through time, one operation per step.</p>
-    </div>
-    <div class="card soon">
-      <div class="tag"><span class="badge soon">Coming soon</span></div>
-      <h3>3 · Attention and Transformer</h3>
-      <p>Self-attention, masks, encoder and decoder blocks, plus temperature, top-k and top-p sampling.</p>
-    </div>
+    <div class="cell soon rv"><div class="badges"><span class="g">Coming soon</span></div><h3>2 · RNN, LSTM and GRU</h3><p>Unrolled time steps and backpropagation through time, one operation per step.</p></div>
+    <div class="cell soon rv"><div class="badges"><span class="g">Coming soon</span></div><h3>3 · Attention and Transformer</h3><p>Self-attention, masks, encoder and decoder blocks, plus temperature, top-k and top-p sampling.</p></div>
   </div>
 </section>
+</main>
 
-<section id="about">
-  <h2>About</h2>
-  <p class="sub">Built by <a href="../" style="color:var(--acc2)">Asif Ahsan</a>, Lecturer in Machine Learning and AI, for students who learn best by seeing the numbers move. Each module uses the same worked examples as the lecture slides, so what you see here matches what is taught in class.</p>
-</section>
+<footer>Visual Learning by <a href="../">Asif Ahsan</a> · Lecturer in Machine Learning &amp; AI · free for teaching and learning</footer>
 
-<footer>Visual Learning by <a href="../" style="color:var(--acc2)">Asif Ahsan</a> · free to use for teaching and learning</footer>
+<script>
+document.getElementById('tg').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(e){}};
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
 </body>
 </html>
