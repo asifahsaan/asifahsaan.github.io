@@ -9,6 +9,8 @@ def build(name):
     t = t.replace('/*KATEX_JS*/', rd('katex.js.part'))
     t = t.replace('/*COMMON_JS*/', rd('common.js'))
     t = t.replace('/*PANEL_JS*/', rd('panel.js'))
+    import re
+    t = re.sub(r'/\*INCLUDE:([\w.]+)\*/', lambda mo: rd(mo.group(1)), t)
     if '/*DEFAULTS_JS*/' in t: t = t.replace('/*DEFAULTS_JS*/', rd(f'{name}_defaults.js'))
     out = here.parent / 'visual-learning' / ({'nn': 'neural-network'}.get(name, name) + '.html')  # rnn -> rnn.html
     out.write_text(t, encoding='utf-8'); print(out, len(t))
