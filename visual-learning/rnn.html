@@ -404,7 +404,7 @@ const tDS=(tt,j)=>R`\delta^s_{${tt},${j+1}}`,tDH=(tt,j)=>R`\delta^h_{${tt},${j+1
 const S={cfg:defaultCfg(),i:0};let steps=[],tab='step';
 /* ================= steps ================= */
 /* ---------- colour code used to pair operands visually ---------- */
-const OP={x:'#D9730D',h:'#7C3AED',b:'#16A34A',o:'#0E7490',g:'#C0392B'};
+const OP={x:'#D9730D',h:'#7C3AED',b:'#16A34A',o:'#0E7490',g:'#C0392B'},LOSSC='#B7791F';
 const cc=(col,tex)=>R`\textcolor{${col}}{${tex}}`;
 const ACTINFO={
   tanh:{t:'Activation function: tanh',w:R`tanh is an S-shaped curve: $\tanh(s)=\dfrac{e^{s}-e^{-s}}{e^{s}+e^{-s}}$. Very negative $s$ gives about $-1$, $s=0$ gives $0$, very positive $s$ gives about $+1$.`,y:`Without a non-linear function, many layers collapse into one big linear map and the network could not learn curved, complex patterns. tanh also keeps every hidden value between −1 and 1, so the memory cannot blow up, and it is centred on 0, which makes learning easier.`},
@@ -489,8 +489,11 @@ function build(){
           what:[R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$`],res:[R`\sum_j e^{u_j}=${m.u[t].map(v=>`e^{${N(v)}}`).join('+')}=${N(m.u[t].reduce((s,v)=>s+Math.exp(v),0))}`,R`\begin{aligned}${m.y[t].map((v,c)=>`y_{${tt},${c+1}}&=\\frac{e^{${N(m.u[t][c])}}}{${N(m.u[t].reduce((s,q)=>s+Math.exp(q),0))}}=${hl(v)}`).join(R` \\ `)}\end{aligned}`,...predLine(t)],say:`Class probabilities that sum to 1.`});}
       const lossLearn=cfg.out==='softmax'?L_('ce','Cross-entropy loss',R`$L=-\sum_k t_k\ln y_k$. With a one-hot target only the true class counts: the loss is $-\ln$ of the probability given to it.`,`It is small when the true class gets a high probability and very large when it gets a low one. Together with softmax it gives the very simple error $y-t$.`):L_('mse','Squared-error loss',R`$L=\tfrac12\sum_k (y_k-t_k)^2$: the squared gap between each prediction $y$ and its target $t$.`,`Training needs **one number** that says how wrong the network is. Squaring makes every error positive and punishes big mistakes more. The $\tfrac12$ only tidies the derivative.`);
       P({ph:'F',title:outs.length>1?`Forward: loss $L_${tt}$ at time step ${tt}`:'Forward: loss $L$',path:`y${tt}, t → L${outs.length>1?tt:''}`,act:[...rowKeys('y',tt,C),`l:${tt}`,`a:yl:${tt}`],gives:[`l:${tt}`,...(outs.length===1?['L']:[])],mats:[],learn:lossLearn,
-        what:[...(cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$ (note the minus sign: $\ln$ of a probability is negative, so the loss is positive)`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`]),...interp(t)],
-        res:[cfg.out==='softmax'?R`L_${tt}=-\left[${m.y[t].map((v,c)=>`${N(tg[c])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.lt[t])}`:R`L_${tt}=\tfrac12\left[${m.y[t].map((v,c)=>`(${N(v)}-${N(tg[c])})^2`).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});}
+        ops:{cells:{...Object.fromEntries(rowKeys('y',tt,C).map((kk,c)=>[kk,cfg.out==='softmax'?(tg[c]===1?LOSSC:'#B9BFC6'):LOSSC])),[`l:${tt}`]:LOSSC},arrows:{[`a:yl:${tt}`]:LOSSC},
+          key:cfg.out==='softmax'?[[LOSSC,'probability of the **target** token (t = 1): the only one that counts'],['#B9BFC6','other tokens (t = 0): multiplied by 0, so they drop out']]:[[LOSSC,'each prediction y is compared with its target t']]},
+        what:[...(cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$ (note the minus sign: $\ln$ of a probability is negative, so the loss is positive)`,`In the picture the target token (marked ★) is outlined in amber and the others in grey. Only the amber one is used: its $t$ is 1, while every other $t$ is 0 and wipes its term out.`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`,`Every output $y$ (amber) is compared with its own target $t$.`]),...interp(t)],
+        res:cfg.out==='softmax'?[R`L_${tt}=-\sum_k t_k\ln y_{${tt},k}`,R`=-\left[${m.y[t].map((v,c)=>cc(tg[c]===1?LOSSC:'#9aa0a6',tg[c]===1?R`\mathbf{${N(tg[c])}\cdot\ln(${N(v)})}`:R`${N(tg[c])}\cdot\ln(${N(v)})`)).join('+')}\right]`,R`\text{only the target term is left, the others are multiplied by }0:\quad L_${tt}=-\ln(${N(m.y[t][tg.indexOf(Math.max(...tg))])})=${hl(m.lt[t])}`]
+          :[R`L_${tt}=\tfrac12\left[${m.y[t].map((v,c)=>cc(LOSSC,`(${N(v)}-${N(tg[c])})^2`)).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});}
   }
   if(outs.length>1)P({ph:'F',title:'Forward: total loss $L$ (sum over time)',path:'L₁ + … + L_T → L',act:[...outs.map(t=>`l:${t+1}`),'L'],gives:['L'],mats:[],what:[R`$L=\sum_t L_t$: the losses of all output steps add up.`],res:[R`L=${outs.map(t=>N(m.lt[t])).join('+')}=${hl(m.L)}`],say:`Forward pass finished. Backpropagation through time starts from this one number.`});
   else st[st.length-1].say='Forward pass finished. Backpropagation through time starts from this one number.';
@@ -587,7 +590,7 @@ function makeLayout(){
     if(o){box[`u${tt}`]=place('u',tt,C,'u');box[`y${tt}`]=place('y',tt,C,'y');geo[`l:${tt}`]={x:colX(tt)+(md*c-c)/2,y:rowY.l,w:c,h:c,kind:'l'};}
     {const tkn=cfg.tok?cfg.tok.vocab[cfg.tok.seq[tt-1]]:null,oh=cfg.tok&&!cfg.tok.emb;
      if(oh&&c>=16)for(let i=0;i<d;i++)texts.push({x:box[`x${tt}`].x+i*c+c/2,y:rowY.x+c+10,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#8a929a'});
-     if(o&&cfg.tok&&c>=16)for(let i=0;i<C;i++)texts.push({x:box[`y${tt}`].x+i*c+c/2,y:rowY.y-3,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#7C4DDB'});
+     if(o&&cfg.tok&&c>=16){const tr=cfg.t[outs.indexOf(tt-1)],ti=tr.indexOf(Math.max(...tr));for(let i=0;i<C;i++)texts.push({x:box[`y${tt}`].x+i*c+c/2,y:rowY.y-3,t:cfg.tok.vocab[i]+(i===ti?'★':''),a:'middle',s:9,col:i===ti?'#B7791F':'#7C4DDB'});}
      texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+(oh?29:16),t:`t = ${tt}`+(tkn!==null?`  “${tkn}”`:''),a:'middle',b:1});}}
   if(outs.length>0){const xx=colX(T+1)+(md*c-c)/2;geo['L']={x:xx,y:rowY.l,w:c,h:c,kind:'L'};texts.push({x:xx+c/2,y:rowY.l-6,t:outs.length>1?'total L':'L',a:'middle'});}
   const mid=(b)=>b.cx;

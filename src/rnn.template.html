@@ -256,7 +256,7 @@ function makeLayout(){
     if(o){box[`u${tt}`]=place('u',tt,C,'u');box[`y${tt}`]=place('y',tt,C,'y');geo[`l:${tt}`]={x:colX(tt)+(md*c-c)/2,y:rowY.l,w:c,h:c,kind:'l'};}
     {const tkn=cfg.tok?cfg.tok.vocab[cfg.tok.seq[tt-1]]:null,oh=cfg.tok&&!cfg.tok.emb;
      if(oh&&c>=16)for(let i=0;i<d;i++)texts.push({x:box[`x${tt}`].x+i*c+c/2,y:rowY.x+c+10,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#8a929a'});
-     if(o&&cfg.tok&&c>=16)for(let i=0;i<C;i++)texts.push({x:box[`y${tt}`].x+i*c+c/2,y:rowY.y-3,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#7C4DDB'});
+     if(o&&cfg.tok&&c>=16){const tr=cfg.t[outs.indexOf(tt-1)],ti=tr.indexOf(Math.max(...tr));for(let i=0;i<C;i++)texts.push({x:box[`y${tt}`].x+i*c+c/2,y:rowY.y-3,t:cfg.tok.vocab[i]+(i===ti?'★':''),a:'middle',s:9,col:i===ti?'#B7791F':'#7C4DDB'});}
      texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+(oh?29:16),t:`t = ${tt}`+(tkn!==null?`  “${tkn}”`:''),a:'middle',b:1});}}
   if(outs.length>0){const xx=colX(T+1)+(md*c-c)/2;geo['L']={x:xx,y:rowY.l,w:c,h:c,kind:'L'};texts.push({x:xx+c/2,y:rowY.l-6,t:outs.length>1?'total L':'L',a:'middle'});}
   const mid=(b)=>b.cx;
