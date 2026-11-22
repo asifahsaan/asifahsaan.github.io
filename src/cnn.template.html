@@ -37,6 +37,8 @@ body{padding-top:10px}
 .okk{color:#1c6b3a;font-size:13px}
 .mini{display:inline-grid;gap:1px;margin:2px 6px 2px 0;vertical-align:middle}
 .mini i{display:block;width:30px;height:22px;font:600 9.5px/22px "IBM Plex Sans",sans-serif;text-align:center;font-style:normal;border-radius:3px}
+.paint{display:inline-grid;gap:2px;margin:6px 0;touch-action:none;cursor:crosshair;user-select:none;padding:4px;background:#ddd;border-radius:6px}
+.paint div{width:34px;height:34px;border-radius:3px}
 .vscroll{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
 </style>
 </head>
@@ -87,6 +89,7 @@ body{padding-top:10px}
     <input type="range" id="slider" min="0" max="0" value="0">
     <span class="cnt" id="cnt"></span>
     <button class="btn" id="play">▶ Play</button>
+    <button class="btn" id="slide" title="Slide the filter over every position quickly">⏩ Slide window</button>
   </div>
   <div class="jump" id="jump"></div>
   <div class="note" style="margin-top:6px">Tip: use the ← → keys. Want a different image, filter or network? Open the <b>Custom example</b> tab.</div>
@@ -344,11 +347,11 @@ function makeLayout(){
   // flow arrows between blocks at mid height
   const ts=titles;for(let i=0;i<ts.length-1;i++){}
   h+='<g id="fcg"></g>';
-  for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="${Math.min(4,c/6)}"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7,c*.3)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.1)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
+  for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><title></title><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="${Math.min(4,c/6)}"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7,c*.3)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.1)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
   // class target labels
   for(let i=0;i<C;i++){const r=geo[`p:${i}`];h+=`<text x="${r.x+r.w+5}" y="${r.y+r.h/2+3}" font-size="10" fill="${i===S.cfg.target?'#C0392B':'#6b7280'}" font-weight="${i===S.cfg.target?700:400}">${i===S.cfg.target?'t=1 ✓':'t=0'}</text>`;}
   h+='<g class="ov" id="ov"></g>';svg.innerHTML=h;
-  cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
+  cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,ti:g.querySelector('title'),r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
   // FC edges
   let eh='';fcEdges=[];for(let nn=0;nn<n;nn++)for(let cc=0;cc<C;cc++){const a=geo[`v:${nn}`],b=geo[`u:${cc}`];eh+=`<line class="edgeV" id="fe-${nn}-${cc}" x1="${a.x+a.w}" y1="${a.y+a.h/2}" x2="${b.x}" y2="${b.y+b.h/2}" stroke-linecap="round"/>`;fcEdges.push([nn,cc]);}
   $('#fcg').innerHTML=eh;
@@ -358,6 +361,9 @@ const f2=v=>{const a=Math.abs(v)<.005?0:v;return a.toFixed(2)};
 function valOf(key,M,th){const [t,a,b,c]=key.split(':'),A=+a,B=+b,C=+c;
   switch(t){case'X':return M.Xp[A][B];case'W':return th.filters[A].w[B][C];case'B':return th.filters[A].b;case'Z':return M.Z[A][B][C];case'A':return M.A[A][B][C];case'P':return M.P[A][B][C];
     case'v':return M.v[A];case'u':return M.u[A];case'p':return M.p[A];case'L':return M.L;}}
+function cellName(key){const [t,a,b,c]=key.split(':'),F=S.cfg.filters.length,fs=F>1?`(f${+a+1})`:'';
+  switch(t){case'X':return`X[${+a+1},${+b+1}]`;case'W':return`W${fs}[${+b+1},${+c+1}]`;case'B':return`bias${F>1?' of filter '+(+a+1):''}`;case'Z':case'A':case'P':return`${t}${fs}[${+b+1},${+c+1}]`;
+    case'v':return`v${+a+1}`;case'u':return`u${+a+1}`;case'p':return`p${+a+1}`;case'L':return'L';}return key;}
 function gradOf(key,G){const [t,a,b,c]=key.split(':'),A=+a,B=+b,C=+c;
   switch(t){case'u':return G.du[A];case'v':return G.dv[A];case'P':return G.dP[A][B][C];case'A':return G.dA[A][B][C];case'Z':return G.dZ[A][B][C];case'W':return G.dW[A][B][C];case'B':return G.db[A];}}
 function cum(i){const vis=new Set(),gv=new Set();let upd=false,check=false;
@@ -368,7 +374,7 @@ function paint(){
   const i=S.i,cur=steps[i],cs=cum(i),back=cur.ph==='B';const cfg=S.cfg;
   const {m,g}=backward(cfg);const cfg1=applyG(cfg,g,cfg.eta),m1=forward(cfg1);
   const th=cs.upd?cfg1:cfg,M=cs.check?m1:m,showG=!cs.check;
-  const act=new Set(cur.act||[]);
+  const act=new Set(cur.act||[]);const winSet=new Set(((cur.ov&&cur.ov.boxes)||[]).filter(b=>b.cls!=='sel').flatMap(b=>b.keys));
   // normalisers
   const mxOf=(t,fn)=>Math.max(1e-9,...Object.keys(geo).filter(k=>k[0]===t).map(k=>Math.abs(fn(k))));
   const nz=mxOf('Z',k=>valOf(k,M,th)),na=mxOf('A',k=>valOf(k,M,th)),np=mxOf('P',k=>valOf(k,M,th)),nw=Math.max(1e-9,...Object.keys(geo).filter(k=>k[0]==='W').map(k=>Math.abs(valOf(k,M,th)))),nv=mxOf('v',k=>valOf(k,M,th)),nu=mxOf('u',k=>valOf(k,M,th));
@@ -383,9 +389,11 @@ function paint(){
     e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);
     const isAct=act.has(key);e.r.setAttribute('stroke',isAct?(back?ERR:ACC):stroke);e.r.setAttribute('stroke-width',isAct?2.6:1);
     e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
-    e.tv.textContent=txt;e.tv.setAttribute('fill',tcol);
-    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;e.tg.textContent=gvv===undefined?'':f2(gvv);
-    e.tv.setAttribute('dy',gvv===undefined?'.34em':'-.05em');}
+    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;
+    const keepTxt=LAY.c>=19||isAct||winSet.has(key);
+    e.tv.textContent=keepTxt?txt:'';e.tv.setAttribute('fill',tcol);e.tg.textContent=(gvv===undefined||!keepTxt)?'':f2(gvv);
+    e.tv.setAttribute('dy',gvv===undefined?'.34em':'-.05em');
+    e.ti.textContent=shown&&!r.pad?`${cellName(key)} = ${N(valOf(key,M,th))}${gvv===undefined?'':' · gradient '+N(gvv)}`:'';}
   // FC edges
   const V=th.V,mxV=Math.max(.05,...V.flat().map(Math.abs));
   for(const [nn,cc] of fcEdges){const ln=$(`#fe-${nn}-${cc}`),w=V[cc][nn];const on=cur.edges==='all'||cur.edges===`u:${cc}`;
@@ -411,9 +419,15 @@ function paint(){
   $('#prev').disabled=i===0;$('#next').disabled=i===steps.length-1;$('#prev2').disabled=i===0;$('#next2').disabled=i===steps.length-1;
 }
 /* ================= tabs & controls ================= */
-let playTimer=null;
+let playTimer=null,slideTimer=null;
 function go(i){S.i=Math.max(0,Math.min(steps.length-1,i));paint();}
-function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
+function stopSlide(){if(slideTimer){clearInterval(slideTimer);slideTimer=null;$('#slide').textContent='⏩ Slide window';}}
+function stopPlay(){stopSlide();if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
+function slideAll(){if(slideTimer){stopSlide();return;}const isConv=i=>steps[i]&&steps[i].title.startsWith('Convolve');
+  if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}
+  if(!isConv(S.i)){const f=steps.findIndex(s=>s.title.startsWith('Convolve'));if(f<0)return;go(f);}
+  $('#slide').textContent='⏸ Stop sliding';
+  slideTimer=setInterval(()=>{if(isConv(S.i+1))go(S.i+1);else stopSlide();},380);}
 function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Setup','S'],['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];
   $('#jump').innerHTML=L.map(([n,p])=>`<button class="btn" data-i="${first(p)}">⏭ ${n}</button>`).join('');
   $('#jump').querySelectorAll('button').forEach(b=>b.onclick=()=>{stopPlay();go(+b.dataset.i)});}
@@ -488,15 +502,34 @@ function reshapeCfg(o){const old=S.cfg,cfg=clone(old);
 function numIn(id,lab,v,min,max,step=1){return`<label>${lab}<input type="number" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}"></label>`;}
 function buildCustom(){const cfg=S.cfg,sh=shapes(cfg),{H,W,k,F,C}=sh;
   $('#c-img-ctl').innerHTML=numIn('ch','Height',H,3,10)+numIn('cw','Width',W,3,10)+`<label>Presets<select id="cpre"><option value="">choose…</option>${['Vertical bar','Horizontal bar','Diagonal','Plus','Letter L','Checkerboard','Random','Invert','Clear'].map(x=>`<option>${x}</option>`).join('')}</select></label>`;
-  $('#c-img').innerHTML=`<div class="mgrid img" style="grid-template-columns:repeat(${W},auto)">${cfg.img.map((r,i)=>r.map((v,j)=>`<input type="number" step="0.05" data-i="${i}" data-j="${j}" value="${v}">`).join('')).join('')}</div><div class="note">Pixel values: 0 = black, 1 = white. Type any number.</div>`;
+  $('#c-img').innerHTML=paintHTML(cfg)+`<details style="margin-top:6px"><summary class="note" style="cursor:pointer">Exact pixel values (type numbers)</summary><div class="mgrid img" style="grid-template-columns:repeat(${W},auto)">${cfg.img.map((r,i)=>r.map((v,j)=>`<input type="number" step="0.05" data-i="${i}" data-j="${j}" value="${v}">`).join('')).join('')}</div><div class="note">Pixel values: 0 = black, 1 = white. Type any number.</div></details>`;
   $('#c-arch').innerHTML=numIn('cf','Filters',F,1,3)+numIn('ck','Filter size',k,2,4)+numIn('cs','Stride',cfg.stride,1,3)+numIn('cp','Padding',cfg.pad,0,2)+numIn('cq','Pool size',cfg.q,2,3)+numIn('ceta','Learning rate η',cfg.eta,0.01,2,0.01);
-  $('#c-shape').innerHTML=`Output size: ⌊(${H}+2·${cfg.pad}−${k})/${cfg.stride}⌋+1 = <b>${sh.oh}×${sh.ow}</b> → pooled <b>${sh.ph}×${sh.pw}</b> → flatten <b>${F*sh.ph*sh.pw}</b> numbers.`;
-  $('#c-fil').innerHTML=cfg.filters.map((f,fi)=>`<div class="fbox"><div class="k">Filter ${fi+1}</div><div class="mgrid" style="grid-template-columns:repeat(${k},auto)">${f.w.map((r,a)=>r.map((v,b)=>`<input type="number" step="0.1" data-f="${fi}" data-a="${a}" data-b="${b}" value="${v}">`).join('')).join('')}</div><div class="row" style="margin:2px 0"><label>bias<input type="number" step="0.05" data-fb="${fi}" value="${f.b}"></label><label>preset<select data-fp="${fi}"><option value="">choose…</option>${Object.keys(FPRESETS).map(x=>`<option>${x}</option>`).join('')}</select></label></div></div>`).join('');
+  $('#c-shape').innerHTML=`Output size: ⌊(${H}+2·${cfg.pad}−${k})/${cfg.stride}⌋+1 = <b>${sh.oh}×${sh.ow}</b> → pooled <b>${sh.ph}×${sh.pw}</b> → flatten <b>${F*sh.ph*sh.pw}</b> numbers.`+sizeTable(cfg);
+  $('#c-fil').innerHTML=cfg.filters.map((f,fi)=>`<div class="fbox"><div class="k">Filter ${fi+1}</div>${(()=>{const n=filterName(f.w);return n?`<div class="note" style="max-width:250px;margin-bottom:4px">${esc(n)}: ${esc(FDESC[n.replace(' (flipped sign)','')])}</div>`:`<div class="note" style="margin-bottom:4px">custom filter</div>`;})()}<div class="mgrid" style="grid-template-columns:repeat(${k},auto)">${f.w.map((r,a)=>r.map((v,b)=>`<input type="number" step="0.1" data-f="${fi}" data-a="${a}" data-b="${b}" value="${v}">`).join('')).join('')}</div><div class="row" style="margin:2px 0"><label>bias<input type="number" step="0.05" data-fb="${fi}" value="${f.b}"></label><label>preset<select data-fp="${fi}"><option value="">choose…</option>${Object.keys(FPRESETS).map(x=>`<option>${x}</option>`).join('')}</select></label></div></div>`).join('');
   const n=F*sh.ph*sh.pw;
   $('#c-cls').innerHTML=numIn('cc','Classes',C,2,4)+`<label>True class<select id="ctg">${Array.from({length:C},(_,c)=>`<option value="${c}" ${c===cfg.target?'selected':''}>${esc(cls(cfg,c))}</option>`).join('')}</select></label>`+Array.from({length:C},(_,c)=>`<label>Name ${c+1}<input type="text" data-cn="${c}" value="${esc(cls(cfg,c))}" style="width:120px;font:500 13px inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6px"></label>`).join('');
   $('#c-v').innerHTML=`<div class="note" style="margin-bottom:4px">FC weights V (${C} × ${n}) and biases c. Rows = classes, columns = flattened values.</div><div class="vscroll"><div class="mgrid" style="grid-template-columns:repeat(${n+1},auto)">${cfg.V.map((r,c)=>r.map((v,nn)=>`<input type="number" step="0.1" data-vc="${c}" data-vn="${nn}" value="${v}">`).join('')+`<input type="number" step="0.1" data-cb="${c}" value="${cfg.c[c]}" title="bias c" style="background:#FFF8E5">`).join('')}</div></div>`;
   wireCustom();}
-function wireCustom(){
+function sizeTable(cfg){const base=shapes(cfg);let h=`<details style="margin:6px 0"><summary style="cursor:pointer">Stride and padding explorer (conv output size → pooled size for this image and filter)</summary><table class="t" style="max-width:520px;margin-top:6px"><tr><th></th>${[1,2,3].map(s=>`<th>stride ${s}</th>`).join('')}</tr>`;
+  for(const p of [0,1,2]){h+=`<tr><td>padding ${p}</td>`;for(const s of [1,2,3]){const sh=shapes({...cfg,stride:s,pad:p}),ok=validShape(sh),cur=(s===cfg.stride&&p===cfg.pad);
+    h+=`<td style="${cur?'background:var(--tint);font-weight:700':''}">${ok?`${sh.oh}×${sh.ow} → ${sh.ph}×${sh.pw}`:'<span style="color:#aaa">too small</span>'}</td>`;}h+='</tr>';}
+  return h+`</table><div class="note" style="margin-top:4px">Padding keeps edges and size; stride skips positions and shrinks the output. Highlighted = your current choice.</div></details>`;}
+function paintHTML(cfg){const H=cfg.img.length,W=cfg.img[0].length;
+  return`<div class="row"><label>Brush value <span><input type="range" id="brush" min="0" max="1" step="0.05" value="0.9" style="accent-color:var(--acc)"> <b id="brushv">0.90</b></span></label><span class="note">Click or drag on the picture to paint. Right-click or hold Shift to erase (sets 0.10).</span></div>
+  <div class="paint" id="paint" style="grid-template-columns:repeat(${W},34px)">${cfg.img.map((r,i)=>r.map((v,j)=>{const b=Math.round(255*Math.max(0,Math.min(1,v)));return`<div data-i="${i}" data-j="${j}" style="background:rgb(${b},${b},${b})" title="${v}"></div>`}).join('')).join('')}</div>`;}
+function wirePaint(){const grid=$('#paint');if(!grid)return;let down=false,erase=false,pend=false;
+  const apply=e=>{const el=document.elementFromPoint(e.clientX,e.clientY);if(!el||!grid.contains(el)||el.dataset.i===undefined)return;
+    const v=erase?.1:parseFloat($('#brush').value),i=+el.dataset.i,j=+el.dataset.j;if(S.cfg.img[i][j]===v)return;S.cfg.img[i][j]=v;const b=Math.round(255*v);el.style.background=`rgb(${b},${b},${b})`;el.title=v;
+    const inp=document.querySelector(`#c-img input[data-i="${i}"][data-j="${j}"]`);if(inp)inp.value=v;TR.cfg=null;
+    if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;rebuild(false);});}};
+  grid.addEventListener('pointerdown',e=>{e.preventDefault();down=true;erase=e.button===2||e.shiftKey;try{grid.setPointerCapture(e.pointerId);}catch(_){}apply(e);});
+  grid.addEventListener('pointermove',e=>{if(down)apply(e);});
+  const up=()=>{down=false;};grid.addEventListener('pointerup',up);grid.addEventListener('pointercancel',up);grid.addEventListener('contextmenu',e=>e.preventDefault());
+  $('#brush').oninput=e=>{$('#brushv').textContent=parseFloat(e.target.value).toFixed(2);};}
+const FDESC={'Vertical edge':'looks for left–right brightness changes (vertical edges)','Horizontal edge':'looks for top–bottom brightness changes (horizontal edges)','Blur (average)':'averages the neighbourhood (smooths the image)','Identity':'copies the centre pixel unchanged','Sharpen':'boosts the centre against its neighbours (sharpens details)','Diagonal':'responds to diagonal structure'};
+function filterName(w){const k=w.length;for(const [n,f] of Object.entries(FPRESETS)){const p=f(k);if(p.every((r,i)=>r.every((v,j)=>Math.abs(v-w[i][j])<1e-9)))return n;}
+  const neg=w.flat().map(v=>-v);for(const [n,f] of Object.entries(FPRESETS)){const p=f(k);if(p.every((r,i)=>r.every((v,j)=>Math.abs(v-neg[i*k+j]/1)<1e-9)))return n+' (flipped sign)';}return null;}
+function wireCustom(){wirePaint();
   const getNum=id=>parseFloat($('#'+id).value);
   const arch=()=>{const o={H:getNum('ch'),W:getNum('cw'),F:getNum('cf'),k:getNum('ck'),stride:getNum('cs'),pad:getNum('cp'),q:getNum('cq'),C:getNum('cc')};
     if(Object.values(o).some(v=>!Number.isInteger(v)))return;const {cfg,bad}=reshapeCfg(o);
@@ -505,7 +538,7 @@ function wireCustom(){
   ['ch','cw','cf','ck','cs','cp','cq','cc'].forEach(id=>{const el=$('#'+id);if(el)el.onchange=arch;});
   $('#ceta').onchange=()=>{const v=getNum('ceta');if(v>0){S.cfg.eta=v;TR.cfg=null;rebuild(false);}};
   $('#cpre').onchange=e=>{const nm=e.target.value;if(!nm)return;const next=clone(S.cfg);next.img=imgPreset(nm,next.img.length,next.img[0].length);validateAndApply(next,`Image: ${nm}.`);buildCustom();};
-  document.querySelectorAll('#c-img input').forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;S.cfg.img[+inp.dataset.i][+inp.dataset.j]=v;TR.cfg=null;rebuild(false);});
+  document.querySelectorAll('#c-img input[data-i]').forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;S.cfg.img[+inp.dataset.i][+inp.dataset.j]=v;TR.cfg=null;rebuild(false);});
   document.querySelectorAll('#c-fil input[data-f]').forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;S.cfg.filters[+inp.dataset.f].w[+inp.dataset.a][+inp.dataset.b]=v;TR.cfg=null;rebuild(false);});
   document.querySelectorAll('#c-fil input[data-fb]').forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;S.cfg.filters[+inp.dataset.fb].b=v;TR.cfg=null;rebuild(false);});
   document.querySelectorAll('#c-fil select').forEach(sel=>sel.onchange=()=>{const nm=sel.value;if(!nm)return;const next=clone(S.cfg);next.filters[+sel.dataset.fp].w=FPRESETS[nm](k_());validateAndApply(next,`Filter ${+sel.dataset.fp+1}: ${nm}.`);buildCustom();});
@@ -526,6 +559,7 @@ function init(){
   $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)setTab(b.dataset.t);};
   $('#prev').onclick=()=>{stopPlay();go(S.i-1)};$('#next').onclick=()=>{stopPlay();go(S.i+1)};
   $('#slider').oninput=e=>{stopPlay();go(+e.target.value)};
+  $('#slide').onclick=slideAll;
   $('#play').onclick=()=>{if(playTimer){stopPlay();return;}if(S.i>=steps.length-1)go(0);$('#play').textContent='⏸ Pause';playTimer=setInterval(()=>{if(S.i>=steps.length-1){stopPlay();return;}go(S.i+1);},1800);};
   document.addEventListener('keydown',e=>{if(tab!=='step'||/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight'){stopPlay();go(S.i+1)}if(e.key==='ArrowLeft'){stopPlay();go(S.i-1)}});
   $('#eps').onchange=renderCheck;

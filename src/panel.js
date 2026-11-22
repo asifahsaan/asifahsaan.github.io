@@ -5,7 +5,7 @@ const fabDefault=()=>({x:innerWidth-FS-FM,y:innerHeight-FS-FM});
 const clampFab=p=>({x:Math.max(6,Math.min(innerWidth-FS-6,p.x)),y:Math.max(6,Math.min(innerHeight-FS-6,p.y))});
 function placeFab(){const p=clampFab(fabPos||fabDefault());fab.style.left=p.x+'px';fab.style.top=p.y+'px';}
 function syncPanel(){const on=tab==='step';panel.style.display=(on&&panelOpen)?'':'none';fab.style.display=(on&&!panelOpen)?'':'none';}
-function openPanel(){panelOpen=true;const w=Math.min(540,innerWidth*.94);if(!panel.style.width)panel.style.width=w+'px';
+function openPanel(){panelOpen=true;const w=Math.min(540,innerWidth*.94);if(!panel.style.width)panel.style.width=w+'px';if(!panel.style.height)panel.style.height=Math.round(Math.min(560,innerHeight*.84))+'px';
   panel.style.visibility='hidden';syncPanel();const pw=panel.offsetWidth,ph=panel.offsetHeight;
   const f=clampFab(fabPos||fabDefault()),cx=f.x+FS/2,cy=f.y+FS/2;
   let left=cx>innerWidth/2?f.x+FS-pw:f.x,top=cy>innerHeight/2?f.y+FS-ph:f.y;

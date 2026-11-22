@@ -144,8 +144,11 @@ svg.chart text{font-size:11px;fill:#6b7280;font-family:inherit}
 .fnav .trk{flex:1;height:5px;background:#E3E3DD;border-radius:3px;overflow:hidden}
 .fnav .bar{height:100%;width:0;background:linear-gradient(90deg,var(--acc),#7C4DDB);transition:width .4s}
 .fnav .c2{font-weight:700;font-size:12.5px;color:var(--edge);background:var(--tint);border-radius:99px;padding:4px 10px}
-.panel.floating{position:fixed;z-index:60;box-shadow:0 18px 46px rgba(20,40,60,.30),0 2px 8px rgba(20,40,60,.12);border:1px solid #c9dce6;background:#fff;border-radius:14px;min-width:300px;max-width:94vw;max-height:90vh;resize:both;overflow:auto;display:flex;flex-direction:column}
-.panel.floating .fhead{cursor:grab}
+.panel.floating{position:fixed;z-index:60;box-shadow:0 18px 46px rgba(20,40,60,.30),0 2px 8px rgba(20,40,60,.12);border:1px solid #c9dce6;background:rgba(255,255,255,.84);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);border-radius:14px;min-width:300px;max-width:94vw;max-height:90vh;resize:both;overflow:auto;display:flex;flex-direction:column}
+.panel.floating .fhead{cursor:grab;background:rgba(232,242,247,.8)}
+.panel.floating:hover{background:rgba(255,255,255,.95)}
+@media(max-width:760px){.stagewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.stage{min-width:800px}.stagewrap:after{content:"← swipe the diagram →";display:block;font-size:11px;color:var(--mut);text-align:center;padding:2px}}
+.panel.floating .fnav button{background:rgba(255,255,255,.85)}
 .panel.floating.drag .fhead{cursor:grabbing}
 .panel.floating.drag{box-shadow:0 26px 60px rgba(20,40,60,.38);transition:none}
 .panel.floating .fbody{flex:1;overflow:auto}
@@ -653,7 +656,7 @@ const fabDefault=()=>({x:innerWidth-FS-FM,y:innerHeight-FS-FM});
 const clampFab=p=>({x:Math.max(6,Math.min(innerWidth-FS-6,p.x)),y:Math.max(6,Math.min(innerHeight-FS-6,p.y))});
 function placeFab(){const p=clampFab(fabPos||fabDefault());fab.style.left=p.x+'px';fab.style.top=p.y+'px';}
 function syncPanel(){const on=tab==='step';panel.style.display=(on&&panelOpen)?'':'none';fab.style.display=(on&&!panelOpen)?'':'none';}
-function openPanel(){panelOpen=true;const w=Math.min(540,innerWidth*.94);if(!panel.style.width)panel.style.width=w+'px';
+function openPanel(){panelOpen=true;const w=Math.min(540,innerWidth*.94);if(!panel.style.width)panel.style.width=w+'px';if(!panel.style.height)panel.style.height=Math.round(Math.min(560,innerHeight*.84))+'px';
   panel.style.visibility='hidden';syncPanel();const pw=panel.offsetWidth,ph=panel.offsetHeight;
   const f=clampFab(fabPos||fabDefault()),cx=f.x+FS/2,cy=f.y+FS/2;
   let left=cx>innerWidth/2?f.x+FS-pw:f.x,top=cy>innerHeight/2?f.y+FS-ph:f.y;
