@@ -47,6 +47,29 @@ body{padding-top:10px}
 .vscroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
 .gf .b{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
 .gf .tr{flex:1;height:16px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
+.archbar{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;margin:4px 0 8px}
+.archbar .seg button.on{background:var(--acc);color:#fff}
+.zoomb{display:inline-flex;gap:4px;margin-left:auto}.zoomb .btn{padding:6px 11px}
+.archcap{background:var(--card);border-radius:10px;padding:8px 12px;font-size:14px;margin-bottom:8px;min-height:20px}
+.archgrid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
+@media(max-width:1000px){.archgrid{grid-template-columns:1fr}}
+.archwrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;max-height:78vh}
+.archwrap svg{display:block;font-family:inherit}
+.archinfo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;position:sticky;top:8px;max-height:78vh;overflow:auto}
+.archinfo h3{margin:0 0 6px;font-size:17px}.tbadge{font-size:11px;background:var(--card);border-radius:6px;padding:2px 6px;color:var(--mut);vertical-align:middle}
+.archinfo .read{background:#EAF4F8;border-radius:8px;padding:6px 9px;margin:6px 0;font-size:13px}.archinfo .why{font-size:13px;color:#33414d}
+.archinfo .katex-display{overflow-x:auto;overflow-y:hidden;margin:.5em 0}
+.archleg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mut);margin-top:8px}.archleg i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+#a-svg .cellbox{fill:#F3F4F6;stroke:#DADDE2;stroke-width:1.5}
+#a-svg .cap{font-size:13px;fill:#6b7480;font-weight:600}
+#a-svg .chip{font-size:11.5px;fill:#1f2937;stroke:#fff;stroke-width:3.5;paint-order:stroke;font-weight:600}
+#a-svg .gl{font-size:13px;font-style:italic;fill:#6b7480}
+#a-svg .dim{opacity:.14}
+#a-svg .part{cursor:pointer}
+#a-svg .part:hover{filter:brightness(.93) drop-shadow(0 0 3px rgba(30,88,115,.5))}
+#a-svg .part.sel{filter:drop-shadow(0 0 5px #1E5873) drop-shadow(0 0 2px #1E5873)}
+#a-svg .part.cmp .cellbox{fill:#E7EEF3;stroke:#9DB8C8}
+#a-svg .shrinkbtn{cursor:pointer}#a-svg .shrinkbtn rect{fill:#fff;stroke:#9DB8C8}#a-svg .shrinkbtn text{font-size:12px;fill:#1E5873;font-weight:600}
 .gf .fl{position:absolute;left:0;top:0;bottom:0;background:var(--err);opacity:.75}
 </style>
 </head>
@@ -58,6 +81,7 @@ body{padding-top:10px}
     <div class="seg" id="cellsel"><button data-c="lstm" class="on">LSTM</button><button data-c="gru">GRU</button></div>
     <div class="tabs" id="tabs">
       <button class="tab on" data-t="step">Step by step</button>
+      <button class="tab" data-t="arch">Architecture</button>
       <button class="tab" data-t="all">Show all</button>
       <button class="tab" data-t="check">Gradient check</button>
       <button class="tab" data-t="train">Training</button>
@@ -106,8 +130,10 @@ body{padding-top:10px}
     <button class="btn" id="play">▶ Play</button>
   </div>
   <div class="jump" id="jump"></div>
-  <div class="note" style="margin-top:6px">Tip: use the ← → keys, and switch between <b>LSTM</b> and <b>GRU</b> at the top right. Own sequence or sizes? Open the <b>Custom</b> tab.</div>
+  <div class="note" style="margin-top:6px">Tip: use the ← → keys, and switch between <b>LSTM</b> and <b>GRU</b> at the top right. Want the cell drawn as in the lecture slides, with clickable gates? Open the <b>Architecture</b> tab. Own sequence or sizes? Open <b>Custom</b>.</div>
 </section>
+
+<section id="p-arch" class="hide"><div id="archroot"></div></section>
 
 <section id="p-all" class="hide"></section>
 
@@ -295,10 +321,10 @@ function paint(){
 let playTimer=null;
 function go(i){S.i=Math.max(0,Math.min(steps.length-1,i));paint();}
 function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
-function rebuild(relayout=true){document.querySelectorAll('#cellsel button').forEach(b=>b.classList.toggle('on',b.dataset.c===S.cfg.cell));steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
+function rebuild(relayout=true){document.querySelectorAll('#cellsel button').forEach(b=>b.classList.toggle('on',b.dataset.c===S.cfg.cell));steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='arch')renderArch();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
 function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Setup','S'],['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];$('#jump').innerHTML=L.map(([n,p])=>`<button class="btn" data-i="${first(p)}">⏭ ${n}</button>`).join('');$('#jump').querySelectorAll('button').forEach(b=>b.onclick=()=>{stopPlay();go(+b.dataset.i)});}
-function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));for(const id of ['step','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
-  if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
+function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));for(const id of ['step','arch','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
+  if(t==='arch')renderArch();if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
   $('#p-all').innerHTML=glossBlock(steps.gloss)+`<div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
@@ -363,6 +389,7 @@ function wireCustom(){const cfg=S.cfg;
   num('#c-io input[data-x]',(i,v)=>{const [t,k]=i.dataset.x.split(',').map(Number);S.cfg.x[t][k]=v;});num('#c-io input[data-t]',(i,v)=>{const [t,k]=i.dataset.t.split(',').map(Number);S.cfg.t[t][k]=v;});
   num('#c-w input[data-w]',(i,v)=>{const parts=i.dataset.w.split(',');const path=parts[0].split('.');const ix=parts.slice(1).map(Number);const o=path.reduce((a,k)=>a[k],S.cfg);if(Array.isArray(o[0]))o[ix[0]][ix[1]]=v;else o[ix[1]]=v;});}
 /* ================= floating explainer + book icon ================= */
+/*INCLUDE:lstm_arch.js*/
 /*PANEL_JS*/
 /* ================= wiring ================= */
 function init(){initConcepts();
@@ -384,7 +411,7 @@ function init(){initConcepts();
   $('#crand').onclick=()=>{const o=S.cfg,c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;applyCfg(c,'Random weights.');buildCustom();};
   $('#cgo').onclick=()=>{setTab('step');go(0);};
   $('#cpre').onchange=e=>{const f=PRESETS[e.target.value];if(!f)return;applyCfg(f(),`Loaded: ${e.target.value}`);buildCustom();};
-  window.__app={S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,randCfg,PRESETS,DEFAULTS,trainN,trainReset,TR:()=>TR};
+  window.__app={A,renderArch,S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,randCfg,PRESETS,DEFAULTS,trainN,trainReset,TR:()=>TR};
 }
 init();
 </script>
