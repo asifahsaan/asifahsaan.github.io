@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neural Network Lab · ANN step by step</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+/*KATEX_CSS*/
+<style>
+/*COMMON_CSS*/
+/* ---- Neural Network lab (generic architecture) ---- */
+body{padding-top:10px}
+.topnav{font-size:12.5px;margin-bottom:6px;color:var(--mut)}.topnav a{color:var(--acc);text-decoration:none;font-weight:600}
+.stage{aspect-ratio:auto}
+.stage svg{position:static;display:block;width:100%;height:auto}
+.stage svg text{font-family:"IBM Plex Sans",Arial,sans-serif}
+.halo{paint-order:stroke;stroke:#fff;stroke-width:3.2px;stroke-linejoin:round}
+.nc{transition:fill .45s,stroke .45s}
+.nc.active{animation:npulse2 1.5s ease-out infinite}
+.nc.err{animation:npulse2 1.5s ease-out infinite}
+@keyframes npulse2{0%{stroke-width:3}50%{stroke-width:6}100%{stroke-width:3}}
+.eg{transition:stroke .45s,stroke-width .45s,opacity .45s}
+.eg.flow{stroke-dasharray:11 8;animation:dash .75s linear infinite}
+.eg.flow.rev{animation-direction:reverse}
+.flash{animation:tflash .9s ease-out}
+@keyframes tflash{0%{fill-opacity:.2}30%{fill-opacity:1}100%{fill-opacity:1}}
+.chipg rect{fill:#fff;fill-opacity:.94;stroke:var(--line);stroke-width:1}
+.chipg.gr rect{fill:var(--errtint);stroke:#f0b9b3}
+.chipg.ac rect{stroke:var(--acc);stroke-width:1.8}
+.chipg text{font-size:10.5px;fill:#1E5873}.chipg.gr text{fill:var(--err);font-weight:600}
+.chipg.ng text{fill:#B1500F}
+.chipg{transition:opacity .35s}
+.cust{display:block}
+.cust h3{font-size:14px;margin:18px 0 6px;color:var(--acc);letter-spacing:.06em;text-transform:uppercase}
+.cust .row label{font-size:12.5px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+.cust input[type=number],.cust select{font:500 13px inherit;font-family:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6px;width:96px}
+.cust select{width:auto;max-width:260px}
+.mgrid{display:inline-grid;gap:3px;margin:4px 0}
+.mgrid input{width:66px!important;padding:4px!important;text-align:center}
+.fbox{display:inline-block;background:var(--card);border-radius:10px;padding:10px 12px;margin:0 10px 10px 0;vertical-align:top}
+.fbox .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;margin-bottom:4px}
+.warn{color:var(--err);font-weight:600;font-size:13px;margin:8px 0}
+.okk{color:#1c6b3a;font-size:13px}
+.lsz{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.lsz label{align-items:center}
+.vscroll{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+</style>
+</head>
+<body>
+<div class="topnav"><a href="./">← Visual Learning</a> · <a href="../">Asif Ahsan</a></div>
+<header>
+  <div><div class="kick">Artificial Intelligence · Interactive lab · Module 1</div><h1 id="h1">Neural Network Lab: any network, step by step</h1></div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-t="step">Step by step</button>
+    <button class="tab" data-t="all">Show all</button>
+    <button class="tab" data-t="check">Gradient check</button>
+    <button class="tab" data-t="train">Training</button>
+    <button class="tab" data-t="cust">Custom network</button>
+  </div>
+</header>
+
+<section id="p-step">
+  <div class="layout" id="layout">
+    <div class="stagecol">
+      <div class="stagewrap"><div class="stage" id="stage"><svg id="svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg></div></div>
+      <div class="legend" id="legend">
+        <span><i style="background:#E6EAF0;border-color:#64748B"></i>Input</span>
+        <span><i style="background:#DCEEF5;border-color:#2B7A9B"></i>Hidden</span>
+        <span><i style="background:#EBE3FA;border-color:#7C4DDB"></i>Output</span>
+        <span><i style="background:#FFF1C9;border-color:#E0A100"></i>Loss</span>
+        <span><b class="sw" style="background:#2B7A9B"></b>weight &gt; 0</span>
+        <span><b class="sw" style="background:#E07B39"></b>weight &lt; 0 (thickness = |w|)</span>
+        <span><i style="background:var(--ghost);border-color:#D6D6D0"></i>Not reached yet</span>
+        <span><i style="background:var(--errtint);border-color:var(--err)"></i>Red = error signal / gradient</span>
+      </div>
+    </div>
+    <aside class="panel floating" id="panel">
+      <div class="fhead" id="fhead"><span class="grip">⋮⋮</span><span class="ft">Explainer · drag me anywhere</span>
+        <button id="fmin" title="Collapse to a book icon">–</button></div>
+      <div class="fbody" id="fbody">
+        <div class="k" id="kick"></div>
+        <h2 id="title"></h2>
+        <div class="path" id="path"></div>
+        <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
+        <div class="res" id="res"></div>
+        <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
+      </div>
+      <div class="fnav"><button id="prev2" title="Previous">◀</button><div class="trk"><div class="bar" id="bar"></div></div><span class="c2" id="cnt2"></span><button id="next2" title="Next">▶</button></div>
+    </aside>
+  </div>
+  <div class="ctrl">
+    <button class="btn" id="prev">◀ Prev</button>
+    <button class="btn pri" id="next">Next ▶</button>
+    <input type="range" id="slider" min="0" max="0" value="0">
+    <span class="cnt" id="cnt"></span>
+    <button class="btn" id="play">▶ Play</button>
+    <label class="note">Detail <select id="gran"><option value="neuron">one neuron per step</option><option value="layer">one layer per step (matrices)</option></select></label>
+  </div>
+  <div class="jump" id="jump"></div>
+  <div class="note" style="margin-top:6px">Tip: use the ← → keys. Want your own network (more layers, more neurons, other activations)? Open the <b>Custom network</b> tab.</div>
+</section>
+
+<section id="p-all" class="hide"></section>
+
+<section id="p-check" class="hide">
+  <div class="row"><h2 style="margin:0;font-size:20px">Gradient check: does backprop agree with a numerical derivative?</h2></div>
+  <div id="gcform" class="note"></div>
+  <div class="row"><label class="note">Step size ε&nbsp;
+    <select id="eps"><option value="1e-2">10⁻²</option><option value="1e-3">10⁻³</option><option value="1e-4">10⁻⁴</option><option value="1e-6" selected>10⁻⁶</option><option value="1e-8">10⁻⁸</option></select></label>
+    <span id="gcbadge"></span></div>
+  <div id="gctable"></div>
+</section>
+
+<section id="p-train" class="hide">
+  <div class="row"><h2 style="margin:0;font-size:20px">Training: repeat forward → backward → update</h2></div>
+  <div class="row">
+    <button class="btn pri" id="t1">Train 1 epoch</button><button class="btn" id="t10">+10</button><button class="btn" id="t100">+100</button>
+    <button class="btn" id="tplay">▶ Run</button><button class="btn" id="treset">Reset</button><button class="btn" id="tload">Load trained weights into the stepper</button>
+    <label class="note">η&nbsp;<input type="range" id="teta" min="0.01" max="3" step="0.01" value="0.5" style="vertical-align:middle;accent-color:var(--acc)"> <b id="tetav"></b></label>
+    <label class="note"><input type="checkbox" id="tlog"> log scale</label>
+  </div>
+  <div class="grid2">
+    <div><svg id="chart" class="chart" viewBox="0 0 620 300" style="width:100%;background:#fff;border:1px solid var(--line);border-radius:12px"></svg></div>
+    <div>
+      <div class="card"><div class="k">After <b id="tep">0</b> epochs</div><div class="bars" id="tbars"></div><div class="note" id="tl"></div></div>
+      <div class="card" style="margin-top:12px"><div class="k">Parameters (start → now)</div><div class="vscroll" id="tpar"></div></div>
+    </div>
+  </div>
+  <div class="note" style="margin-top:8px">Try a very large or very small η and watch the curve.</div>
+</section>
+
+<section id="p-cust" class="hide cust">
+  <div class="row"><h2 style="margin:0;font-size:20px">Build your own network</h2><span class="note">Change the architecture, the activation, the numbers. Everything recomputes. Then open <b>Step by step</b>.</span></div>
+  <div class="row"><button class="btn" id="creset">Reset to the lecture example (2-2-2)</button><button class="btn" id="crand">Randomise weights</button><button class="btn pri" id="cgo">▶ See it step by step</button><span id="cmsg"></span></div>
+  <h3>1 · Architecture</h3>
+  <div class="row"><label>Ready-made examples<select id="cpre"></select></label></div>
+  <div class="lsz" id="c-sizes"></div>
+  <div class="row" id="c-act"></div>
+  <h3>2 · Input and target</h3>
+  <div id="c-io"></div>
+  <h3>3 · Weights and biases</h3>
+  <div id="c-w"></div>
+</section>
+
+<div class="fnote">Neural Network Lab series. Layers are fully connected; each neuron computes $z=\sum w\,a+b$ then an activation. Hidden activation, output type and loss are chosen in the Custom tab. All maths runs in your browser and is cross-checked against a Python reference.</div>
+
+<button id="fab" title="Open explainer (drag me anywhere)" aria-label="Open explainer" style="display:none"><svg viewBox="0 0 24 24" width="29" height="29" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6.2c4-2.2 7.5-2.2 10-.7V19c-2.5-1.5-6-1.5-10 .7-4-2.2-7.5-2.2-10-.7z"/><path d="M12 6.2v13.5"/></svg><span class="badge" id="fabn">1</span></button>
+/*KATEX_JS*/
+<script>
+"use strict";
+/*COMMON_JS*/
+/* ================= maths (mirror of src/nn_ref.py) ================= */
+const sig=z=>1/(1+Math.exp(-z));
+const ACTS={sigmoid:{f:z=>sig(z),d:(z,a)=>a*(1-a),tex:R`\sigma`,dtex:'a(1-a)',name:'sigmoid'},tanh:{f:Math.tanh,d:(z,a)=>1-a*a,tex:R`\tanh`,dtex:'1-a^2',name:'tanh'},relu:{f:z=>Math.max(0,z),d:(z,a)=>z>0?1:0,tex:R`\mathrm{ReLU}`,dtex:R`\mathbb 1[z>0]`,name:'ReLU'}};
+function defaultCfg(){return{sizes:[2,2,2],act:'sigmoid',out:'sigmoid',W:[[[.2,.1],[-.3,.2]],[[.3,-.5],[.4,.2]]],b:[[.1,-.2],[0,.1]],x:[1,2],t:[1,0],eta:.5,gran:'neuron'};}
+function forward(cfg){const L=cfg.sizes.length-1,a=[cfg.x.slice()],z=[];
+  for(let l=1;l<=L;l++){const zl=cfg.W[l-1].map((row,j)=>row.reduce((t,w,i)=>t+w*a[l-1][i],0)+cfg.b[l-1][j]);z.push(zl);
+    if(l<L)a.push(zl.map(ACTS[cfg.act].f));
+    else if(cfg.out==='sigmoid')a.push(zl.map(sig));
+    else if(cfg.out==='linear')a.push(zl.slice());
+    else{const mx=Math.max(...zl),e=zl.map(v=>Math.exp(v-mx)),s=e.reduce((p,q)=>p+q,0);a.push(e.map(v=>v/s));}}
+  const y=a[L],t=cfg.t;const loss=cfg.out==='softmax'?-t.reduce((s,tk,k)=>s+tk*Math.log(y[k]),0):.5*y.reduce((s,v,k)=>s+(v-t[k])**2,0);
+  return{a,z,L:loss};}
+function backward(cfg){const m=forward(cfg),L=cfg.sizes.length-1,y=m.a[L],dy=y.map((v,k)=>v-cfg.t[k]);
+  const dz=Array(L),da=Array(L+1);da[L]=dy;dz[L-1]=cfg.out==='sigmoid'?dy.map((v,k)=>v*y[k]*(1-y[k])):dy.slice();
+  for(let l=L-1;l>=1;l--){da[l]=m.a[l].map((_,i)=>cfg.W[l].reduce((s,row,j)=>s+row[i]*dz[l][j],0));dz[l-1]=da[l].map((v,j)=>v*ACTS[cfg.act].d(m.z[l-1][j],m.a[l][j]));}
+  const dW=dz.map((d,l)=>d.map(v=>m.a[l].map(x=>v*x))),db=dz.map(d=>d.slice());
+  return{m,g:{da,dz,dW,db}};}
+function apply(cfg,g,eta){const c=clone(cfg);for(let l=0;l<cfg.W.length;l++){c.W[l]=cfg.W[l].map((r,j)=>r.map((w,i)=>w-eta*g.dW[l][j][i]));c.b[l]=cfg.b[l].map((v,j)=>v-eta*g.db[l][j]);}return c;}
+function paramList(cfg){const P=[];const L=cfg.sizes.length-1;for(let l=0;l<L;l++)for(let j=0;j<cfg.sizes[l+1];j++){for(let i=0;i<cfg.sizes[l];i++)P.push({id:`W${l}_${j}_${i}`,tex:tW(l+1,j,i),path:['W',l,j,i]});P.push({id:`b${l}_${j}`,tex:tB(l+1,j),path:['b',l,j]});}return P;}
+const getP=(o,p)=>p.reduce((a,k)=>a[k],o);const setP=(o,p,v)=>{const t=p.slice(0,-1).reduce((a,k)=>a[k],o);t[p[p.length-1]]=v;};
+function analytic(cfg){const {g}=backward(cfg),o={};for(const pr of paramList(cfg)){const [t,l,j,i]=pr.path;o[pr.id]=t==='W'?g.dW[l][j][i]:g.db[l][j];}return o;}
+function numgrad(cfg,eps){const o={};for(const pr of paramList(cfg)){const a=clone(cfg),b=clone(cfg);setP(a,pr.path,getP(cfg,pr.path)+eps);setP(b,pr.path,getP(cfg,pr.path)-eps);o[pr.id]=(forward(a).L-forward(b).L)/(2*eps);}return o;}
+/* ================= notation (matches the lecture for 1 hidden layer) ================= */
+let NL=2;
+const lect=()=>NL===2;
+const tW=(l,j,i)=>lect()?(l===1?`w_{${j+1}${i+1}}`:`v_{${j+1}${i+1}}`):`W^{(${l})}_{${j+1}${i+1}}`;
+const tB=(l,j)=>lect()?(l===1?`b_${j+1}`:`c_${j+1}`):`b^{(${l})}_{${j+1}}`;
+const tZ=(l,j)=>lect()?(l===1?`z_${j+1}`:`u_${j+1}`):`z^{(${l})}_{${j+1}}`;
+const tA=(l,j)=>l===0?`x_${j+1}`:l===NL?`y_${j+1}`:(lect()?`h_${j+1}`:`a^{(${l})}_{${j+1}}`);
+const tDA=(l,j)=>lect()?(l===2?R`\delta^y_${j+1}`:R`\delta^h_${j+1}`):R`\delta^{a(${l})}_{${j+1}}`;
+const tDZ=(l,j)=>lect()?(l===2?R`\delta^u_${j+1}`:R`\delta^z_${j+1}`):R`\delta^{z(${l})}_{${j+1}}`;
+const tZv=l=>lect()?(l===1?'z':'u'):`z^{(${l})}`;const tAv=l=>l===0?'x':l===NL?'y':(lect()?'h':`a^{(${l})}`);
+const tWm=l=>lect()?(l===1?'W':'V'):`W^{(${l})}`;const tBv=l=>lect()?(l===1?'b':'c'):`b^{(${l})}`;
+const tDZv=l=>lect()?(l===2?R`\delta^u`:R`\delta^z`):R`\delta^{z(${l})}`;const tDAv=l=>lect()?(l===2?R`\delta^y`:R`\delta^h`):R`\delta^{a(${l})}`;
+const nodeTxt={z:l=>lect()?(l===1?'z':'u'):'z',a:l=>l===NL?'y':(lect()?'h':'a'),dz:l=>lect()?(l===2?'δu':'δz'):'δz',da:l=>lect()?(l===2?'δy':'δh'):'δa'};
+const bmc=v=>R`\begin{bmatrix}${v.map(N).join(R` \\ `)}\end{bmatrix}`;
+const bmM=M=>R`\begin{bmatrix}${M.map(r=>r.map(N).join(' & ')).join(R` \\ `)}\end{bmatrix}`;
+const colLines=(items,per)=>{const rows=[];for(let i=0;i<items.length;i+=per)rows.push(items.slice(i,i+per));return R`\begin{array}{${'l'.repeat(per)}}${rows.map(r=>r.join(' & ')).join(R` \\[1pt] `)}\end{array}`;};
+const alignLines=(items,per)=>{const rows=[];for(let i=0;i<items.length;i+=per)rows.push(items.slice(i,i+per));return R`\begin{aligned}${rows.map((r,i)=>`&${i?'+':''}${r.join('+')}`).join(R` \\ `)}\end{aligned}`;};
+const lname=l=>l===0?'Input':l===NL?'Output':(NL===2?'Hidden':`Hidden ${l}`);
+/* ================= state ================= */
+const S={cfg:defaultCfg(),i:0};let steps=[],tab='step';
+/* ================= steps ================= */
+function build(){
+  const cfg=S.cfg,sz=cfg.sizes,L=sz.length-1;NL=L;const A=ACTS[cfg.act],eta=cfg.eta;
+  const {m,g}=backward(cfg),cfg1=apply(cfg,g,eta),m1=forward(cfg1),st=[],P=o=>st.push(o);
+  const nk=(l,j)=>`n:${l}:${j}`,ek=(l,j,i)=>`e:${l}:${j}:${i}`;
+  const layerNodes=l=>[...Array(sz[l]).keys()].map(j=>nk(l,j));
+  const layerEdges=l=>[...Array(sz[l]).keys()].flatMap(j=>[...Array(sz[l-1]).keys()].map(i=>ek(l,j,i)));
+  const actTex=(l)=>l<L?A.tex:(cfg.out==='sigmoid'?R`\sigma`:cfg.out==='linear'?'':R`\mathrm{softmax}`);
+  const sub=(t)=>t;
+  const layerMode=cfg.gran==='layer';
+  const outNote=cfg.out==='sigmoid'?'sigmoid output with squared error':cfg.out==='linear'?'linear output with squared error':'softmax output with cross-entropy';
+  // ---- forward
+  for(let l=1;l<=L;l++){
+    if(layerMode){
+      P({ph:'F',title:`Forward: all $${tZv(l)}$ of layer ${l} (${lname(l).toLowerCase()})`,path:`${tAv(l-1)}, ${tWm(l)}, ${tBv(l)} → ${tZv(l)}`,act:{n:[...layerNodes(l-1),...layerNodes(l)],e:layerEdges(l)},
+        what:[R`$${tZv(l)}=${tWm(l)}\,${tAv(l-1)}+${tBv(l)}$ (matrix times vector, plus bias).`,`Row $j$ of the matrix is the weights of neuron $j$.`],
+        res:[R`${tZv(l)}=${bmM(cfg.W[l-1])}${bmc(m.a[l-1])}+${bmc(cfg.b[l-1])}=${bmc(m.z[l-1])}`],
+        gives:m.z[l-1].map((v,j)=>({k:`z:${l}:${j}`})),say:`Layer ${l} computes all its weighted sums at once.`});
+      if(!(l===L&&cfg.out==='linear'))P({ph:'F',title:l<L?`Forward: activation of layer ${l}`:`Forward: output $y$`,path:`${tZv(l)} → ${tAv(l)}`,act:{n:layerNodes(l),e:[]},
+        what:[l<L?R`$${tAv(l)}=${A.tex}(${tZv(l)})$ applied to every neuron.`:cfg.out==='softmax'?R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$ (softmax).`:R`$y=\sigma(${tZv(l)})$ (sigmoid output).`],
+        res:[R`${tAv(l)}=${actTex(l)}\!\left(${bmc(m.z[l-1])}\right)=${bmc(m.a[l])}`],gives:m.a[l].map((v,j)=>({k:`a:${l}:${j}`})),say:`Same activation for every neuron of the layer.`});
+      else P({ph:'F',title:'Forward: linear output $y=z$',path:`${tZv(l)} → y`,act:{n:layerNodes(l),e:[]},what:['Linear output: no squashing, $y=z$.'],res:[R`y=${bmc(m.a[l])}`],gives:m.a[l].map((v,j)=>({k:`a:${l}:${j}`})),say:'Useful for regression.'});
+    }else{
+      for(let j=0;j<sz[l];j++){
+        const terms=cfg.W[l-1][j].map((w,i)=>`${Q(w)}${Q(m.a[l-1][i])}`),srcs=cfg.W[l-1][j].map((_,i)=>tW(l,j,i)+tA(l-1,i)).join('+');
+        P({ph:'F',title:`Forward: $${tZ(l,j)}$ of ${lname(l).toLowerCase()} neuron ${j+1}`,path:`${[...Array(sz[l-1]).keys()].map(i=>tA(l-1,i).replace(/[_{}^()]/g,'')).join(', ')}, weights, bias → ${tZ(l,j).replace(/[_{}^()]/g,'')}`,
+          act:{n:[...layerNodes(l-1),nk(l,j)],e:[...Array(sz[l-1]).keys()].map(i=>ek(l,j,i))},
+          what:[`Neuron ${j+1} of this layer sees **all** ${sz[l-1]} value${sz[l-1]>1?'s':''} from the previous layer.`,R`$${tZ(l,j)}=\sum_i W_{${j+1}i}\,a_i+${tB(l,j)}$`,`One row of the weight matrix times the input vector, plus the bias.`],
+          res:[R`${tZ(l,j)}=${srcs}+${tB(l,j)}`,R`=${terms.length>3?alignLines(terms,3)+'+':terms.join('+')+'+'}${Q(cfg.b[l-1][j])}=${hl(m.z[l-1][j])}`],gives:[{k:`z:${l}:${j}`}],
+          say:`Weighted sum plus bias: the same dot product as a single neuron.`});
+        if(!(l===L&&(cfg.out==='softmax'||cfg.out==='linear'))){
+          const zz=m.z[l-1][j];const isOut=l===L;
+          const body=isOut?R`y_${j+1}=\sigma(${tZ(l,j)})=\frac{1}{1+e^{-${Q(zz)}}}`:cfg.act==='sigmoid'?R`${tA(l,j)}=\sigma(${tZ(l,j)})=\frac{1}{1+e^{-${Q(zz)}}}`:cfg.act==='tanh'?R`${tA(l,j)}=\tanh(${tZ(l,j)})=\tanh${Q(zz)}`:R`${tA(l,j)}=\max(0,${tZ(l,j)})=\max(0,${Q(zz)})`;
+          P({ph:'F',title:isOut?`Forward: prediction $y_${j+1}$`:`Forward: activation $${tA(l,j)}$`,path:`${tZ(l,j).replace(/[_{}^()]/g,'')} → ${tA(l,j).replace(/[_{}^()]/g,'')}`,act:{n:[nk(l,j)],e:[]},
+            what:[isOut?R`$y_${j+1}=\sigma(${tZ(l,j)})$ (sigmoid output). Compare with the target $t_${j+1}=${N(cfg.t[j])}$ next.`:R`Squash $${tZ(l,j)}$ with ${A.name}: $${tA(l,j)}=${A.tex}(${tZ(l,j)})$.`,cfg.act==='relu'&&!isOut?`ReLU keeps positive values and sets negative ones to 0.`:`The output of this neuron feeds the next layer.`],
+            res:[body+R`=${hl(m.a[l][j])}`],gives:[{k:`a:${l}:${j}`}],say:isOut?`Target is ${N(cfg.t[j])}, prediction is ${N(m.a[l][j])}.`:`The nonlinearity is what lets a network model more than a straight line.`});
+        }else if(l===L&&cfg.out==='linear'){
+          P({ph:'F',title:`Forward: linear output $y_${j+1}$`,path:`${tZ(l,j).replace(/[_{}^()]/g,'')} → y`,act:{n:[nk(l,j)],e:[]},what:[R`Linear output: $y_${j+1}=${tZ(l,j)}$, no squashing (regression).`],res:[R`y_${j+1}=${tZ(l,j)}=${hl(m.a[l][j])}`],gives:[{k:`a:${l}:${j}`}],say:`Target is ${N(cfg.t[j])}, prediction is ${N(m.a[l][j])}.`});
+        }
+      }
+      if(l===L&&cfg.out==='softmax')P({ph:'F',title:'Forward: softmax over all outputs',path:'u → y',act:{n:layerNodes(L),e:[]},
+        what:[R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$: positive numbers that sum to 1.`],
+        res:[R`\sum_j e^{u_j}=${m.z[L-1].map(v=>`e^{${N(v)}}`).join('+')}=${N(m.z[L-1].reduce((s,v)=>s+Math.exp(v),0))}`,R`\begin{aligned}${m.a[L].map((v,k)=>`y_${k+1}&=\\frac{e^{${N(m.z[L-1][k])}}}{${N(m.z[L-1].reduce((s,q)=>s+Math.exp(q),0))}}=${hl(v)}`).join(R` \\ `)}\end{aligned}`],gives:m.a[L].map((v,k)=>({k:`a:${L}:${k}`})),say:`Class probabilities. The target is one-hot.`});
+    }
+  }
+  // ---- loss
+  const lossNodes=[...layerNodes(L),'n:loss'],lossEdges=[...Array(sz[L]).keys()].map(j=>`eL:${j}`);
+  if(cfg.out==='softmax')P({ph:'F',title:'Forward: cross-entropy loss $L$',path:'y, t → L',act:{n:lossNodes,e:lossEdges},what:[R`$L=-\sum_k t_k\ln y_k$`,`Only the true class contributes when $t$ is one-hot.`],
+    res:[R`L=-\sum_k t_k\ln y_k=-\left[${m.a[L].map((v,k)=>`${N(cfg.t[k])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.L)}`],gives:[{k:'L'}],say:`Forward pass finished. Every backward step reuses the numbers already shown.`});
+  else P({ph:'F',title:'Forward: squared-error loss $L$',path:'y, t → L',act:{n:lossNodes,e:lossEdges},what:[R`$L=\tfrac12\sum_k (y_k-t_k)^2$`,`One number that says how wrong all outputs are together.`],
+    res:[R`L=\tfrac12\sum_k (y_k-t_k)^2=\tfrac12\left[${m.a[L].map((v,k)=>`(${N(v)}-${N(cfg.t[k])})^2`).join('+')}\right]=${hl(m.L)}`],gives:[{k:'L'}],say:`Forward pass finished. Every backward step reuses the numbers already shown.`});
+  // ---- backward
+  const gradsOfLayer=(l)=>{ // l = 1..L (weights into layer l)
+    if(layerMode){
+      P({ph:'B',title:`Gradient: weights and biases of layer ${l}`,path:`${tDZv(l)}, ${tAv(l-1)} → d${tWm(l)}, d${tBv(l)}`,act:{n:[...layerNodes(l-1),...layerNodes(l)],e:layerEdges(l)},
+        gradsOut:{w:[...Array(sz[l]).keys()].flatMap(j=>[...Array(sz[l-1]).keys()].map(i=>`gw:${l}:${j}:${i}`)),b:[...Array(sz[l]).keys()].map(j=>`gb:${l}:${j}`)},
+        what:[R`$\mathrm{d}${tWm(l)}=${tDZv(l)}\,(${tAv(l-1)})^{\top}$ (outer product) and $\mathrm{d}${tBv(l)}=${tDZv(l)}$.`,`Entry $(j,i)$ is the error at neuron $j$ times the activation that fed the weight.`],
+        res:[R`\mathrm{d}${tWm(l)}=${bmc(g.dz[l-1])}${R`\begin{bmatrix}${m.a[l-1].map(N).join(' & ')}\end{bmatrix}`}=${bmM(g.dW[l-1])}`,R`\mathrm{d}${tBv(l)}=${bmc(g.db[l-1])}`],say:`All weights of this layer get their gradients at once.`});
+    }else for(let j=0;j<sz[l];j++){
+      for(let i=0;i<sz[l-1];i++)P({ph:'B',title:`Gradient: $\\mathrm{d}${tW(l,j,i)}$`,path:`δ${j+1}, ${tA(l-1,i).replace(/[_{}^()]/g,'')} → d${tW(l,j,i).replace(/[_{}^()]/g,'')}`,act:{n:[nk(l,j),nk(l-1,i)],e:[ek(l,j,i)]},gradsOut:{w:[`gw:${l}:${j}:${i}`]},
+        what:[R`$\dfrac{\partial L}{\partial ${tW(l,j,i)}}=${tDZ(l,j)}\,${tA(l-1,i)}$`,`Error at the neuron times the activation that fed this weight.`],
+        res:[R`\mathrm{d}${tW(l,j,i)}=${tDZ(l,j)}\,${tA(l-1,i)}=${Q(g.dz[l-1][j])}${Q(m.a[l-1][i])}=${hl(g.dW[l-1][j][i])}`],say:`One weight, one gradient. A big activation means a big share of the blame.`});
+      P({ph:'B',title:`Gradient: $\\mathrm{d}${tB(l,j)}$ (bias)`,path:`δ${j+1} → bias`,act:{n:[nk(l,j)],e:[]},gradsOut:{b:[`gb:${l}:${j}`]},
+        what:[R`$\dfrac{\partial L}{\partial ${tB(l,j)}}=${tDZ(l,j)}$`,`A bias is a weight whose input is always 1.`],res:[R`\mathrm{d}${tB(l,j)}=${tDZ(l,j)}\cdot 1=${hl(g.db[l-1][j])}`],say:`Bias gradient equals the error signal itself.`});
+    }
+  };
+  // output deltas
+  const dyk=k=>R`${Q(m.a[L][k])}-${Q(cfg.t[k])}`;
+  if(layerMode){
+    if(cfg.out==='sigmoid')P({ph:'B',title:'Backward: error at the output layer',path:'L → y → u',act:{n:[...lossNodes,...layerNodes(L)],e:lossEdges},grads:[...layerNodes(L).flatMap((_,k)=>[`da:${L}:${k}`,`dz:${L}:${k}`])],
+      what:[R`$\delta^y=y-t$, then $\delta^u=\delta^y\odot y\odot(1-y)$ (sigmoid slope).`],res:[R`\delta^y=${bmc(g.da[L])},\quad\delta^u=${bmc(g.dz[L-1])}`],say:`Start of the chain rule.`});
+    else P({ph:'B',title:'Backward: error at the output layer',path:'L → y → z',act:{n:[...lossNodes,...layerNodes(L)],e:lossEdges},grads:layerNodes(L).map((_,k)=>`dz:${L}:${k}`),
+      what:[cfg.out==='softmax'?R`Softmax + cross-entropy give $\delta^u=y-t$.`:R`Linear output + squared error give $\delta^u=y-t$.`],res:[R`${tDZv(L)}=y-t=${bmc(g.dz[L-1])}`],say:`Prediction minus target. That is all.`});
+  }else if(cfg.out==='sigmoid'){
+    for(let k=0;k<sz[L];k++){
+      P({ph:'B',title:`Backward: error at output $y_${k+1}$`,path:`L → y${k+1}`,act:{n:['n:loss',nk(L,k)],e:[`eL:${k}`]},grads:[`da:${L}:${k}`],
+        what:[R`$${tDA(L,k)}=\dfrac{\partial L}{\partial y_${k+1}}=y_${k+1}-t_${k+1}$`,`Sign tells the direction: ${m.a[L][k]<cfg.t[k]?'prediction too low':'prediction too high'}.`],
+        res:[R`${tDA(L,k)}=y_${k+1}-t_${k+1}=${dyk(k)}=${hl(g.da[L][k])}`],say:`Start of the chain rule. The derivative of ½(y−t)² is simply y−t.`});
+      P({ph:'B',title:`Backward: error at $${tZ(L,k)}$ (through the sigmoid)`,path:`y${k+1} → ${tZ(L,k).replace(/[_{}^()]/g,'')}`,act:{n:[nk(L,k)],e:[]},grads:[`dz:${L}:${k}`],
+        what:[R`$${tDZ(L,k)}=${tDA(L,k)}\,\sigma'(${tZ(L,k)})$, with $\sigma'=y(1-y)$`],
+        res:[R`${tDZ(L,k)}=${tDA(L,k)}\,y_${k+1}(1-y_${k+1})=${Q(g.da[L][k])}${Q(m.a[L][k])}(1-${N(m.a[L][k])})=${hl(g.dz[L-1][k])}`],say:`σ′ is at most 0.25, so errors shrink as they pass through sigmoids: the seed of vanishing gradients.`});}
+  }else{
+    for(let k=0;k<sz[L];k++)P({ph:'B',title:`Backward: error at $${tZ(L,k)}$`,path:`L → y${k+1} → ${tZ(L,k).replace(/[_{}^()]/g,'')}`,act:{n:['n:loss',nk(L,k)],e:[`eL:${k}`]},grads:[`dz:${L}:${k}`],
+      what:[cfg.out==='softmax'?R`Softmax + cross-entropy collapse to $${tDZ(L,k)}=y_${k+1}-t_${k+1}$.`:R`Linear output + squared error: $${tDZ(L,k)}=y_${k+1}-t_${k+1}$.`,`No separate activation-slope step is needed.`],
+      res:[R`${tDZ(L,k)}=y_${k+1}-t_${k+1}=${dyk(k)}=${hl(g.dz[L-1][k])}`],say:`Prediction minus target: the simplest possible error signal.`});
+  }
+  gradsOfLayer(L);
+  for(let l=L-1;l>=1;l--){
+    if(layerMode){
+      P({ph:'B',title:`Backward: error arriving at layer ${l}`,path:`${tDZv(l+1)}, ${tWm(l+1)} → ${tDAv(l)}`,act:{n:[...layerNodes(l+1),...layerNodes(l)],e:layerEdges(l+1)},grads:layerNodes(l).map((_,j)=>`da:${l}:${j}`),
+        what:[R`$${tDAv(l)}=(${tWm(l+1)})^{\top}${tDZv(l+1)}$: errors travel back along the same weights.`],res:[R`${tDAv(l)}=${bmM(cfg.W[l])}^{\top}${bmc(g.dz[l])}=${bmc(g.da[l])}`],say:`Every neuron gets error from all neurons it feeds; contributions add.`});
+      P({ph:'B',title:`Backward: error at the pre-activation of layer ${l}`,path:`${tDAv(l)} → ${tDZv(l)}`,act:{n:layerNodes(l),e:[]},grads:layerNodes(l).map((_,j)=>`dz:${l}:${j}`),
+        what:[R`$${tDZv(l)}=${tDAv(l)}\odot f'(${tZv(l)})$ with $f'=${A.dtex}$`],res:[R`${tDZv(l)}=${bmc(g.da[l])}\odot${bmc(m.a[l].map((a,j)=>A.d(m.z[l-1][j],a)))}=${bmc(g.dz[l-1])}`],say:`Multiply by the slope of the activation.`});
+    }else for(let j=0;j<sz[l];j++){
+      const terms=cfg.W[l].map((row,k)=>`${Q(row[j])}${Q(g.dz[l][k])}`);
+      P({ph:'B',title:`Backward: error arriving at $${tA(l,j)}$`,path:`δ of next layer, weights → ${tA(l,j).replace(/[_{}^()]/g,'')}`,act:{n:[...layerNodes(l+1),nk(l,j)],e:cfg.W[l].map((_,k)=>ek(l+1,k,j))},grads:[`da:${l}:${j}`],
+        what:[R`$${tDA(l,j)}=\sum_k W_{kj}\,\delta^{z}_k$ over the ${sz[l+1]} neuron${sz[l+1]>1?'s':''} it feeds`,sz[l+1]>1?`**All** of them send error back, so the contributions add.`:`Only one neuron receives this value, so there is one contribution.`],
+        res:[R`${tDA(l,j)}=${cfg.W[l].map((_,k)=>`${tW(l+1,k,j)}${tDZ(l+1,k)}`).join('+')}`,R`=${terms.join('+')}=${hl(g.da[l][j])}`],say:`This extra step (compared with a network without hidden layers) spreads the blame over earlier neurons.`});
+      P({ph:'B',title:`Backward: error at $${tZ(l,j)}$ (through ${A.name})`,path:`${tA(l,j).replace(/[_{}^()]/g,'')} → ${tZ(l,j).replace(/[_{}^()]/g,'')}`,act:{n:[nk(l,j)],e:[]},grads:[`dz:${l}:${j}`],
+        what:[R`$${tDZ(l,j)}=${tDA(l,j)}\,f'(${tZ(l,j)})$, with $f'=${A.dtex}$`],
+        res:[R`${tDZ(l,j)}=${Q(g.da[l][j])}\cdot ${N(A.d(m.z[l-1][j],m.a[l][j]))}=${hl(g.dz[l-1][j])}`],say:cfg.act==='relu'?`ReLU slope is 1 where $z>0$ and 0 elsewhere.`:`Same slope scaling as before.`});
+    }
+    gradsOfLayer(l);
+  }
+  // ---- update
+  const pl=paramList(cfg),an=analytic(cfg);
+  const items=pl.map(pr=>R`${pr.tex}\leftarrow ${Q(getP(cfg,pr.path))}-${Q(eta)}${Q(an[pr.id])}=${N(getP(cfg1,pr.path))}`);
+  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:{n:[],e:[]},upd:true,what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`,`Step against the gradient, so the loss should go down.`],
+    res:[R`\small ${colLines(items,2)}`],say:`Gradient descent. Edge labels on the diagram now show the new weights.`});
+  P({ph:'C',title:'Check: run the forward pass again',path:'new weights → y → L′',act:{n:[],e:[]},upd:true,check:true,
+    what:[`Same inputs, **new** weights.`,R`$L'=${N(m1.L)}$ against $L=${N(m.L)}$`,m1.L<m.L?`**The loss went down**, so the update helped.`:`The loss did **not** go down: try a smaller $\\eta$.`],
+    res:[R`y'=(${m1.a[L].map(N).join(',\\,')}),\quad t=(${cfg.t.map(N).join(',\\,')})`,R`L'=${hl(m1.L)}\;${m1.L<m.L?'<':'\\ge'}\;${N(m.L)}=L`],say:`Repeat this loop many times and you get training (see the Training tab).`});
+  return st;
+}
+/* ================= diagram (SVG) ================= */
+let POS={},nodeEls={},edgeEls={},VH=500,GEO=null;const LC={in:'#64748B',hid:['#2B7A9B','#3B8F7A','#4B6CB7','#8A6D3B'],out:'#7C4DDB',loss:'#E0A100'};
+const layerColor=l=>l===0?LC.in:l===NL?LC.out:LC.hid[(l-1)%4];
+const POSC='#2B7A9B',NEGC='#E07B39',LOSSC='#E0A100',SV='http://www.w3.org/2000/svg';
+function makeLayout(){
+  const cfg=S.cfg,sz=cfg.sizes,L=sz.length-1;NL=L;const maxN=Math.max(...sz),sp=136;VH=Math.max(420,maxN*sp+84);
+  const x0=95,span=L===1?650:(650/L);POS={};
+  for(let l=0;l<=L;l++)for(let j=0;j<sz[l];j++)POS[`n:${l}:${j}`]=[x0+l*span,VH/2+(j-(sz[l]-1)/2)*sp+8];
+  POS['n:loss']=[925,VH/2+8];
+  const E=sz.slice(1).reduce((s,n,i)=>s+n*sz[i],0);const showAll=E<=14;
+  const svg=$('#svg');svg.setAttribute('viewBox',`0 0 1000 ${VH}`);
+  const mk=(id,c)=>`<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  let h=`<defs>${mk('mp',POSC)+mk('mn',NEGC)+mk('me',ERR)+mk('ml',LOSSC)}</defs>`;
+  // column headers
+  for(let l=0;l<=L;l++)h+=`<text x="${POS[`n:${l}:0`][0]}" y="22" text-anchor="middle" font-size="12" font-weight="700" letter-spacing=".08em" fill="${layerColor(l)}">${lname(l).toUpperCase()}</text><text x="${POS[`n:${l}:0`][0]}" y="37" text-anchor="middle" font-size="10.5" fill="#6b7280">${sz[l]} neuron${sz[l]>1?'s':''}${l>0&&l<L?` · ${ACTS[cfg.act].name}`:l===L?` · ${cfg.out}`:''}</text>`;
+  h+=`<text x="925" y="22" text-anchor="middle" font-size="12" font-weight="700" letter-spacing=".08em" fill="${LC.loss}">LOSS</text><text x="925" y="37" text-anchor="middle" font-size="10.5" fill="#6b7280">${cfg.out==='softmax'?'cross-entropy':'½ squared error'}</text>`;
+  h+='<g id="edges"></g><g id="nodesg"></g><g id="chipsg"></g>';svg.innerHTML=h;
+  const eg=$('#edges'),ng=$('#nodesg'),cg=$('#chipsg');edgeEls={};nodeEls={};GEO={showAll,E};
+  const addEdge=(id,a,b,r1,r2,isL)=>{const [x1,y1]=POS[a],[x2,y2]=POS[b],dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len;
+    const g=[x1+ux*r1,y1+uy*r1,x2-ux*r2,y2-uy*r2];const ln=document.createElementNS(SV,'line');['x1','y1','x2','y2'].forEach((k,i)=>ln.setAttribute(k,g[i]));ln.setAttribute('stroke-linecap','round');ln.setAttribute('class','eg');eg.appendChild(ln);
+    edgeEls[id]={ln,g,isL};return g;};
+  const chip=(cls)=>{const g=document.createElementNS(SV,'g');g.setAttribute('class','chipg '+cls);g.innerHTML='<rect rx="5" width="66" height="16" x="-33" y="-8"/><text text-anchor="middle" dy=".33em"></text>';g.style.opacity=0;cg.appendChild(g);return g;};
+  for(let l=1;l<=L;l++)for(let j=0;j<sz[l];j++)for(let i=0;i<sz[l-1];i++){const id=`e:${l}:${j}:${i}`,g=addEdge(id,`n:${l-1}:${i}`,`n:${l}:${j}`,26,28,false);
+    const f1=.24,f2=.76,px=(f)=>[g[0]+(g[2]-g[0])*f,g[1]+(g[3]-g[1])*f];
+    const w=chip(''),gr=chip('gr');const [wx,wy]=px(f1),[gx,gy]=px(f2);w.setAttribute('transform',`translate(${wx},${wy})`);gr.setAttribute('transform',`translate(${gx},${gy})`);edgeEls[id].w=w;edgeEls[id].gr=gr;}
+  for(let k=0;k<sz[L];k++)addEdge(`eL:${k}`,`n:${L}:${k}`,'n:loss',27,26,true);
+  const mkText=(cls,col)=>{const t=document.createElementNS(SV,'text');t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11.5');t.setAttribute('class','halo '+cls);t.setAttribute('fill',col);return t;};
+  for(const id of Object.keys(POS)){const [x,y]=POS[id],isL=id==='n:loss',[,l,j]=id.split(':').map(v=>+v||0);
+    const g=document.createElementNS(SV,'g');const c=document.createElementNS(SV,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',isL?24:26);c.setAttribute('class','nc');g.appendChild(c);
+    const lab=document.createElementNS(SV,'text');lab.setAttribute('x',x);lab.setAttribute('y',y);lab.setAttribute('text-anchor','middle');lab.setAttribute('dy','.35em');lab.setAttribute('font-size','15');lab.setAttribute('font-style','italic');
+    lab.innerHTML=isL?'L':`${l===0?'x':l===NL?'y':'h'}<tspan dy="4" font-size="10">${l>0&&l<NL&&NL>2?l+',':''}${j+1}</tspan>`;g.appendChild(lab);
+    const fl=[],bl=[];const lines=isL?1:(l===0?1:3);
+    for(let q=0;q<lines;q++){const t=mkText('',q===0&&l>0&&!isL?'#6b7280':q===1?'#1F5B8C':'#1c6b3a');t.setAttribute('x',x);t.setAttribute('y',y-26-5-q*12);g.appendChild(t);fl.push(t);}
+    if(isL){fl[0].setAttribute('fill','#8a6500');fl[0].setAttribute('y',y-26-5);}
+    else if(l>0){fl[0].setAttribute('fill','#6b7280');fl[1].setAttribute('fill','#1F5B8C');fl[2].setAttribute('fill','#1c6b3a');}
+    else fl[0].setAttribute('fill','#444');
+    const nb=(!isL&&l>0)?2:0;for(let q=0;q<nb;q++){const t=mkText('',ERR);t.setAttribute('x',x);t.setAttribute('y',y+26+14+q*12);t.setAttribute('font-weight','600');g.appendChild(t);bl.push(t);}
+    ng.appendChild(g);nodeEls[id]={c,lab,fl,bl,l,j,isL};
+    if(l===L&&!isL){const t=mkText('','#5b2fa0');t.setAttribute('x',x+66);t.setAttribute('y',y+4);t.setAttribute('font-size','11');t.setAttribute('font-weight','600');ng.appendChild(t);nodeEls[id].tg=t;}}
+}
+function setT(el,txt,color){if(el.textContent===txt)return;const first=!el.dataset.s;el.dataset.s=1;el.textContent=txt;if(color)el.setAttribute('fill',color);if(!first&&txt){el.classList.remove('flash');void el.getBoundingClientRect();el.classList.add('flash');}}
+function cum(i){const vis=new Set(),gv=new Set(),gw=new Set(),gb=new Set(),dn=new Set(),de=new Set();let upd=false,check=false;
+  for(let t=0;t<=i;t++){const s=steps[t];(s.gives||[]).forEach(x=>vis.add(x.k));(s.grads||[]).forEach(x=>gv.add(x));
+    if(s.gradsOut){(s.gradsOut.w||[]).forEach(x=>gw.add(x));(s.gradsOut.b||[]).forEach(x=>gb.add(x));}
+    if(s.upd)upd=true;if(s.check)check=true;if(t<i){s.act.n.forEach(a=>dn.add(a));s.act.e.forEach(a=>de.add(a));}}
+  return{vis,gv,gw,gb,dn,de,upd,check};}
+let lastI=-1;
+function paint(){
+  const cfg=S.cfg,sz=cfg.sizes,L=sz.length-1,i=S.i,cur=steps[i],cs=cum(i),back=cur.ph==='B';
+  const {m,g}=backward(cfg),cfg1=apply(cfg,g,cfg.eta),m1=forward(cfg1);const th=cs.upd?cfg1:cfg,M=cs.check?m1:m,showG=!cs.check;
+  const act={n:new Set(cur.act.n),e:new Set(cur.act.e)};
+  let mx=.05;for(const row of th.W)for(const r of row)for(const w of r)mx=Math.max(mx,Math.abs(w));
+  // edges
+  for(const [id,e] of Object.entries(edgeEls)){const ln=e.ln;let col,op,wd,flow=false;
+    if(e.isL){col=LOSSC;wd=3.2;}else{const [,l,j,ii]=id.split(':').map(Number),w=th.W[l-1][j][ii];col=w>=0?POSC:NEGC;wd=1.3+4.6*Math.abs(w)/mx;}
+    if(act.e.has(id)){if(back)col=ERR;op=1;wd+=2.2;flow=true;}else if(cs.de.has(id)||(cs.upd&&!e.isL))op=.7;else op=.2;
+    ln.style.stroke=col;ln.style.strokeWidth=wd;ln.style.opacity=op;ln.setAttribute('marker-end',`url(#${col===POSC?'mp':col===NEGC?'mn':col===ERR?'me':'ml'})`);
+    ln.classList.toggle('flow',flow);ln.classList.toggle('rev',flow&&back);
+    if(!e.isL){const [,l,j,ii]=id.split(':').map(Number),w=th.W[l-1][j][ii],a=act.e.has(id),vis=GEO.showAll||a,gk=`gw:${l}:${j}:${ii}`;
+      setT(e.w.querySelector('text'),`${tWshort(l,j,ii)}=${N(w)}`);e.w.style.opacity=vis?(a||cs.de.has(id)||cs.upd?1:.55):0;e.w.classList.toggle('ac',a);e.w.classList.toggle('ng',w<0);
+      const hasG=showG&&cs.gw.has(gk);setT(e.gr.querySelector('text'),hasG?`d${tWshort(l,j,ii)}=${N(g.dW[l-1][j][ii])}`:'');e.gr.style.opacity=hasG&&(GEO.showAll||a)?1:0;}}
+  // nodes
+  for(const [id,n] of Object.entries(nodeEls)){const isL=n.isL,c=isL?LC.loss:layerColor(n.l);let cls='nc',fill,stroke=c,tcol='#222';
+    if(act.n.has(id)){cls+=back?' err':' active';fill=back?'#FDE8E6':c;stroke=back?ERR:c;tcol=back?ERR:'#fff';}
+    else if(cs.dn.has(id)){fill=tint(c);}else if(n.l===0&&!isL){fill='#fff';tcol=c;}else{fill='#EFEFEA';stroke='#D6D6D0';tcol='#a6a6a0';}
+    n.c.setAttribute('class',cls);n.c.setAttribute('fill',fill);n.c.setAttribute('stroke',stroke);n.c.setAttribute('stroke-width',2.4);n.lab.setAttribute('fill',tcol);
+    if(isL){setT(n.fl[0],cs.vis.has('L')?`L=${N(M.L)}`:'');continue;}
+    const l=n.l,j=n.j;
+    if(l===0){setT(n.fl[0],`x=${N(cfg.x[j])}`);continue;}
+    setT(n.fl[0],`b=${N(th.b[l-1][j])}`);setT(n.fl[1],cs.vis.has(`z:${l}:${j}`)?`${nodeTxt.z(l)}=${N(M.z[l-1][j])}`:'');setT(n.fl[2],cs.vis.has(`a:${l}:${j}`)?`${nodeTxt.a(l)}=${N(M.a[l][j])}`:'');
+    setT(n.bl[0],showG&&cs.gv.has(`da:${l}:${j}`)?`${nodeTxt.da(l)}=${N(g.da[l][j])}`:'');setT(n.bl[1],showG&&cs.gv.has(`dz:${l}:${j}`)?`${nodeTxt.dz(l)}=${N(g.dz[l-1][j])}`:'');
+    if(n.tg)setT(n.tg,`t=${N(cfg.t[j])}`);}
+  // panel
+  const names={F:'Forward',B:'Backward',U:'Update',C:'Check'};
+  $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}`;
+  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);
+  $('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
+  const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');
+  res.querySelectorAll('.katex-display').forEach((e,j)=>e.style.animationDelay=(j*160+80)+'ms');
+  $('#say').innerHTML=rt(cur.say||'');
+  if(i!==lastI){const fb=$('#fbody');fb.classList.remove('swap');void fb.offsetWidth;fb.classList.add('swap');lastI=i;}
+  $('#slider').max=steps.length-1;$('#slider').value=i;$('#cnt').textContent=`${i+1} / ${steps.length}`;$('#cnt2').textContent=`${i+1} / ${steps.length}`;
+  $('#fabn').textContent=i+1;$('#bar').style.width=((i+1)/steps.length*100)+'%';
+  $('#prev').disabled=i===0;$('#next').disabled=i===steps.length-1;$('#prev2').disabled=i===0;$('#next2').disabled=i===steps.length-1;
+}
+const tint=c=>{const n=parseInt(c.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255,m=v=>Math.round(v+(255-v)*.84);return`rgb(${m(r)},${m(g)},${m(b)})`;};
+const tWshort=(l,j,i)=>NL===2?(l===1?'w':'v')+(j+1)+(i+1):`W${l}.${j+1}${i+1}`;
+/* ================= controls ================= */
+let playTimer=null;
+function go(i){S.i=Math.max(0,Math.min(steps.length-1,i));paint();}
+function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
+function rebuild(relayout=true){$('#gran').value=S.cfg.gran;steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
+function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];
+  $('#jump').innerHTML=L.map(([n,p])=>`<button class="btn" data-i="${first(p)}">⏭ ${n}</button>`).join('');$('#jump').querySelectorAll('button').forEach(b=>b.onclick=()=>{stopPlay();go(+b.dataset.i)});}
+function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  for(const id of ['step','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
+  if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
+function renderAll(){const names={F:['Forward pass',''],B:['Backward pass (chain rule)','B'],U:['Update',''],C:['Check','']};let h='',last='';
+  steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
+    h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
+  $('#p-all').innerHTML=`<div class="row"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
+function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;NL=S.cfg.sizes.length-1;
+  $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one parameter up and down by ε, re-run the forward pass, and compare with the backprop value.</div>`;
+  const rows=paramList(S.cfg).map(pr=>{const d=Math.abs(an[pr.id]-ng[pr.id]);mx=Math.max(mx,d);return`<tr><td>${K(pr.tex)}</td><td>${an[pr.id].toFixed(8)}</td><td>${ng[pr.id].toFixed(8)}</td><td>${d.toExponential(2)}</td></tr>`}).join('');
+  $('#gctable').innerHTML=`<table class="t"><tr><th>Parameter</th><th>Backprop (analytic)</th><th>Numerical</th><th>|difference|</th></tr>${rows}</table>`;
+  $('#gcbadge').innerHTML=`<span class="badge ${mx<1e-5?'pass':'fail'}">${mx<1e-5?'PASS':'CHECK'} · max |difference| = ${mx.toExponential(2)}</span>`;}
+/* ---------- training ---------- */
+let TR={cfg:null,hist:[],ep:0,start:null},trainTimer=null;
+function trainReset(){TR.cfg=clone(S.cfg);TR.start=clone(S.cfg);TR.ep=0;TR.hist=[forward(TR.cfg).L];}
+function trainResetIfNeeded(){if(!TR.cfg)trainReset();}
+function trainN(n){for(let i=0;i<n;i++){const {g}=backward(TR.cfg);TR.cfg=apply(TR.cfg,g,S.cfg.eta);TR.ep++;TR.hist.push(forward(TR.cfg).L);}renderTrain();}
+function stopTrainPlay(){if(trainTimer){clearInterval(trainTimer);trainTimer=null;$('#tplay').textContent='▶ Run';}}
+function renderTrain(){const cfg=S.cfg;NL=cfg.sizes.length-1;$('#tetav').textContent=cfg.eta.toFixed(2);$('#teta').value=cfg.eta;$('#tep').textContent=TR.ep;
+  const m=forward(TR.cfg),y=m.a[NL],rng=cfg.out==='linear'?Math.max(1,...y.map(Math.abs),...cfg.t.map(Math.abs)):1;
+  $('#tbars').innerHTML=y.map((v,k)=>`<div class="b"><span style="width:40px">${K(tA(NL,k))}</span><div class="track"><div class="fill" style="width:${Math.max(0,Math.min(100,v/rng*100)).toFixed(1)}%"></div><div class="tg" style="left:${Math.max(0,Math.min(99,cfg.t[k]/rng*100)).toFixed(1)}%"></div></div><span style="width:70px;text-align:right">${v.toFixed(4)}</span></div>`).join('');
+  $('#tl').innerHTML=`Red mark = target. ${K(`L=${m.L.toFixed(6)}`)}`;
+  $('#tpar').innerHTML=`<table class="t" style="font-size:12.5px">${paramList(cfg).map(pr=>`<tr><td>${K(pr.tex)}</td><td>${getP(TR.start,pr.path).toFixed(4)}</td><td>→ <b>${getP(TR.cfg,pr.path).toFixed(4)}</b></td></tr>`).join('')}</table>`;drawChart();}
+function drawChart(){const H=TR.hist,W=620,Ht=300,ml=58,mr=14,mt=14,mb=36,log=$('#tlog').checked,n=H.length-1;
+  const vals=H.map(v=>Math.max(v,1e-12));let lo,hi;
+  if(log){hi=Math.ceil(Math.log10(Math.max(...vals)));lo=Math.floor(Math.log10(Math.min(...vals)));if(hi===lo)lo=hi-1;}else{hi=Math.max(...vals)*1.05;lo=0;}
+  const X=e=>ml+(n?e/n:0)*(W-ml-mr),Y=v=>{const f=log?(Math.log10(Math.max(v,1e-12))-lo)/(hi-lo):(v-lo)/(hi-lo||1);return mt+(1-f)*(Ht-mt-mb);};
+  let s=`<rect x="${ml}" y="${mt}" width="${W-ml-mr}" height="${Ht-mt-mb}" fill="#fff" stroke="#DEDED8"/>`;
+  const ticks=log?Array.from({length:hi-lo+1},(_,i)=>Math.pow(10,lo+i)):Array.from({length:5},(_,i)=>lo+(hi-lo)*i/4);
+  for(const tv of ticks){const y=Y(tv);s+=`<line x1="${ml}" x2="${W-mr}" y1="${y}" y2="${y}" stroke="#EFEFEA"/><text x="${ml-6}" y="${y+4}" text-anchor="end">${log?tv.toExponential(0):tv.toFixed(3)}</text>`;}
+  for(let i=0;i<=5;i++){const e=Math.round(n*i/5);s+=`<text x="${X(e)}" y="${Ht-mb+16}" text-anchor="middle">${e}</text>`;}
+  s+=`<text x="${(ml+W-mr)/2}" y="${Ht-4}" text-anchor="middle">epoch</text><text x="14" y="${Ht/2}" transform="rotate(-90 14 ${Ht/2})" text-anchor="middle">loss L</text>`;
+  const stride=Math.max(1,Math.floor(n/400));let pts=[];for(let e=0;e<=n;e+=stride)pts.push(`${X(e).toFixed(1)},${Y(H[e]).toFixed(1)}`);if((n%stride)!==0)pts.push(`${X(n).toFixed(1)},${Y(H[n]).toFixed(1)}`);
+  s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${ACC}" stroke-width="2.4" stroke-linejoin="round"/><circle cx="${X(n)}" cy="${Y(H[n])}" r="4" fill="${ACC}"/>`;$('#chart').innerHTML=s;}
+/* ================= custom network editor ================= */
+function randCfg(sizes,act,out,seed,keep){const r=mulberry(seed),rn=(a)=>+((r()*2-1)*a).toFixed(2),L=sizes.length-1;
+  const c=Object.assign(defaultCfg(),{sizes,act,out});c.W=Array.from({length:L},(_,l)=>Array.from({length:sizes[l+1]},()=>Array.from({length:sizes[l]},()=>rn(.8))));c.b=Array.from({length:L},(_,l)=>Array.from({length:sizes[l+1]},()=>rn(.3)));
+  c.x=Array.from({length:sizes[0]},(_,i)=>+(((i%2)?-.8:1)*(.4+.3*((i*7)%3))).toFixed(2));c.t=out==='softmax'?Array.from({length:sizes[L]},(_,k)=>k===(sizes[L]>1?1:0)?1:0):Array.from({length:sizes[L]},(_,k)=>k%2?0:1);
+  if(out==='softmax'&&!c.t.includes(1))c.t[0]=1;return c;}
+const PRESETS={'Lecture example: 2-2-2 sigmoid (default)':()=>defaultCfg(),
+  'XOR: 2-2-1 sigmoid':()=>{const c=randCfg([2,2,1],'sigmoid','sigmoid',4);c.x=[1,0];c.t=[1];return c;},
+  'Deeper: 3-4-2-1, tanh hidden, linear output':()=>{const c=randCfg([3,4,2,1],'tanh','linear',3);c.x=[.5,-1,.8];c.t=[.7];c.eta=.1;return c;},
+  'Classifier: 2-3-3, ReLU hidden, softmax + cross-entropy':()=>{const c=randCfg([2,3,3],'relu','softmax',5);c.x=[1.2,-.4];c.t=[0,1,0];c.eta=.2;return c;},
+  'Wide and deep: 4-5-5-3 sigmoid':()=>{const c=randCfg([4,5,5,3],'sigmoid','sigmoid',9);c.x=[.2,.9,-.3,.5];c.t=[1,0,1];return c;}};
+function applyCfg(next,msg){S.cfg=next;S.i=0;TR.cfg=null;stopTrainPlay();$('#cmsg').innerHTML=`<span class="okk">${msg||'Updated.'}</span>`;rebuild(true);}
+function numI(id,lab,v,min,max,step=1){return`<label>${lab}<input type="number" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}"></label>`;}
+function buildCustom(){const cfg=S.cfg,sz=cfg.sizes,L=sz.length-1;NL=L;
+  $('#cpre').innerHTML='<option value="">choose…</option>'+Object.keys(PRESETS).map(k=>`<option>${esc(k)}</option>`).join('');
+  $('#c-sizes').innerHTML=sz.map((n,l)=>numI(`cs${l}`,l===0?'Inputs':l===L?'Outputs':`Hidden ${l}${L>2?'':''}`,n,1,6)).join('')+`<button class="btn" id="caddh" ${L>=5?'disabled':''}>+ hidden layer</button><button class="btn" id="cremh" ${L<=1?'disabled':''}>− hidden layer</button>`;
+  $('#c-act').innerHTML=`<label>Hidden activation<select id="cact">${Object.entries(ACTS).map(([k,v])=>`<option value="${k}" ${cfg.act===k?'selected':''}>${v.name}</option>`).join('')}</select></label>
+   <label>Output and loss<select id="cout"><option value="sigmoid" ${cfg.out==='sigmoid'?'selected':''}>sigmoid + squared error</option><option value="linear" ${cfg.out==='linear'?'selected':''}>linear + squared error</option><option value="softmax" ${cfg.out==='softmax'?'selected':''}>softmax + cross-entropy</option></select></label>
+   ${numI('ceta','Learning rate η',cfg.eta,0.001,5,0.01)}<label>Detail<select id="cgran"><option value="neuron" ${cfg.gran==='neuron'?'selected':''}>one neuron per step</option><option value="layer" ${cfg.gran==='layer'?'selected':''}>one layer per step</option></select></label>`;
+  $('#c-io').innerHTML=`<div class="fbox"><div class="k">Input x</div><div class="mgrid" style="grid-template-columns:repeat(${sz[0]},auto)">${cfg.x.map((v,i)=>`<input type="number" step="0.1" data-x="${i}" value="${v}">`).join('')}</div></div>
+   <div class="fbox"><div class="k">Target t ${cfg.out==='softmax'?'(one-hot: a single 1)':''}</div><div class="mgrid" style="grid-template-columns:repeat(${sz[L]},auto)">${cfg.t.map((v,i)=>`<input type="number" step="0.1" data-t="${i}" value="${v}">`).join('')}</div></div>`;
+  $('#c-w').innerHTML=cfg.W.map((Wl,l)=>`<div class="fbox"><div class="k">Layer ${l+1}: ${sz[l]} → ${sz[l+1]} (rows = neurons, last column = bias)</div><div class="mgrid" style="grid-template-columns:repeat(${sz[l]+1},auto)">${Wl.map((row,j)=>row.map((w,i)=>`<input type="number" step="0.1" data-w="${l},${j},${i}" value="${w}">`).join('')+`<input type="number" step="0.1" data-b="${l},${j}" value="${cfg.b[l][j]}" style="background:#FFF8E5" title="bias">`).join('')}</div></div>`).join('');
+  wireCustom();}
+function wireCustom(){const cfg=S.cfg,L=cfg.sizes.length-1;
+  const resize=(sizes,msg)=>{const c=randCfg(sizes,cfg.act,cfg.out,sizes.join('')|0);c.eta=cfg.eta;c.gran=cfg.gran;applyCfg(c,msg||'New architecture. Weights were re-initialised randomly (edit them below).');buildCustom();};
+  cfg.sizes.forEach((_,l)=>{$(`#cs${l}`).onchange=()=>{const v=parseInt($(`#cs${l}`).value);if(!(v>=1&&v<=6))return;const s=cfg.sizes.slice();s[l]=v;resize(s);};});
+  $('#caddh').onclick=()=>{const s=cfg.sizes.slice();s.splice(s.length-1,0,3);resize(s);};
+  $('#cremh').onclick=()=>{const s=cfg.sizes.slice();s.splice(s.length-2,1);resize(s);};
+  $('#cact').onchange=e=>{S.cfg.act=e.target.value;TR.cfg=null;rebuild(true);};
+  $('#cout').onchange=e=>{S.cfg.out=e.target.value;if(S.cfg.out==='softmax'){const k=Math.max(0,S.cfg.t.indexOf(Math.max(...S.cfg.t)));S.cfg.t=S.cfg.t.map((_,q)=>q===k?1:0);}TR.cfg=null;rebuild(true);buildCustom();};
+  $('#cgran').onchange=e=>{S.cfg.gran=e.target.value;$('#gran').value=S.cfg.gran;rebuild(true);};
+  $('#ceta').onchange=()=>{const v=parseFloat($('#ceta').value);if(v>0){S.cfg.eta=v;TR.cfg=null;rebuild(false);}};
+  const num=(sel,fn)=>document.querySelectorAll(sel).forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;fn(inp,v);TR.cfg=null;rebuild(false);});
+  num('#c-io input[data-x]',(i,v)=>S.cfg.x[+i.dataset.x]=v);num('#c-io input[data-t]',(i,v)=>S.cfg.t[+i.dataset.t]=v);
+  num('#c-w input[data-w]',(i,v)=>{const [l,j,k]=i.dataset.w.split(',').map(Number);S.cfg.W[l][j][k]=v;});num('#c-w input[data-b]',(i,v)=>{const [l,j]=i.dataset.b.split(',').map(Number);S.cfg.b[l][j]=v;});}
+/* ================= floating explainer + book icon ================= */
+/*PANEL_JS*/
+/* ================= wiring ================= */
+function init(){
+  document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
+  steps=build();makeLayout();renderJump();paint();
+  document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();
+  $('#prev2').onclick=()=>{stopPlay();go(S.i-1)};$('#next2').onclick=()=>{stopPlay();go(S.i+1)};
+  if(innerWidth<700){panelOpen=false;syncPanel();}else openPanel();
+  $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)setTab(b.dataset.t);};
+  $('#prev').onclick=()=>{stopPlay();go(S.i-1)};$('#next').onclick=()=>{stopPlay();go(S.i+1)};
+  $('#slider').oninput=e=>{stopPlay();go(+e.target.value)};
+  $('#play').onclick=()=>{if(playTimer){stopPlay();return;}if(S.i>=steps.length-1)go(0);$('#play').textContent='⏸ Pause';playTimer=setInterval(()=>{if(S.i>=steps.length-1){stopPlay();return;}go(S.i+1);},1800);};
+  $('#gran').onchange=e=>{S.cfg.gran=e.target.value;S.i=0;rebuild(false);};
+  document.addEventListener('keydown',e=>{if(tab!=='step'||/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight'){stopPlay();go(S.i+1)}if(e.key==='ArrowLeft'){stopPlay();go(S.i-1)}});
+  $('#eps').onchange=renderCheck;
+  $('#t1').onclick=()=>{trainResetIfNeeded();trainN(1)};$('#t10').onclick=()=>{trainResetIfNeeded();trainN(10)};$('#t100').onclick=()=>{trainResetIfNeeded();trainN(100)};
+  $('#treset').onclick=()=>{stopTrainPlay();trainReset();renderTrain()};
+  $('#tplay').onclick=()=>{if(trainTimer){stopTrainPlay();return;}trainResetIfNeeded();$('#tplay').textContent='⏸ Pause';trainTimer=setInterval(()=>trainN(5),120);};
+  $('#tload').onclick=()=>{trainResetIfNeeded();const eta=S.cfg.eta,gran=S.cfg.gran;S.cfg=clone(TR.cfg);S.cfg.eta=eta;S.cfg.gran=gran;TR.cfg=null;stopTrainPlay();rebuild(true);setTab('step');go(0);};
+  $('#teta').oninput=e=>{S.cfg.eta=parseFloat(e.target.value);rebuild(false);renderTrain();};
+  $('#tlog').onchange=drawChart;
+  $('#creset').onclick=()=>{applyCfg(defaultCfg(),'Back to the lecture example.');buildCustom();};
+  $('#crand').onclick=()=>{const c=randCfg(S.cfg.sizes,S.cfg.act,S.cfg.out,Date.now()%100000);c.x=S.cfg.x;c.t=S.cfg.t;c.eta=S.cfg.eta;c.gran=S.cfg.gran;applyCfg(c,'Random weights.');buildCustom();};
+  $('#cgo').onclick=()=>{setTab('step');go(0);};
+  $('#cpre').onchange=e=>{const f=PRESETS[e.target.value];if(!f)return;applyCfg(f(),`Loaded: ${e.target.value}`);buildCustom();};
+  window.__app={S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,defaultCfg,randCfg,PRESETS,trainN,trainReset,TR:()=>TR};
+}
+init();
+</script>
+</body>
+</html>
