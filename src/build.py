@@ -9,6 +9,6 @@ def build(name):
     t = t.replace('/*KATEX_JS*/', rd('katex.js.part'))
     t = t.replace('/*COMMON_JS*/', rd('common.js'))
     t = t.replace('/*PANEL_JS*/', rd('panel.js'))
-    out = here.parent / 'visual-learning' / ({'nn': 'neural-network'}.get(name, name) + '.html')
+    out = here.parent / 'visual-learning' / ({'nn': 'neural-network'}.get(name, name) + '.html')  # rnn -> rnn.html
     out.write_text(t, encoding='utf-8'); print(out, len(t))
 for n in sys.argv[1:]: build(n)

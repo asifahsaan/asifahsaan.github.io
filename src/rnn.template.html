@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RNN Lab · Recurrent network and BPTT step by step</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+/*KATEX_CSS*/
+<style>
+/*COMMON_CSS*/
+/* ---- RNN lab ---- */
+body{padding-top:10px}
+.topnav{font-size:12.5px;margin-bottom:6px;color:var(--mut)}.topnav a{color:var(--acc);text-decoration:none;font-weight:600}
+.stage{aspect-ratio:auto}
+.stage svg{position:static;display:block;width:100%;height:auto}
+.stage svg text{font-family:"IBM Plex Sans",Arial,sans-serif}
+.cell rect{transition:fill .4s,stroke .4s,fill-opacity .4s}
+.cell text{pointer-events:none}
+.cell.active rect,.cell.err rect{animation:cpulse 1.4s ease-out infinite}
+@keyframes cpulse{0%{stroke-width:2.2}50%{stroke-width:4}100%{stroke-width:2.2}}
+.arr{transition:stroke .4s,stroke-width .4s,opacity .4s}
+.arr.flow{stroke-dasharray:9 7;animation:dash .75s linear infinite}
+.arr.flow.rev{animation-direction:reverse}
+.mats{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 0}
+.mat{background:var(--card);border-radius:10px;padding:6px 10px;border:2px solid transparent;transition:border-color .3s,background .3s}
+.mat.hi{border-color:var(--acc);background:var(--tint)}
+.mat .mk{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600;margin-bottom:3px}
+.mat .mg{display:inline-grid;gap:2px}
+.mat .mg i{display:block;min-width:46px;padding:2px 3px;font:600 11px/16px "IBM Plex Sans",sans-serif;text-align:center;font-style:normal;border-radius:3px}
+.mat.hi .mk{color:var(--acc)}
+.cust{display:block}
+.cust h3{font-size:14px;margin:18px 0 6px;color:var(--acc);letter-spacing:.06em;text-transform:uppercase}
+.cust .row label{font-size:12.5px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+.cust input[type=number],.cust select{font:500 13px inherit;font-family:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6px;width:84px}
+.cust select{width:auto;max-width:280px}
+.mgrid{display:inline-grid;gap:3px;margin:4px 0}
+.mgrid input{width:64px!important;padding:4px!important;text-align:center}
+.fbox{display:inline-block;background:var(--card);border-radius:10px;padding:10px 12px;margin:0 10px 10px 0;vertical-align:top}
+.fbox .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;margin-bottom:4px}
+.okk{color:#1c6b3a;font-size:13px}
+.vscroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.gf .b{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+.gf .tr{flex:1;height:16px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
+.gf .fl{position:absolute;left:0;top:0;bottom:0;background:var(--err);opacity:.75}
+</style>
+</head>
+<body>
+<div class="topnav"><a href="./">← Visual Learning</a> · <a href="../">Asif Ahsan</a></div>
+<header>
+  <div><div class="kick">Artificial Intelligence · Interactive lab · Module 3</div><h1>RNN Lab: unrolling a recurrent network and backpropagation through time</h1></div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-t="step">Step by step</button>
+    <button class="tab" data-t="all">Show all</button>
+    <button class="tab" data-t="check">Gradient check</button>
+    <button class="tab" data-t="train">Training</button>
+    <button class="tab" data-t="cust">Custom network</button>
+  </div>
+</header>
+
+<section id="p-step">
+  <div class="layout" id="layout">
+    <div class="stagecol">
+      <div class="stagewrap"><div class="stage" id="stage"><svg id="svg" viewBox="0 0 1000 420" preserveAspectRatio="xMidYMid meet"></svg></div></div>
+      <div class="legend">
+        <span><i style="background:#E6EAF0;border-color:#64748B"></i>Input x</span>
+        <span><i style="background:#DCEEF5;border-color:#2B7A9B"></i>Hidden state (s = before, h = after activation)</span>
+        <span><i style="background:#EBE3FA;border-color:#7C4DDB"></i>Output (u = before, y = after)</span>
+        <span><i style="background:#FFF1C9;border-color:#E0A100"></i>Loss</span>
+        <span><i style="background:var(--ghost);border-color:#D6D6D0"></i>Not reached yet</span>
+        <span><i style="background:var(--errtint);border-color:var(--err)"></i>Red small number = gradient</span>
+        <span>The <b>same</b> weights are reused at every time step.</span>
+      </div>
+      <div class="mats" id="mats"></div>
+    </div>
+    <aside class="panel floating" id="panel">
+      <div class="fhead" id="fhead"><span class="grip">⋮⋮</span><span class="ft">Explainer · drag me anywhere</span>
+        <button id="fmin" title="Collapse to a book icon">–</button></div>
+      <div class="fbody" id="fbody">
+        <div class="k" id="kick"></div>
+        <h2 id="title"></h2>
+        <div class="path" id="path"></div>
+        <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
+        <div class="res" id="res"></div>
+        <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
+      </div>
+      <div class="fnav"><button id="prev2" title="Previous">◀</button><div class="trk"><div class="bar" id="bar"></div></div><span class="c2" id="cnt2"></span><button id="next2" title="Next">▶</button></div>
+    </aside>
+  </div>
+  <div class="ctrl">
+    <button class="btn" id="prev">◀ Prev</button>
+    <button class="btn pri" id="next">Next ▶</button>
+    <input type="range" id="slider" min="0" max="0" value="0">
+    <span class="cnt" id="cnt"></span>
+    <button class="btn" id="play">▶ Play</button>
+    <label class="note">Detail <select id="gran"><option value="neuron">one neuron per step</option><option value="layer">one vector per step (matrices)</option></select></label>
+  </div>
+  <div class="jump" id="jump"></div>
+  <div class="note" style="margin-top:6px">Tip: use the ← → keys. Want a longer sequence, more hidden units or another activation? Open the <b>Custom network</b> tab.</div>
+</section>
+
+<section id="p-all" class="hide"></section>
+
+<section id="p-check" class="hide">
+  <div class="row"><h2 style="margin:0;font-size:20px">Gradient check: does BPTT agree with a numerical derivative?</h2></div>
+  <div id="gcform" class="note"></div>
+  <div class="row"><label class="note">Step size ε&nbsp;
+    <select id="eps"><option value="1e-2">10⁻²</option><option value="1e-3">10⁻³</option><option value="1e-4">10⁻⁴</option><option value="1e-6" selected>10⁻⁶</option><option value="1e-8">10⁻⁸</option></select></label>
+    <span id="gcbadge"></span></div>
+  <div id="gctable"></div>
+  <h2 style="font-size:18px;margin:26px 0 4px">How does the error signal change as it travels back in time?</h2>
+  <div class="note">Length of the error vector at each time step. If it shrinks towards earlier steps the gradient is <b>vanishing</b>; if it grows it is <b>exploding</b>. Try a sigmoid hidden layer with small recurrent weights in the Custom tab.</div>
+  <div class="gf" id="gflow"></div>
+</section>
+
+<section id="p-train" class="hide">
+  <div class="row"><h2 style="margin:0;font-size:20px">Training: repeat forward → BPTT → update</h2></div>
+  <div class="row">
+    <button class="btn pri" id="t1">Train 1 epoch</button><button class="btn" id="t10">+10</button><button class="btn" id="t100">+100</button>
+    <button class="btn" id="tplay">▶ Run</button><button class="btn" id="treset">Reset</button><button class="btn" id="tload">Load trained weights into the stepper</button>
+    <label class="note">η&nbsp;<input type="range" id="teta" min="0.01" max="2" step="0.01" value="0.5" style="vertical-align:middle;accent-color:var(--acc)"> <b id="tetav"></b></label>
+    <label class="note"><input type="checkbox" id="tlog"> log scale</label>
+  </div>
+  <div class="grid2">
+    <div><svg id="chart" class="chart" viewBox="0 0 620 300" style="width:100%;background:#fff;border:1px solid var(--line);border-radius:12px"></svg></div>
+    <div>
+      <div class="card"><div class="k">After <b id="tep">0</b> epochs · outputs</div><div class="bars" id="tbars"></div><div class="note" id="tl"></div></div>
+      <div class="card" style="margin-top:12px"><div class="k">Parameters (start → now)</div><div class="vscroll" id="tpar"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="p-cust" class="hide cust">
+  <div class="row"><h2 style="margin:0;font-size:20px">Build your own recurrent network</h2><span class="note">Change the sequence, the sizes, the activation, the numbers. Everything recomputes. Then open <b>Step by step</b>.</span></div>
+  <div class="row"><button class="btn" id="creset">Reset to the default example</button><button class="btn" id="crand">Randomise weights</button><button class="btn pri" id="cgo">▶ See it step by step</button><span id="cmsg"></span></div>
+  <h3>1 · Architecture</h3>
+  <div class="row"><label>Ready-made examples<select id="cpre"></select></label></div>
+  <div class="row" id="c-arch"></div>
+  <h3>2 · Input sequence and targets</h3>
+  <div id="c-io"></div>
+  <h3>3 · Weights and biases (shared by all time steps)</h3>
+  <div id="c-w"></div>
+</section>
+
+<div class="fnote">Module 3 of the Visual Learning labs. A vanilla RNN reads one input vector per time step and carries a hidden state forward: $s_t=W_{xh}x_t+W_{hh}h_{t-1}+b_h$, $h_t=f(s_t)$. Training uses backpropagation through time (BPTT). All maths runs in your browser and is cross-checked against a Python reference.</div>
+
+<button id="fab" title="Open explainer (drag me anywhere)" aria-label="Open explainer" style="display:none"><svg viewBox="0 0 24 24" width="29" height="29" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4 8 4 12 6.2c4-2.2 7.5-2.2 10-.7V19c-2.5-1.5-6-1.5-10 .7-4-2.2-7.5-2.2-10-.7z"/><path d="M12 6.2v13.5"/></svg><span class="badge" id="fabn">1</span></button>
+/*KATEX_JS*/
+<script>
+"use strict";
+/*COMMON_JS*/
+/* ================= maths (mirror of src/rnn_ref.py) ================= */
+const sig=z=>1/(1+Math.exp(-z));
+const ACTS={tanh:{f:Math.tanh,d:(z,h)=>1-h*h,tex:R`\tanh`,dtex:'1-h^2',name:'tanh'},sigmoid:{f:sig,d:(z,h)=>h*(1-h),tex:R`\sigma`,dtex:'h(1-h)',name:'sigmoid'},relu:{f:z=>Math.max(0,z),d:(z,h)=>z>0?1:0,tex:R`\mathrm{ReLU}`,dtex:R`\mathbb 1[s>0]`,name:'ReLU'}};
+function defaultCfg(){return{T:2,d:2,H:2,C:2,act:'tanh',out:'sigmoid',mode:'last',Wxh:[[.5,-.3],[.2,.4]],Whh:[[.1,.3],[-.2,.2]],b:[.1,-.1],Why:[[.6,-.4],[.3,.5]],by:[0,.1],x:[[1,.5],[.5,-1]],t:[[1,0]],eta:.5,gran:'neuron'};}
+const outSteps=cfg=>cfg.mode==='all'?[...Array(cfg.T).keys()]:[cfg.T-1];
+const mv=(M,v)=>M.map(r=>r.reduce((s,w,i)=>s+w*v[i],0));
+function forward(cfg){const {T,H}=cfg,A=ACTS[cfg.act];const h=[Array(H).fill(0)],s=[];
+  for(let t=0;t<T;t++){const a=mv(cfg.Wxh,cfg.x[t]),r=mv(cfg.Whh,h[t]);const st=a.map((v,j)=>v+r[j]+cfg.b[j]);s.push(st);h.push(st.map(A.f));}
+  const u={},y={},lt={};let L=0;outSteps(cfg).forEach((t,k)=>{const ut=mv(cfg.Why,h[t+1]).map((v,c)=>v+cfg.by[c]);u[t]=ut;
+    if(cfg.out==='sigmoid')y[t]=ut.map(sig);else if(cfg.out==='linear')y[t]=ut.slice();else{const mx=Math.max(...ut),e=ut.map(v=>Math.exp(v-mx)),se=e.reduce((p,q)=>p+q,0);y[t]=e.map(v=>v/se);}
+    const tg=cfg.t[k];lt[t]=cfg.out==='softmax'?-tg.reduce((p,v,c)=>p+v*Math.log(y[t][c]),0):.5*y[t].reduce((p,v,c)=>p+(v-tg[c])**2,0);L+=lt[t];});
+  return{h,s,u,y,lt,L};}
+const outer=(a,b)=>a.map(x=>b.map(y=>x*y));
+const madd=(A,B)=>A.map((r,i)=>r.map((v,j)=>v+B[i][j]));
+const zeros=(r,c)=>Array.from({length:r},()=>Array(c).fill(0));
+function backward(cfg){const m=forward(cfg),{T,H,d,C}=cfg,A=ACTS[cfg.act],outs=outSteps(cfg);
+  const dh=Array.from({length:T},()=>Array(H).fill(0)),ds=Array(T),du={},dy={};let dWhy=zeros(C,H),dby=Array(C).fill(0),dWxh=zeros(H,d),dWhh=zeros(H,H),db=Array(H).fill(0);const contrib=[];
+  for(let t=T-1;t>=0;t--){let cWhy=null,cby=null;
+    if(outs.includes(t)){const k=outs.indexOf(t),tg=cfg.t[k],y=m.y[t];dy[t]=y.map((v,c)=>v-tg[c]);du[t]=cfg.out==='sigmoid'?dy[t].map((v,c)=>v*y[c]*(1-y[c])):dy[t].slice();
+      dh[t]=dh[t].map((v,j)=>v+cfg.Why.reduce((s,row,c)=>s+row[j]*du[t][c],0));cWhy=outer(du[t],m.h[t+1]);cby=du[t].slice();dWhy=madd(dWhy,cWhy);dby=dby.map((v,c)=>v+du[t][c]);}
+    if(t<T-1)dh[t]=dh[t].map((v,j)=>v+cfg.Whh.reduce((s,row,k)=>s+row[j]*ds[t+1][k],0));
+    ds[t]=dh[t].map((v,j)=>v*A.d(m.s[t][j],m.h[t+1][j]));
+    const cWxh=outer(ds[t],cfg.x[t]),cWhh=outer(ds[t],m.h[t]);dWxh=madd(dWxh,cWxh);dWhh=madd(dWhh,cWhh);db=db.map((v,j)=>v+ds[t][j]);
+    contrib.push({t,cWxh,cWhh,cWhy,cby});}
+  return{m,g:{dh,ds,du,dy,dWxh,dWhh,db,dWhy,dby,contrib}};}
+const PN=['Wxh','Whh','b','Why','by'],GN={Wxh:'dWxh',Whh:'dWhh',b:'db',Why:'dWhy',by:'dby'};
+function apply(cfg,g,eta){const c=clone(cfg);for(const n of PN){const G=g[GN[n]];c[n]=Array.isArray(cfg[n][0])?cfg[n].map((r,i)=>r.map((v,j)=>v-eta*G[i][j])):cfg[n].map((v,i)=>v-eta*G[i]);}return c;}
+const PTEX={Wxh:(j,i)=>R`W^{xh}_{${j+1}${i+1}}`,Whh:(j,i)=>R`W^{hh}_{${j+1}${i+1}}`,b:j=>R`b^{h}_{${j+1}}`,Why:(j,i)=>R`W^{hy}_{${j+1}${i+1}}`,by:j=>R`b^{y}_{${j+1}}`};
+function paramList(cfg){const P=[];for(const n of PN){if(Array.isArray(cfg[n][0]))cfg[n].forEach((r,i)=>r.forEach((_,j)=>P.push({id:`${n}_${i}_${j}`,tex:PTEX[n](i,j),path:[n,i,j],n})));else cfg[n].forEach((_,i)=>P.push({id:`${n}_${i}`,tex:PTEX[n](i),path:[n,i],n}));}return P;}
+const getP=(o,p)=>p.reduce((a,k)=>a[k],o);const setP=(o,p,v)=>{const t=p.slice(0,-1).reduce((a,k)=>a[k],o);t[p[p.length-1]]=v;};
+function analytic(cfg){const {g}=backward(cfg),o={};for(const pr of paramList(cfg)){const G=g[GN[pr.n]];o[pr.id]=pr.path.length===3?G[pr.path[1]][pr.path[2]]:G[pr.path[1]];}return o;}
+function numgrad(cfg,eps){const o={};for(const pr of paramList(cfg)){const a=clone(cfg),b=clone(cfg);setP(a,pr.path,getP(cfg,pr.path)+eps);setP(b,pr.path,getP(cfg,pr.path)-eps);o[pr.id]=(forward(a).L-forward(b).L)/(2*eps);}return o;}
+/* ================= LaTeX helpers ================= */
+const bmc=v=>R`\begin{bmatrix}${v.map(N).join(R` \\ `)}\end{bmatrix}`;
+const bmM=M=>R`\begin{bmatrix}${M.map(r=>r.map(N).join(' & ')).join(R` \\ `)}\end{bmatrix}`;
+const colLines=(items,per)=>{const rows=[];for(let i=0;i<items.length;i+=per)rows.push(items.slice(i,i+per));return R`\begin{array}{${'l'.repeat(per)}}${rows.map(r=>r.join(' & ')).join(R` \\[1pt] `)}\end{array}`;};
+const alignLines=(items,per)=>{const rows=[];for(let i=0;i<items.length;i+=per)rows.push(items.slice(i,i+per));return R`\begin{aligned}${rows.map((r,i)=>`&${i?'+':''}${r.join('+')}`).join(R` \\ `)}\end{aligned}`;};
+const tX=(tt,i)=>`x_{${tt},${i+1}}`,tS=(tt,j)=>`s_{${tt},${j+1}}`,tHh=(tt,j)=>`h_{${tt},${j+1}}`,tU=(tt,c)=>`u_{${tt},${c+1}}`,tY=(tt,c)=>`y_{${tt},${c+1}}`;
+const tDS=(tt,j)=>R`\delta^s_{${tt},${j+1}}`,tDH=(tt,j)=>R`\delta^h_{${tt},${j+1}}`,tDU=(tt,c)=>R`\delta^u_{${tt},${c+1}}`,tDY=(tt,c)=>R`\delta^y_{${tt},${c+1}}`;
+/* ================= state ================= */
+const S={cfg:defaultCfg(),i:0};let steps=[],tab='step';
+/* ================= steps ================= */
+function build(){
+  const cfg=S.cfg,{T,d,H,C}=cfg,A=ACTS[cfg.act],eta=cfg.eta,outs=outSteps(cfg),layerMode=cfg.gran==='layer';
+  const {m,g}=backward(cfg),cfg1=apply(cfg,g,eta),m1=forward(cfg1),st=[],P=o=>st.push(o);
+  const K=(p,t,i)=>`${p}:${t}:${i}`;
+  const rowKeys=(p,t,n)=>[...Array(n).keys()].map(i=>K(p,t,i));
+  const plain=s=>s.replace(/[\\_{}^,]/g,'');
+  // ---- setup
+  P({ph:'S',title:'Setup: the recurrent network, unrolled in time',path:'x₁ … x_T → h₁ … h_T → outputs',act:[],gives:[],mats:[],
+    what:[`The sequence has **${T}** time steps. At each step the network reads an input vector of size $${d}$ and updates a hidden state of size $${H}$.`,R`$s_t=W_{xh}x_t+W_{hh}h_{t-1}+b_h,\quad h_t=${A.tex}(s_t)$, with $h_0=\mathbf 0$ (no memory yet).`,
+      cfg.mode==='all'?`An output is produced at **every** step (many-to-many), and the losses add up.`:`One output is produced after the **last** step (many-to-one), like classifying a whole sentence.`,`The picture shows the same network copied $${T}$ times. The weights are **shared** by all copies.`],
+    res:[R`\#\text{parameters}=Hd+H^2+H+CH+C=${H*d}+${H*H}+${H}+${C*H}+${C}=${H*d+H*H+H+C*H+C}`,R`W_{xh}\in\mathbb R^{${H}\times${d}},\ W_{hh}\in\mathbb R^{${H}\times${H}},\ W_{hy}\in\mathbb R^{${C}\times${H}}`],
+    say:`Unrolling turns a loop into a deep network whose layers share weights. Backpropagation through time is just ordinary backpropagation on this unrolled picture.`});
+  // ---- forward
+  for(let t=0;t<T;t++){const tt=t+1,hp=m.h[t],x=cfg.x[t];
+    const xs=rowKeys('x',tt,d),hprev=rowKeys('h',t,H);
+    if(layerMode){
+      P({ph:'F',title:`Forward t=${tt}: hidden pre-activation vector $s_${tt}$`,path:`x${tt}, h${t}, W, b → s${tt}`,act:[...xs,...hprev,...rowKeys('s',tt,H),`a:xs:${tt}`,`a:hs:${tt}`],gives:rowKeys('s',tt,H),mats:['Wxh','Whh','b'],
+        what:[R`$s_${tt}=W_{xh}x_${tt}+W_{hh}h_${t}+b_h$`,t===0?`At the first step there is no memory: $h_0=\\mathbf 0$, so the recurrent term vanishes.`:`The previous hidden state $h_${t}$ is the network's memory and enters through $W_{hh}$.`],
+        res:[R`s_${tt}=${bmM(cfg.Wxh)}${bmc(x)}+${bmM(cfg.Whh)}${bmc(hp)}+${bmc(cfg.b)}=${bmc(m.s[t])}`],say:`New information (x) and old memory (h) are mixed in one weighted sum.`});
+      P({ph:'F',title:`Forward t=${tt}: hidden state $h_${tt}$`,path:`s${tt} → h${tt}`,act:[...rowKeys('s',tt,H),...rowKeys('h',tt,H),`a:sh:${tt}`],gives:rowKeys('h',tt,H),mats:[],
+        what:[R`$h_${tt}=${A.tex}(s_${tt})$ applied to every unit.`],res:[R`h_${tt}=${A.tex}\!\left(${bmc(m.s[t])}\right)=${bmc(m.h[t+1])}`],say:`This vector is passed to the next time step as memory.`});
+    }else for(let j=0;j<H;j++){
+      const terms=[...cfg.Wxh[j].map((w,i)=>`${Q(w)}${Q(x[i])}`),...cfg.Whh[j].map((w,k)=>`${Q(w)}${Q(hp[k])}`)];
+      P({ph:'F',title:`Forward t=${tt}: $${tS(tt,j)}$ of hidden unit ${j+1}`,path:`x${tt}, h${t}, weights → s${tt},${j+1}`,act:[...xs,...hprev,K('s',tt,j),`a:xs:${tt}`,`a:hs:${tt}`],gives:[K('s',tt,j)],mats:['Wxh','Whh','b'],
+        what:[`Hidden unit ${j+1} reads the **input** $x_${tt}$ and the **previous hidden state** $h_${t}$.`,t===0?R`At $t=1$ the previous state is $h_0=\mathbf 0$, so the recurrent part contributes nothing.`:`The recurrent weights bring in what the network remembers from step ${t}.`],
+        res:[R`${tS(tt,j)}=\sum_i W^{xh}_{${j+1}i}\,x_{${tt},i}+\sum_k W^{hh}_{${j+1}k}\,h_{${t},k}+b^h_{${j+1}}`,R`=${alignLines(terms,3)}+${Q(cfg.b[j])}=${hl(m.s[t][j])}`],say:`Same dot-product idea as a feed-forward neuron, with one extra input: the old hidden state.`});
+      P({ph:'F',title:`Forward t=${tt}: activation $${tHh(tt,j)}$`,path:`s${tt},${j+1} → h${tt},${j+1}`,act:[K('s',tt,j),K('h',tt,j),`a:sh:${tt}`],gives:[K('h',tt,j)],mats:[],
+        what:[R`$${tHh(tt,j)}=${A.tex}(${tS(tt,j)})$`,cfg.act==='tanh'?'tanh squashes to the range (−1, 1).':cfg.act==='sigmoid'?'sigmoid squashes to (0, 1).':'ReLU keeps positive values and zeroes negative ones.'],
+        res:[R`${tHh(tt,j)}=${A.tex}(${Q(m.s[t][j])})=${hl(m.h[t+1][j])}`],say:`This value is copied forward in time and also used for the output (if there is one at this step).`});}
+    if(outs.includes(t)){const hn=rowKeys('h',tt,H),k=outs.indexOf(t),tg=cfg.t[k];
+      if(layerMode){
+        P({ph:'F',title:`Forward t=${tt}: output vector $u_${tt}$ and prediction $y_${tt}$`,path:`h${tt}, W_hy, b_y → u${tt} → y${tt}`,act:[...hn,...rowKeys('u',tt,C),...rowKeys('y',tt,C),`a:hu:${tt}`,`a:uy:${tt}`],gives:[...rowKeys('u',tt,C),...rowKeys('y',tt,C)],mats:['Why','by'],
+          what:[R`$u_${tt}=W_{hy}h_${tt}+b_y$, then ${cfg.out==='sigmoid'?R`$y_${tt}=\sigma(u_${tt})$`:cfg.out==='linear'?R`$y_${tt}=u_${tt}$ (linear)`:R`$y_${tt}=\mathrm{softmax}(u_${tt})$`}.`],
+          res:[R`u_${tt}=${bmM(cfg.Why)}${bmc(m.h[t+1])}+${bmc(cfg.by)}=${bmc(m.u[t])}`,R`y_${tt}=${bmc(m.y[t])},\quad t_${tt}=${bmc(tg)}`],say:`The read-out layer is an ordinary output layer applied to the hidden state.`});
+      }else{
+        for(let c=0;c<C;c++){const terms=cfg.Why[c].map((w,j)=>`${Q(w)}${Q(m.h[t+1][j])}`);
+          P({ph:'F',title:`Forward t=${tt}: $${tU(tt,c)}$ of output unit ${c+1}`,path:`h${tt}, W_hy → u${tt},${c+1}`,act:[...hn,K('u',tt,c),`a:hu:${tt}`],gives:[K('u',tt,c)],mats:['Why','by'],
+            what:[R`$${tU(tt,c)}=\sum_j W^{hy}_{${c+1}j}\,${R`h_{${tt},j}`}+b^y_{${c+1}}$`],res:[R`${tU(tt,c)}=${alignLines(terms,3)}+${Q(cfg.by[c])}=${hl(m.u[t][c])}`],say:`Read the hidden state out to class ${c+1}.`});
+          if(cfg.out!=='softmax')P({ph:'F',title:`Forward t=${tt}: prediction $${tY(tt,c)}$`,path:`u${tt},${c+1} → y${tt},${c+1}`,act:[K('u',tt,c),K('y',tt,c),`a:uy:${tt}`],gives:[K('y',tt,c)],mats:[],
+            what:[cfg.out==='sigmoid'?R`$${tY(tt,c)}=\sigma(${tU(tt,c)})$ (sigmoid output)`:R`$${tY(tt,c)}=${tU(tt,c)}$ (linear output, no squashing)`,`Target: $t=${N(tg[c])}$.`],
+            res:[cfg.out==='sigmoid'?R`${tY(tt,c)}=\sigma(${Q(m.u[t][c])})=\frac{1}{1+e^{-${Q(m.u[t][c])}}}=${hl(m.y[t][c])}`:R`${tY(tt,c)}=${tU(tt,c)}=${hl(m.y[t][c])}`],say:`Prediction ${N(m.y[t][c])} against target ${N(tg[c])}.`});}
+        if(cfg.out==='softmax')P({ph:'F',title:`Forward t=${tt}: softmax over the outputs`,path:`u${tt} → y${tt}`,act:[...rowKeys('u',tt,C),...rowKeys('y',tt,C),`a:uy:${tt}`],gives:rowKeys('y',tt,C),mats:[],
+          what:[R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$`],res:[R`\sum_j e^{u_j}=${m.u[t].map(v=>`e^{${N(v)}}`).join('+')}=${N(m.u[t].reduce((s,v)=>s+Math.exp(v),0))}`,R`\begin{aligned}${m.y[t].map((v,c)=>`y_{${tt},${c+1}}&=\\frac{e^{${N(m.u[t][c])}}}{${N(m.u[t].reduce((s,q)=>s+Math.exp(q),0))}}=${hl(v)}`).join(R` \\ `)}\end{aligned}`],say:`Class probabilities that sum to 1.`});}
+      // loss at this step
+      P({ph:'F',title:outs.length>1?`Forward: loss $L_${tt}$ at time step ${tt}`:'Forward: loss $L$',path:`y${tt}, t → L${outs.length>1?tt:''}`,act:[...rowKeys('y',tt,C),`l:${tt}`,`a:yl:${tt}`],gives:[`l:${tt}`,...(outs.length===1?['L']:[])],mats:[],
+        what:cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`],
+        res:[cfg.out==='softmax'?R`L_${tt}=-\left[${m.y[t].map((v,c)=>`${N(tg[c])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.lt[t])}`:R`L_${tt}=\tfrac12\left[${m.y[t].map((v,c)=>`(${N(v)}-${N(tg[c])})^2`).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});}
+  }
+  if(outs.length>1)P({ph:'F',title:'Forward: total loss $L$ (sum over time)',path:'L₁ + … + L_T → L',act:[...outs.map(t=>`l:${t+1}`),'L'],gives:['L'],mats:[],what:[R`$L=\sum_t L_t$: the losses of all output steps add up.`],res:[R`L=${outs.map(t=>N(m.lt[t])).join('+')}=${hl(m.L)}`],say:`Forward pass finished. Backpropagation through time starts from this one number.`});
+  else st[st.length-1].say='Forward pass finished. Backpropagation through time starts from this one number.';
+  // ---- backward (BPTT)
+  for(let t=T-1;t>=0;t--){const tt=t+1,hp=m.h[t],cb=g.contrib.find(q=>q.t===t);
+    if(outs.includes(t)){const tg=cfg.t[outs.indexOf(t)],y=m.y[t];
+      if(layerMode){
+        P({ph:'B',title:`Backward t=${tt}: error at the output ${cfg.out==='sigmoid'?'(through the sigmoid)':''}`,path:`L → y${tt} → u${tt}`,act:[...rowKeys('y',tt,C),...rowKeys('u',tt,C),`l:${tt}`,`a:yl:${tt}`,`a:uy:${tt}`],grads:[...rowKeys('u',tt,C),...(cfg.out==='softmax'?[]:rowKeys('y',tt,C))],mats:[],
+          what:cfg.out==='sigmoid'?[R`$\delta^y=y-t$, then $\delta^u=\delta^y\odot y\odot(1-y)$`]:[R`$\delta^u=y-t$ (${cfg.out==='softmax'?'softmax + cross-entropy':'linear output + squared error'})`],
+          res:[cfg.out==='sigmoid'?R`\delta^y_${tt}=${bmc(g.dy[t])},\quad\delta^u_${tt}=${bmc(g.du[t])}`:R`\delta^u_${tt}=y-t=${bmc(g.du[t])}`],say:`Start of the chain rule at this time step.`});
+      }else for(let c=0;c<C;c++){
+        if(cfg.out==='sigmoid'){
+          P({ph:'B',title:`Backward t=${tt}: error at $${tY(tt,c)}$`,path:`L → y${tt},${c+1}`,act:[K('y',tt,c),`l:${tt}`,`a:yl:${tt}`],grads:[K('y',tt,c)],mats:[],what:[R`$${tDY(tt,c)}=y-t$`],res:[R`${tDY(tt,c)}=${Q(y[c])}-${Q(tg[c])}=${hl(g.dy[t][c])}`],say:`Prediction minus target.`});
+          P({ph:'B',title:`Backward t=${tt}: error at $${tU(tt,c)}$ (through the sigmoid)`,path:`y${tt},${c+1} → u${tt},${c+1}`,act:[K('u',tt,c),K('y',tt,c),`a:uy:${tt}`],grads:[K('u',tt,c)],mats:[],what:[R`$${tDU(tt,c)}=${tDY(tt,c)}\,y(1-y)$`],res:[R`${tDU(tt,c)}=${Q(g.dy[t][c])}\,${Q(y[c])}(1-${N(y[c])})=${hl(g.du[t][c])}`],say:`The sigmoid slope scales the error.`});
+        }else if(cfg.out==='linear'||c===0)P({ph:'B',title:cfg.out==='softmax'?`Backward t=${tt}: error at the logits`:`Backward t=${tt}: error at $${tU(tt,c)}$`,path:`L → y${tt} → u${tt}`,act:[...(cfg.out==='softmax'?rowKeys('u',tt,C):[K('u',tt,c)]),...(cfg.out==='softmax'?rowKeys('y',tt,C):[K('y',tt,c)]),`l:${tt}`,`a:yl:${tt}`,`a:uy:${tt}`],grads:cfg.out==='softmax'?rowKeys('u',tt,C):[K('u',tt,c),K('y',tt,c)],mats:[],
+          what:[cfg.out==='softmax'?R`Softmax + cross-entropy: $\delta^u_k=y_k-t_k$.`:R`Linear output + squared error: $${tDU(tt,c)}=y-t$.`],
+          res:[cfg.out==='softmax'?R`\delta^u_${tt}=${bmc(g.du[t])}`:R`${tDU(tt,c)}=${Q(y[c])}-${Q(tg[c])}=${hl(g.du[t][c])}`],say:`Prediction minus target.`});}
+      const items=[...cb.cWhy.flatMap((r,c)=>r.map((v,j)=>R`\mathrm{d}W^{hy}_{${c+1}${j+1}}\mathrel{+}=${Q(g.du[t][c])}${Q(m.h[t+1][j])}=${N(v)}`)),...g.du[t].map((v,c)=>R`\mathrm{d}b^y_{${c+1}}\mathrel{+}=${N(v)}`)];
+      P({ph:'B',title:`Gradient t=${tt}: contribution to $W_{hy}$ and $b_y$`,path:`δu${tt}, h${tt} → dW_hy, db_y`,act:[...rowKeys('u',tt,C),...rowKeys('h',tt,H),`a:hu:${tt}`],mats:['Why','by'],
+        what:[R`$\mathrm{d}W_{hy}\mathrel{+}=\delta^u_${tt}\,h_${tt}^{\top}$ and $\mathrm{d}b_y\mathrel{+}=\delta^u_${tt}$`,`The read-out weights are shared too, so every output step **adds** its contribution.`],res:[R`\small ${colLines(items,2)}`],say:`These weights are used once per output step, so their gradient is a sum over output steps.`});}
+    // dh and ds
+    const fromOut=outs.includes(t),fromNext=t<T-1;
+    if(layerMode){
+      P({ph:'B',title:`Backward t=${tt}: error arriving at $h_${tt}$`,path:`${fromOut?'δu, W_hy':''}${fromOut&&fromNext?' + ':''}${fromNext?`δs${tt+1}, W_hh`:''} → δh${tt}`,act:[...rowKeys('h',tt,H),...(fromOut?[...rowKeys('u',tt,C),`a:hu:${tt}`]:[]),...(fromNext?[...rowKeys('s',tt+1,H),`a:hs:${tt+1}`]:[])],grads:rowKeys('h',tt,H),mats:[...(fromOut?['Why']:[]),...(fromNext?['Whh']:[])],
+        what:[R`$\delta^h_${tt}=${fromOut?`W_{hy}^{\\top}\\delta^u_${tt}`:''}${fromOut&&fromNext?'+':''}${fromNext?`W_{hh}^{\\top}\\delta^s_${tt+1}`:''}$`,fromNext?`The second term is the error coming **back through time** from step ${tt+1}.`:`This is the last time step, so no error arrives from the future.`],
+        res:[R`\delta^h_${tt}=${[...(fromOut?[R`${bmM(cfg.Why)}^{\top}${bmc(g.du[t])}`]:[]),...(fromNext?[R`${bmM(cfg.Whh)}^{\top}${bmc(g.ds[t+1])}`]:[])].join('+')}=${bmc(g.dh[t])}`],say:`Errors flow back along the same weights that carried the signal forward.`});
+      P({ph:'B',title:`Backward t=${tt}: error at $s_${tt}$ (through ${A.name})`,path:`δh${tt} → δs${tt}`,act:[...rowKeys('s',tt,H),...rowKeys('h',tt,H),`a:sh:${tt}`],grads:rowKeys('s',tt,H),mats:[],
+        what:[R`$\delta^s_${tt}=\delta^h_${tt}\odot f'(s_${tt})$ with $f'=${A.dtex}$`],res:[R`\delta^s_${tt}=${bmc(g.dh[t])}\odot${bmc(m.h[t+1].map((h,j)=>A.d(m.s[t][j],h)))}=${bmc(g.ds[t])}`],say:`Slope of the activation scales the error.`});
+    }else for(let j=0;j<H;j++){
+      const termsO=fromOut?cfg.Why.map((row,c)=>`${Q(row[j])}${Q(g.du[t][c])}`):[],termsN=fromNext?cfg.Whh.map((row,k)=>`${Q(row[j])}${Q(g.ds[t+1][k])}`):[];
+      P({ph:'B',title:`Backward t=${tt}: error arriving at $${tHh(tt,j)}$`,path:`${fromOut?'output error':''}${fromOut&&fromNext?' + ':''}${fromNext?'error from step '+(tt+1):''} → δh${tt},${j+1}`,
+        act:[K('h',tt,j),...(fromOut?[...rowKeys('u',tt,C),`a:hu:${tt}`]:[]),...(fromNext?[...rowKeys('s',tt+1,H),`a:hs:${tt+1}`]:[])],grads:[K('h',tt,j)],mats:[...(fromOut?['Why']:[]),...(fromNext?['Whh']:[])],
+        what:[`Unit ${j+1} gets error from ${fromOut&&fromNext?'**two** places: the output at this step and the next time step':fromOut?'the output of this step (last step, nothing from the future)':'the next time step (no output here)'}.`,R`$${tDH(tt,j)}=${fromOut?R`\sum_c W^{hy}_{cj}\,\delta^u_{${tt},c}`:''}${fromOut&&fromNext?'+':''}${fromNext?R`\sum_k W^{hh}_{kj}\,\delta^s_{${tt+1},k}`:''}$`],
+        res:[R`${tDH(tt,j)}=${alignLines([...termsO,...termsN],3)}=${hl(g.dh[t][j])}`],say:fromNext?`This is the heart of BPTT: the error of a later step is passed back through $W_{hh}$ to this step.`:`Only the output error reaches the last step.`});
+      P({ph:'B',title:`Backward t=${tt}: error at $${tS(tt,j)}$ (through ${A.name})`,path:`δh${tt},${j+1} → δs${tt},${j+1}`,act:[K('s',tt,j),K('h',tt,j),`a:sh:${tt}`],grads:[K('s',tt,j)],mats:[],
+        what:[R`$${tDS(tt,j)}=${tDH(tt,j)}\,f'(${tS(tt,j)})$ with $f'=${A.dtex}$`],res:[R`${tDS(tt,j)}=${Q(g.dh[t][j])}\cdot ${N(A.d(m.s[t][j],m.h[t+1][j]))}=${hl(g.ds[t][j])}`],say:cfg.act==='relu'?'ReLU slope is 1 where s>0 and 0 elsewhere.':`Multiply by the activation slope. For ${A.name} this is at most ${cfg.act==='tanh'?'1':'0.25'}, so error can shrink at every step back in time.`});}
+    P({ph:'B',title:`Gradient t=${tt}: contribution to $W_{xh}$, $W_{hh}$ and $b_h$`,path:`δs${tt}, x${tt}, h${t} → dW_xh, dW_hh, db_h`,act:[...rowKeys('s',tt,H),...rowKeys('x',tt,d),...rowKeys('h',t,H),`a:xs:${tt}`,`a:hs:${tt}`],mats:['Wxh','Whh','b'],
+      what:[R`$\mathrm{d}W_{xh}\mathrel{+}=\delta^s_${tt}\,x_${tt}^{\top}$, $\mathrm{d}W_{hh}\mathrel{+}=\delta^s_${tt}\,h_${t}^{\top}$, $\mathrm{d}b_h\mathrel{+}=\delta^s_${tt}$`,`Because the weights are shared, **every** time step adds its own contribution.`,t===0?R`At $t=1$ the previous state is $\mathbf 0$, so the $W_{hh}$ contribution is zero.`:`Each contribution uses the input and the previous state of its own time step.`],
+      res:[R`\delta^s_${tt}=${bmc(g.ds[t])}`,R`\mathrm{d}W_{xh}\mathrel{+}=${bmc(g.ds[t])}${R`\begin{bmatrix}${cfg.x[t].map(N).join(' & ')}\end{bmatrix}`}=${bmM(cb.cWxh)}`,R`\mathrm{d}W_{hh}\mathrel{+}=${bmc(g.ds[t])}${R`\begin{bmatrix}${hp.map(N).join(' & ')}\end{bmatrix}`}=${bmM(cb.cWhh)}`,R`\mathrm{d}b_h\mathrel{+}=${bmc(g.ds[t])}`],say:`Weight sharing in action: one weight, many contributions.`});
+  }
+  // ---- sum over time
+  const sumLine=(name,key,sel)=>R`\mathrm{d}${name}=${g.contrib.slice().reverse().map(c=>sel(c)).filter(Boolean).map(M=>Array.isArray(M[0])?bmM(M):bmc(M)).join('+')}=${Array.isArray(g[key][0])?bmM(g[key]):bmc(g[key])}`;
+  P({ph:'B',title:'Gradients: add up the contributions of all time steps',path:'Σ over t → dW_xh, dW_hh, db_h, dW_hy, db_y',act:[],mats:['Wxh','Whh','b','Why','by'],
+    what:[`Each weight matrix is used at every time step, so its total gradient is the **sum** of the per-step contributions.`],
+    res:[sumLine('W_{xh}','dWxh',c=>c.cWxh),sumLine('W_{hh}','dWhh',c=>c.cWhh),R`\mathrm{d}b_h=${bmc(g.db)}`,sumLine('W_{hy}','dWhy',c=>c.cWhy),R`\mathrm{d}b_y=${bmc(g.dby)}`],say:`These five totals are all the update step needs.`});
+  // ---- update + check
+  const pl=paramList(cfg),an=analytic(cfg);
+  const items=pl.map(pr=>R`${pr.tex}\leftarrow ${Q(getP(cfg,pr.path))}-${Q(eta)}${Q(an[pr.id])}=${N(getP(cfg1,pr.path))}`);
+  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:[],upd:true,mats:['Wxh','Whh','b','Why','by'],what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`],res:[R`\small ${colLines(items,2)}`],say:`Gradient descent. The matrices below the diagram now show the new weights.`});
+  P({ph:'C',title:'Check: run the forward pass again',path:'new weights → y → L′',act:[],upd:true,check:true,mats:[],what:[`Same sequence, **new** weights.`,R`$L'=${N(m1.L)}$ against $L=${N(m.L)}$`,m1.L<m.L?`**The loss went down**, so the update helped.`:`The loss did **not** go down: try a smaller $\\eta$.`],
+    res:[R`L'=${hl(m1.L)}\;${m1.L<m.L?'<':'\\ge'}\;${N(m.L)}=L`],say:`Repeat this many times and you get training (see the Training tab).`});
+  return st;
+}
+/* ================= layout (SVG) ================= */
+let geo={},cellEls={},arrEls={},LAY=null,VH=420;
+const SVN='http://www.w3.org/2000/svg';
+const RC={x:'#64748B',s:'#2B7A9B',h:'#2B7A9B',u:'#7C4DDB',y:'#7C4DDB',l:'#E0A100',L:'#E0A100'};
+function makeLayout(){
+  const cfg=S.cfg,{T,d,H,C}=cfg,outs=outSteps(cfg),md=Math.max(d,H,C);
+  const nCol=T+1+(outs.length>0?1:0);let c=Math.min(36,980/(nCol*(md+1.3)));c=Math.max(14,Math.floor(c));
+  const colW=md*c+1.1*c,mx=34,top=58,rs=c+36;
+  const rowY={l:top,y:top+rs,u:top+2*rs,h:top+3*rs,s:top+4*rs,x:top+5*rs};VH=rowY.x+c+26;
+  geo={};const texts=[],arrows=[];
+  const colX=tt=>mx+tt*colW;
+  const place=(p,tt,n,row)=>{const w=n*c,x0=colX(tt)+(md*c-w)/2;for(let i=0;i<n;i++)geo[`${p}:${tt}:${i}`]={x:x0+i*c,y:rowY[row],w:c,h:c,kind:p};return{x:x0,w,cx:x0+w/2};};
+  const box={};
+  box.h0=place('h',0,H,'h');texts.push({x:box.h0.cx,y:rowY.h-6,t:'h₀ = 0',a:'middle'});
+  for(let tt=1;tt<=T;tt++){const o=outs.includes(tt-1);
+    box[`x${tt}`]=place('x',tt,d,'x');box[`s${tt}`]=place('s',tt,H,'s');box[`h${tt}`]=place('h',tt,H,'h');
+    if(o){box[`u${tt}`]=place('u',tt,C,'u');box[`y${tt}`]=place('y',tt,C,'y');geo[`l:${tt}`]={x:colX(tt)+(md*c-c)/2,y:rowY.l,w:c,h:c,kind:'l'};}
+    texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+16,t:`t = ${tt}`,a:'middle',b:1});}
+  if(outs.length>0){const xx=colX(T+1)+(md*c-c)/2;geo['L']={x:xx,y:rowY.l,w:c,h:c,kind:'L'};texts.push({x:xx+c/2,y:rowY.l-6,t:outs.length>1?'total L':'L',a:'middle'});}
+  const mid=(b)=>b.cx;
+  const vert=(id,b1,r1,b2,r2,label)=>{arrows.push({id,x1:mid(b1),y1:rowY[r1]-2,x2:mid(b2),y2:rowY[r2]+c+3,label,lx:mid(b1)+6,ly:(rowY[r1]+rowY[r2]+c)/2+3});};
+  for(let tt=1;tt<=T;tt++){const o=outs.includes(tt-1);
+    vert(`a:xs:${tt}`,box[`x${tt}`],'x',box[`s${tt}`],'s',tt===1?'W_xh':'');vert(`a:sh:${tt}`,box[`s${tt}`],'s',box[`h${tt}`],'h',tt===1?'f':'');
+    const hb=box[`h${tt-1}`]||box.h0;arrows.push({id:`a:hs:${tt}`,x1:hb.x+hb.w,y1:rowY.h+c+2,x2:box[`s${tt}`].x,y2:rowY.s-2,label:tt===1?'W_hh':'',lx:(hb.x+hb.w+box[`s${tt}`].x)/2+4,ly:(rowY.h+c+rowY.s)/2+2});
+    if(o){vert(`a:hu:${tt}`,box[`h${tt}`],'h',box[`u${tt}`],'u',tt===outs[0]+1?'W_hy':'');vert(`a:uy:${tt}`,box[`u${tt}`],'u',box[`y${tt}`],'y',tt===outs[0]+1?'g':'');vert(`a:yl:${tt}`,box[`y${tt}`],'y',{cx:colX(tt)+md*c/2},'l',tt===outs[0]+1?'loss':'');}}
+  const svg=$('#svg'),VWd=Math.max(1000,colX(T+1)+md*c+mx);svg.setAttribute('viewBox',`0 0 ${VWd} ${VH}`);
+  let h=`<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a929a"/></marker></defs>`;
+  for(const [row,lab] of [['x','input x'],['s','pre-activation s'],['h','hidden h'],['u','output pre-act u'],['y','prediction y'],['l','loss']])if(row!=='u'&&row!=='y'&&row!=='l'||outs.length)h+=`<text x="3" y="${rowY[row]+c/2+3}" font-size="9" fill="#9aa0a6" transform="rotate(-90 9 ${rowY[row]+c/2})" text-anchor="middle" style="display:none">${lab}</text>`;
+  for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.b?12:10.5}" fill="${t.b?'#444':'#6b7280'}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
+  h+='<g id="arrg">';for(const a of arrows)h+=`<line class="arr" id="${a.id}" x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#9aa0a6" stroke-width="1.6" stroke-linecap="round" marker-end="url(#ar)"/>${a.label?`<text x="${a.lx}" y="${a.ly}" font-size="10.5" fill="#1E5873" font-weight="700">${a.label.replace('_xh','ₓₕ').replace('_hh','ₕₕ').replace('_hy','ₕᵧ')}</text>`:''}`;h+='</g>';
+  for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><title></title><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7.5,c*.32)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.09)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
+  svg.innerHTML=h;LAY={c,rowY,md};
+  cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,ti:g.querySelector('title'),r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
+  arrEls={};svg.querySelectorAll('.arr').forEach(l=>arrEls[l.id]=l);
+}
+const f2=v=>{const a=Math.abs(v)<.005?0:v;return a.toFixed(2)};
+function valOf(key,M,cfg){const [p,t,i]=key.split(':'),T=+t,I=+i;
+  switch(p){case'x':return cfg.x[T-1][I];case's':return M.s[T-1][I];case'h':return M.h[T][I];case'u':return M.u[T-1][I];case'y':return M.y[T-1][I];case'l':return M.lt[T-1];case'L':return M.L;}}
+function gradOf(key,G){const [p,t,i]=key.split(':'),T=+t,I=+i;
+  switch(p){case's':return G.ds[T-1][I];case'h':return G.dh[T-1][I];case'u':return G.du[T-1][I];case'y':return G.dy[T-1][I];}}
+function cum(i){const vis=new Set(),gv=new Set();let upd=false,check=false;
+  for(let t=0;t<=i;t++){const s=steps[t];(s.gives||[]).forEach(x=>vis.add(x));(s.grads||[]).forEach(x=>gv.add(x));if(s.upd)upd=true;if(s.check)check=true;}
+  return{vis,gv,upd,check};}
+const cellName=key=>{const [p,t,i]=key.split(':');return p==='l'?`L at t=${t}`:p==='L'?'total loss L':`${p}(t=${t})[${+i+1}]`;};
+let lastI=-1;
+function paint(){
+  const cfg=S.cfg,i=S.i,cur=steps[i],cs=cum(i),back=cur.ph==='B';
+  const {m,g}=backward(cfg),cfg1=apply(cfg,g,cfg.eta),m1=forward(cfg1);const th=cs.upd?cfg1:cfg,M=cs.check?m1:m,showG=!cs.check;
+  const act=new Set(cur.act||[]);
+  const mxOf=p=>Math.max(1e-9,...Object.keys(geo).filter(k=>k[0]===p).map(k=>Math.abs(valOf(k,M,th))));
+  const nm={x:mxOf('x'),s:mxOf('s'),h:mxOf('h'),u:mxOf('u')};
+  for(const [key,r] of Object.entries(geo)){const e=cellEls[key],kind=r.kind;
+    const given=kind==='x'||key.startsWith('h:0:'),shown=given||cs.vis.has(key);let fill='#EFEFEA',fo=1,stroke='#D6D6D0',txt='',tcol='#1d2229';
+    if(shown){const v=key.startsWith('h:0:')?0:valOf(key,M,th);const nrm=nm[kind]||1;
+      const base=v<0?'#E07B39':kind==='x'?'#64748B':kind==='u'||kind==='y'?'#7C4DDB':kind==='l'||kind==='L'?'#E0A100':'#2B7A9B';
+      const mag=(kind==='y'||kind==='l'||kind==='L')?Math.min(1,Math.abs(v)):Math.min(1,Math.abs(v)/nrm);fill=base;fo=.1+.62*mag;stroke=base;txt=kind==='L'||kind==='l'?v.toFixed(3):f2(v);}
+    e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);
+    const isAct=act.has(key);e.r.setAttribute('stroke',isAct?(back?ERR:ACC):stroke);e.r.setAttribute('stroke-width',isAct?2.6:1);e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
+    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;const keep=LAY.c>=19||isAct;
+    e.tv.textContent=keep?txt:'';e.tv.setAttribute('fill',tcol);e.tg.textContent=(gvv===undefined||!keep)?'':f2(gvv);e.tv.setAttribute('dy',gvv===undefined?'.34em':'-.05em');
+    e.ti.textContent=shown?`${cellName(key)} = ${N(key.startsWith('h:0:')?0:valOf(key,M,th))}${gvv===undefined?'':' · gradient '+N(gvv)}`:'';}
+  for(const [id,ln] of Object.entries(arrEls)){const on=act.has(id);ln.style.stroke=on?(back?ERR:ACC):'#9aa0a6';ln.style.strokeWidth=on?3.2:1.6;ln.style.opacity=on?1:.55;ln.classList.toggle('flow',on);ln.classList.toggle('rev',on&&back);ln.setAttribute('marker-end',on?'':'url(#ar)');}
+  // matrices strip
+  const hi=new Set(cur.mats||[]);const mats=[['Wxh',R`W_{xh}`,'H×d'],['Whh',R`W_{hh}`,'H×H'],['b',R`b_h`,'H'],['Why',R`W_{hy}`,'C×H'],['by',R`b_y`,'C']];
+  $('#mats').innerHTML=mats.map(([n,tex,sh])=>{const A=th[n],is2=Array.isArray(A[0]),rows=is2?A:A.map(v=>[v]),mx=Math.max(.05,...rows.flat().map(Math.abs));
+    return`<div class="mat ${hi.has(n)?'hi':''}"><div class="mk">${K(tex)} · ${sh}</div><div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${rows.flat().map(v=>`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`}">${v.toFixed(3)}</i>`).join('')}</div></div>`;}).join('');
+  // panel
+  const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
+  $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}`;
+  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);
+  $('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
+  const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');
+  res.querySelectorAll('.katex-display').forEach((e,j)=>e.style.animationDelay=(j*160+80)+'ms');
+  $('#say').innerHTML=rt(cur.say||'');
+  if(i!==lastI){const fb=$('#fbody');fb.classList.remove('swap');void fb.offsetWidth;fb.classList.add('swap');lastI=i;}
+  $('#slider').max=steps.length-1;$('#slider').value=i;$('#cnt').textContent=`${i+1} / ${steps.length}`;$('#cnt2').textContent=`${i+1} / ${steps.length}`;
+  $('#fabn').textContent=i+1;$('#bar').style.width=((i+1)/steps.length*100)+'%';
+  $('#prev').disabled=i===0;$('#next').disabled=i===steps.length-1;$('#prev2').disabled=i===0;$('#next2').disabled=i===steps.length-1;
+}
+/* ================= controls ================= */
+let playTimer=null;
+function go(i){S.i=Math.max(0,Math.min(steps.length-1,i));paint();}
+function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
+function rebuild(relayout=true){$('#gran').value=S.cfg.gran;steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
+function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Setup','S'],['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];
+  $('#jump').innerHTML=L.map(([n,p])=>`<button class="btn" data-i="${first(p)}">⏭ ${n}</button>`).join('');$('#jump').querySelectorAll('button').forEach(b=>b.onclick=()=>{stopPlay();go(+b.dataset.i)});}
+function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  for(const id of ['step','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
+  if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
+function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
+  steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
+    h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
+  $('#p-all').innerHTML=`<div class="row"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
+function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
+  $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;
+  const rows=paramList(S.cfg).map(pr=>{const d=Math.abs(an[pr.id]-ng[pr.id]);mx=Math.max(mx,d);return`<tr><td>${K(pr.tex)}</td><td>${an[pr.id].toFixed(8)}</td><td>${ng[pr.id].toFixed(8)}</td><td>${d.toExponential(2)}</td></tr>`}).join('');
+  $('#gctable').innerHTML=`<table class="t"><tr><th>Parameter</th><th>BPTT (analytic)</th><th>Numerical</th><th>|difference|</th></tr>${rows}</table>`;
+  $('#gcbadge').innerHTML=`<span class="badge ${mx<1e-5?'pass':'fail'}">${mx<1e-5?'PASS':'CHECK'} · max |difference| = ${mx.toExponential(2)}</span>`;
+  const {g}=backward(S.cfg),nrm=v=>Math.sqrt(v.reduce((s,x)=>s+x*x,0)),vals=g.ds.map(nrm),mxv=Math.max(1e-12,...vals);
+  $('#gflow').innerHTML=vals.map((v,t)=>`<div class="b"><span style="width:90px">${K(`\\|\\delta^s_{${t+1}}\\|`)}</span><div class="tr"><div class="fl" style="width:${(v/mxv*100).toFixed(1)}%"></div></div><span style="width:92px;text-align:right">${v.toExponential(2)}</span></div>`).join('')+`<div class="note">Ratio first step / last step = ${(vals[0]/(vals[vals.length-1]||1)).toFixed(3)} ${vals[0]<vals[vals.length-1]?'(error is smaller further back in time)':'(error is larger further back in time)'}</div>`;}
+/* ---------- training ---------- */
+let TR={cfg:null,hist:[],ep:0,start:null},trainTimer=null;
+function trainReset(){TR.cfg=clone(S.cfg);TR.start=clone(S.cfg);TR.ep=0;TR.hist=[forward(TR.cfg).L];}
+function trainResetIfNeeded(){if(!TR.cfg)trainReset();}
+function trainN(n){for(let i=0;i<n;i++){const {g}=backward(TR.cfg);TR.cfg=apply(TR.cfg,g,S.cfg.eta);TR.ep++;TR.hist.push(forward(TR.cfg).L);}renderTrain();}
+function stopTrainPlay(){if(trainTimer){clearInterval(trainTimer);trainTimer=null;$('#tplay').textContent='▶ Run';}}
+function renderTrain(){const cfg=S.cfg;$('#tetav').textContent=cfg.eta.toFixed(2);$('#teta').value=cfg.eta;$('#tep').textContent=TR.ep;
+  const m=forward(TR.cfg),outs=outSteps(cfg);
+  $('#tbars').innerHTML=outs.map((t,k)=>m.y[t].map((v,c)=>`<div class="b"><span style="width:62px;font-size:12px">${K(`y_{${t+1},${c+1}}`)}</span><div class="track"><div class="fill" style="width:${Math.max(0,Math.min(100,v*100)).toFixed(1)}%"></div><div class="tg" style="left:${Math.max(0,Math.min(99,cfg.t[k][c]*100)).toFixed(1)}%"></div></div><span style="width:70px;text-align:right">${v.toFixed(4)}</span></div>`).join('')).join('');
+  $('#tl').innerHTML=`Red mark = target (bars show 0 to 1). ${K(`L=${m.L.toFixed(6)}`)}`;
+  $('#tpar').innerHTML=`<table class="t" style="font-size:12.5px">${paramList(cfg).map(pr=>`<tr><td>${K(pr.tex)}</td><td>${getP(TR.start,pr.path).toFixed(4)}</td><td>→ <b>${getP(TR.cfg,pr.path).toFixed(4)}</b></td></tr>`).join('')}</table>`;drawChart();}
+function drawChart(){const H=TR.hist,W=620,Ht=300,ml=58,mr=14,mt=14,mb=36,log=$('#tlog').checked,n=H.length-1;
+  const vals=H.map(v=>Math.max(v,1e-12));let lo,hi;
+  if(log){hi=Math.ceil(Math.log10(Math.max(...vals)));lo=Math.floor(Math.log10(Math.min(...vals)));if(hi===lo)lo=hi-1;}else{hi=Math.max(...vals)*1.05;lo=0;}
+  const X=e=>ml+(n?e/n:0)*(W-ml-mr),Y=v=>{const f=log?(Math.log10(Math.max(v,1e-12))-lo)/(hi-lo):(v-lo)/(hi-lo||1);return mt+(1-f)*(Ht-mt-mb);};
+  let s=`<rect x="${ml}" y="${mt}" width="${W-ml-mr}" height="${Ht-mt-mb}" fill="#fff" stroke="#DEDED8"/>`;
+  const ticks=log?Array.from({length:hi-lo+1},(_,i)=>Math.pow(10,lo+i)):Array.from({length:5},(_,i)=>lo+(hi-lo)*i/4);
+  for(const tv of ticks){const y=Y(tv);s+=`<line x1="${ml}" x2="${W-mr}" y1="${y}" y2="${y}" stroke="#EFEFEA"/><text x="${ml-6}" y="${y+4}" text-anchor="end">${log?tv.toExponential(0):tv.toFixed(3)}</text>`;}
+  for(let i=0;i<=5;i++){const e=Math.round(n*i/5);s+=`<text x="${X(e)}" y="${Ht-mb+16}" text-anchor="middle">${e}</text>`;}
+  s+=`<text x="${(ml+W-mr)/2}" y="${Ht-4}" text-anchor="middle">epoch</text><text x="14" y="${Ht/2}" transform="rotate(-90 14 ${Ht/2})" text-anchor="middle">loss L</text>`;
+  const stride=Math.max(1,Math.floor(n/400));let pts=[];for(let e=0;e<=n;e+=stride)pts.push(`${X(e).toFixed(1)},${Y(H[e]).toFixed(1)}`);if((n%stride)!==0)pts.push(`${X(n).toFixed(1)},${Y(H[n]).toFixed(1)}`);
+  s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${ACC}" stroke-width="2.4" stroke-linejoin="round"/><circle cx="${X(n)}" cy="${Y(H[n])}" r="4" fill="${ACC}"/>`;$('#chart').innerHTML=s;}
+/* ================= custom editor ================= */
+function randCfg(o,seed){const r=mulberry(seed),rn=(a)=>+((r()*2-1)*a).toFixed(2);const {T,d,H,C}=o;const c=Object.assign(defaultCfg(),o);
+  c.Wxh=Array.from({length:H},()=>Array.from({length:d},()=>rn(.7)));c.Whh=Array.from({length:H},()=>Array.from({length:H},()=>rn(.5)));c.b=Array.from({length:H},()=>rn(.2));
+  c.Why=Array.from({length:C},()=>Array.from({length:H},()=>rn(.7)));c.by=Array.from({length:C},()=>rn(.2));
+  c.x=Array.from({length:T},()=>Array.from({length:d},()=>rn(1)));
+  const k=c.mode==='all'?T:1;c.t=Array.from({length:k},(_,q)=>c.out==='softmax'?Array.from({length:C},(_,j)=>j===q%C?1:0):Array.from({length:C},(_,j)=>(q+j)%2?0:1));return c;}
+const PRESETS={'Default: 2 steps, 2 inputs, 2 hidden, 2 sigmoid outputs (last step)':()=>defaultCfg(),
+  'Many-to-many: 4 steps, 3 hidden units (output at every step)':()=>{const c=randCfg({T:4,d:2,H:3,C:2,act:'tanh',out:'sigmoid',mode:'all',eta:.3},1);return c;},
+  'Sequence classifier: 3 steps, ReLU hidden, softmax + cross-entropy':()=>randCfg({T:3,d:3,H:2,C:3,act:'relu',out:'softmax',mode:'last',eta:.2},2),
+  'Vanishing gradient demo: 5 steps, sigmoid hidden, small recurrent weights':()=>{const c=randCfg({T:5,d:1,H:2,C:1,act:'sigmoid',out:'sigmoid',mode:'last',eta:.5},4);c.Whh=[[.3,-.2],[.2,.3]];c.Wxh=[[.8],[-.6]];c.x=[[1],[.5],[-.5],[.8],[.2]];c.t=[[1]];return c;},
+  'Exploding gradient demo: 5 steps, ReLU hidden, large recurrent weights':()=>{const c=randCfg({T:5,d:1,H:2,C:1,act:'relu',out:'linear',mode:'last',eta:.001},4);c.Whh=[[1.2,.5],[.4,1.2]];c.Wxh=[[.5],[.4]];c.b=[.1,.1];c.Why=[[.5,.4]];c.by=[0];c.x=[[1],[.5],[.3],[.6],[.2]];c.t=[[.5]];return c;}};
+function applyCfg(next,msg){S.cfg=next;S.i=0;TR.cfg=null;stopTrainPlay();$('#cmsg').innerHTML=`<span class="okk">${msg||'Updated.'}</span>`;rebuild(true);}
+function numI(id,lab,v,min,max,step=1){return`<label>${lab}<input type="number" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}"></label>`;}
+function buildCustom(){const cfg=S.cfg,{T,d,H,C}=cfg,outs=outSteps(cfg);
+  $('#cpre').innerHTML='<option value="">choose…</option>'+Object.keys(PRESETS).map(k=>`<option>${esc(k)}</option>`).join('');
+  $('#c-arch').innerHTML=numI('cT','Time steps',T,2,6)+numI('cd','Input size',d,1,3)+numI('cH','Hidden units',H,1,4)+numI('cC','Outputs',C,1,4)
+   +`<label>Hidden activation<select id="cact">${Object.entries(ACTS).map(([k,v])=>`<option value="${k}" ${cfg.act===k?'selected':''}>${v.name}</option>`).join('')}</select></label>
+   <label>Output and loss<select id="cout"><option value="sigmoid" ${cfg.out==='sigmoid'?'selected':''}>sigmoid + squared error</option><option value="linear" ${cfg.out==='linear'?'selected':''}>linear + squared error</option><option value="softmax" ${cfg.out==='softmax'?'selected':''}>softmax + cross-entropy</option></select></label>
+   <label>Outputs at<select id="cmode"><option value="last" ${cfg.mode==='last'?'selected':''}>last step only (many-to-one)</option><option value="all" ${cfg.mode==='all'?'selected':''}>every step (many-to-many)</option></select></label>
+   ${numI('ceta','Learning rate η',cfg.eta,0.001,5,0.01)}<label>Detail<select id="cgran"><option value="neuron" ${cfg.gran==='neuron'?'selected':''}>one neuron per step</option><option value="layer" ${cfg.gran==='layer'?'selected':''}>one vector per step</option></select></label>`;
+  $('#c-io').innerHTML=`<div class="fbox"><div class="k">Inputs x (rows = time steps)</div><div class="mgrid" style="grid-template-columns:repeat(${d},auto)">${cfg.x.map((r,t)=>r.map((v,i)=>`<input type="number" step="0.1" data-x="${t},${i}" value="${v}">`).join('')).join('')}</div></div>
+   <div class="fbox"><div class="k">Targets t (rows = ${cfg.mode==='all'?'time steps':'the last step'}${cfg.out==='softmax'?', one-hot':''})</div><div class="mgrid" style="grid-template-columns:repeat(${C},auto)">${cfg.t.map((r,k)=>r.map((v,c)=>`<input type="number" step="0.1" data-t="${k},${c}" value="${v}">`).join('')).join('')}</div></div>`;
+  const grid=(name,A,label)=>{const is2=Array.isArray(A[0]),rows=is2?A:[A];return`<div class="fbox"><div class="k">${label}</div><div class="mgrid" style="grid-template-columns:repeat(${rows[0].length},auto)">${rows.map((r,i)=>r.map((v,j)=>`<input type="number" step="0.1" data-w="${name},${i},${j}" value="${v}">`).join('')).join('')}</div></div>`;};
+  $('#c-w').innerHTML=grid('Wxh',cfg.Wxh,`W<sub>xh</sub> (${H}×${d})`)+grid('Whh',cfg.Whh,`W<sub>hh</sub> (${H}×${H})`)+grid('b',cfg.b,'b<sub>h</sub>')+grid('Why',cfg.Why,`W<sub>hy</sub> (${C}×${H})`)+grid('by',cfg.by,'b<sub>y</sub>');
+  wireCustom();}
+function wireCustom(){const cfg=S.cfg;
+  const arch=()=>{const g=id=>parseInt($('#'+id).value);const o={T:g('cT'),d:g('cd'),H:g('cH'),C:g('cC')};if(Object.values(o).some(v=>!(v>=1)))return;
+    const c=randCfg(Object.assign({},o,{act:cfg.act,out:cfg.out,mode:cfg.mode,eta:cfg.eta,gran:cfg.gran}),o.T*1000+o.d*100+o.H*10+o.C);
+    // keep old inputs where shapes still fit
+    c.x=c.x.map((r,t)=>r.map((v,i)=>(cfg.x[t]&&cfg.x[t][i]!==undefined)?cfg.x[t][i]:v));applyCfg(c,'New shape. Weights were re-initialised randomly (edit them below).');buildCustom();};
+  ['cT','cd','cH','cC'].forEach(id=>$('#'+id).onchange=arch);
+  $('#cact').onchange=e=>{S.cfg.act=e.target.value;TR.cfg=null;rebuild(true);};
+  $('#cout').onchange=e=>{S.cfg.out=e.target.value;if(S.cfg.out==='softmax')S.cfg.t=S.cfg.t.map(r=>{const k=Math.max(0,r.indexOf(Math.max(...r)));return r.map((_,c)=>c===k?1:0);});TR.cfg=null;rebuild(true);buildCustom();};
+  $('#cmode').onchange=e=>{const c=clone(S.cfg);c.mode=e.target.value;const k=c.mode==='all'?c.T:1;c.t=Array.from({length:k},(_,q)=>c.t[q]||c.t[c.t.length-1].slice());applyCfg(c,'Output mode changed.');buildCustom();};
+  $('#cgran').onchange=e=>{S.cfg.gran=e.target.value;rebuild(true);};
+  $('#ceta').onchange=()=>{const v=parseFloat($('#ceta').value);if(v>0){S.cfg.eta=v;TR.cfg=null;rebuild(false);}};
+  const num=(sel,fn)=>document.querySelectorAll(sel).forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;fn(inp,v);TR.cfg=null;rebuild(false);});
+  num('#c-io input[data-x]',(i,v)=>{const [t,k]=i.dataset.x.split(',').map(Number);S.cfg.x[t][k]=v;});num('#c-io input[data-t]',(i,v)=>{const [t,k]=i.dataset.t.split(',').map(Number);S.cfg.t[t][k]=v;});
+  num('#c-w input[data-w]',(i,v)=>{const [n,a,b]=i.dataset.w.split(',');if(Array.isArray(S.cfg[n][0]))S.cfg[n][+a][+b]=v;else S.cfg[n][+b]=v;});}
+/* ================= floating explainer + book icon ================= */
+/*PANEL_JS*/
+/* ================= wiring ================= */
+function init(){
+  document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
+  steps=build();makeLayout();renderJump();paint();
+  document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();
+  $('#prev2').onclick=()=>{stopPlay();go(S.i-1)};$('#next2').onclick=()=>{stopPlay();go(S.i+1)};
+  if(innerWidth<700){panelOpen=false;syncPanel();}else openPanel();
+  $('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)setTab(b.dataset.t);};
+  $('#prev').onclick=()=>{stopPlay();go(S.i-1)};$('#next').onclick=()=>{stopPlay();go(S.i+1)};
+  $('#slider').oninput=e=>{stopPlay();go(+e.target.value)};
+  $('#play').onclick=()=>{if(playTimer){stopPlay();return;}if(S.i>=steps.length-1)go(0);$('#play').textContent='⏸ Pause';playTimer=setInterval(()=>{if(S.i>=steps.length-1){stopPlay();return;}go(S.i+1);},1800);};
+  $('#gran').onchange=e=>{S.cfg.gran=e.target.value;S.i=0;rebuild(false);};
+  document.addEventListener('keydown',e=>{if(tab!=='step'||/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight'){stopPlay();go(S.i+1)}if(e.key==='ArrowLeft'){stopPlay();go(S.i-1)}});
+  $('#eps').onchange=renderCheck;
+  $('#t1').onclick=()=>{trainResetIfNeeded();trainN(1)};$('#t10').onclick=()=>{trainResetIfNeeded();trainN(10)};$('#t100').onclick=()=>{trainResetIfNeeded();trainN(100)};
+  $('#treset').onclick=()=>{stopTrainPlay();trainReset();renderTrain()};
+  $('#tplay').onclick=()=>{if(trainTimer){stopTrainPlay();return;}trainResetIfNeeded();$('#tplay').textContent='⏸ Pause';trainTimer=setInterval(()=>trainN(5),120);};
+  $('#tload').onclick=()=>{trainResetIfNeeded();const eta=S.cfg.eta,gran=S.cfg.gran;S.cfg=clone(TR.cfg);S.cfg.eta=eta;S.cfg.gran=gran;TR.cfg=null;stopTrainPlay();rebuild(true);setTab('step');go(0);};
+  $('#teta').oninput=e=>{S.cfg.eta=parseFloat(e.target.value);rebuild(false);renderTrain();};
+  $('#tlog').onchange=drawChart;
+  $('#creset').onclick=()=>{applyCfg(defaultCfg(),'Back to the default example.');buildCustom();};
+  $('#crand').onclick=()=>{const o=S.cfg,c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;c.eta=o.eta;c.gran=o.gran;applyCfg(c,'Random weights.');buildCustom();};
+  $('#cgo').onclick=()=>{setTab('step');go(0);};
+  $('#cpre').onchange=e=>{const f=PRESETS[e.target.value];if(!f)return;applyCfg(f(),`Loaded: ${e.target.value}`);buildCustom();};
+  window.__app={S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,defaultCfg,randCfg,PRESETS,trainN,trainReset,TR:()=>TR};
+}
+init();
+</script>
+</body>
+</html>
