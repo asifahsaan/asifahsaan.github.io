@@ -156,6 +156,26 @@ details.concepts:not([open])>summary:after{content:" · tap to read"}
 .arrowkey .akh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--mut);width:100%}
 .arrowkey .ak{display:inline-flex;align-items:center;gap:7px}
 .arrowkey .aw{color:#1E5873;font-size:13.5px}
+/* PPTX dialog and slide image boxes */
+#pptxroot{position:fixed;inset:0;z-index:310;background:rgba(15,25,35,.55);display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Sans",Arial,sans-serif}
+.pxbox{background:#fff;border-radius:14px;padding:22px 26px;width:560px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.pxbox h3{margin:0 0 6px;font-size:20px}
+.pxnote{font-size:13px;color:#6b7280;line-height:1.5}
+.pxopts{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:14px 0 8px;font-size:13.5px}
+.pxopts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.pxcount{font-weight:700;color:#1E5873;margin:6px 0}
+.pxbar{height:8px;background:#E3E3DD;border-radius:5px;overflow:hidden;margin:8px 0}
+.pxbar div{height:100%;width:0;background:linear-gradient(90deg,#2B7A9B,#7C4DDB);transition:width .3s}
+.pxmsg{font-size:13px;min-height:18px;color:#444}
+.pxbtns{display:flex;gap:10px;margin-top:10px}
+.pptxbox{font-family:"IBM Plex Sans",Arial,sans-serif;color:#1d2229;font-size:15px;line-height:1.5}
+.pptxbox .pres{background:#DCEEF5;border:1px solid #b7d9e6;border-radius:8px;padding:2px 10px}
+.pptxbox .katex-display{margin:.45em 0;font-size:.95em}
+.pptxbox ul{margin:4px 0 4px 20px;padding:0;font-size:16px;line-height:1.5}
+.pptxbox .opkey{display:flex;flex-wrap:wrap;gap:4px 12px;margin:2px 0 6px;font-size:13.5px}
+.pptxbox .opkey span{display:inline-flex;align-items:center;gap:6px}
+.pptxbox .opkey i{display:inline-block;width:14px;height:14px;border-radius:4px}
+.pptxbox p{margin:4px 0}
 /* PDF preview and print */
 #pdfroot{position:fixed;inset:0;z-index:300;background:#e9ecef;display:flex;flex-direction:column;font-family:"IBM Plex Sans",Arial,sans-serif}
 #pdfbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid #ccd;font-size:13px}
