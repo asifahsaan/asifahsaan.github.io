@@ -411,7 +411,7 @@ function wireCustom(){const cfg=S.cfg;
 /*PANEL_JS*/
 /*INCLUDE:rnn_words.js*/
 /* ================= wiring ================= */
-function init(){
+function init(){initPdf();
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
   steps=build();makeLayout();renderJump();paint();
   document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();
