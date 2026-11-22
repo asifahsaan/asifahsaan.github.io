@@ -138,6 +138,24 @@ svg.chart text{font-size:11px;fill:#6b7280;font-family:inherit}
 .panel.floating:hover{background:rgba(255,255,255,.95)}
 @media(max-width:760px){.stagewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.stage{min-width:800px}.stagewrap:after{content:"← swipe the diagram →";display:block;font-size:11px;color:var(--mut);text-align:center;padding:2px}}
 .panel.floating .fnav button{background:rgba(255,255,255,.85)}
+details.concepts{background:#FAF6EA;border:1px solid #EADFB8;border-radius:10px;padding:6px 12px;margin:8px 0}
+details.concepts>summary{cursor:pointer;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b5200;list-style:none}
+details.concepts>summary::-webkit-details-marker{display:none}
+details.concepts>summary:before{content:"▸ ";color:#B58B00}
+details.concepts[open]>summary:before{content:"▾ "}
+details.concepts>summary:after{content:" · tap to hide";font-weight:400;text-transform:none;letter-spacing:0;color:#9a8440}
+details.concepts:not([open])>summary:after{content:" · tap to read"}
+.lcard{border-top:1px solid #EADFB8;margin-top:7px;padding-top:5px}
+.lcard:first-of-type{border-top:0;margin-top:5px}
+.lcard .lh{font-weight:700;font-size:14px;color:#3d3000}
+.lcard p{margin:3px 0;font-size:13.5px;line-height:1.5}
+.opkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 2px;font-size:12.5px}
+.opkey span{display:inline-flex;align-items:center;gap:6px}
+.opkey i{display:inline-block;width:14px;height:14px;border-radius:4px}
+.arrowkey{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0 0;padding:8px 12px;background:var(--card);border-radius:10px;font-size:13px}
+.arrowkey .akh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--mut);width:100%}
+.arrowkey .ak{display:inline-flex;align-items:center;gap:7px}
+.arrowkey .aw{color:#1E5873;font-size:13.5px}
 .panel.floating.drag .fhead{cursor:grabbing}
 .panel.floating.drag{box-shadow:0 26px 60px rgba(20,40,60,.38);transition:none}
 .panel.floating .fbody{flex:1;overflow:auto}

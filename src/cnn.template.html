@@ -76,6 +76,8 @@ body{padding-top:10px}
         <div class="k" id="kick"></div>
         <h2 id="title"></h2>
         <div class="path" id="path"></div>
+        <div id="learn"></div>
+        <div id="opkey" class="opkey"></div>
         <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
         <div class="res" id="res"></div>
         <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
@@ -210,110 +212,7 @@ const colLines=(items,per)=>{const rows=[];for(let i=0;i<items.length;i+=per)row
 const ij=(i,j)=>`${i+1}${j+1}`;
 const cls=(cfg,c)=>cfg.names&&cfg.names[c]?cfg.names[c]:`class ${c+1}`;
 /* ================= step builder ================= */
-function build(){
-  const cfg=S.cfg,sh=shapes(cfg),{H,W,k,s,p,q,Hp,Wp,oh,ow,ph,pw,F,C}=sh,n=F*ph*pw,Tg=cfg.target,eta=cfg.eta;
-  const {m,g}=backward(cfg),cfg1=applyG(cfg,g,eta),m1=forward(cfg1);
-  const st=[],P=o=>st.push(o);
-  const mapKeys=(t,f)=>{const a=[],nr=t==='Z'||t==='A'?oh:ph,nc=t==='Z'||t==='A'?ow:pw;for(let i=0;i<nr;i++)for(let j=0;j<nc;j++)a.push(`${t}:${f}:${i}:${j}`);return a;};
-  const allMaps=t=>[...Array(F).keys()].flatMap(f=>mapKeys(t,f));
-  const vKeys=[...Array(n).keys()].map(x=>`v:${x}`),uKeys=[...Array(C).keys()].map(x=>`u:${x}`),pKeys=[...Array(C).keys()].map(x=>`p:${x}`);
-  const filtKeys=f=>{const a=[];for(let i=0;i<k;i++)for(let j=0;j<k;j++)a.push(`W:${f}:${i}:${j}`);return a;};
-  const winKeys=(r0,c0,h,w,pre)=>{const a=[];for(let i=0;i<h;i++)for(let j=0;j<w;j++)a.push(`${pre}:${r0+i}:${c0+j}`);return a;};
-  // ---- setup
-  P({ph:'S',title:'Setup: image, filters and output sizes',path:'X → conv → ReLU → pool → flatten → FC → softmax → L',act:[],gives:[],
-    what:[`Image $X$ is $${H}\\times${W}$${p?`, zero-padded by $p=${p}$ to $${Hp}\\times${Wp}$`:' (no padding)'}.`,`${F} filter${F>1?'s':''} of size $${k}\\times${k}$ slide with stride $s=${s}$.`,`Then ReLU, $${q}\\times${q}$ max-pool, flatten, a fully connected layer with ${C} classes, softmax and cross-entropy. True class: **${esc(cls(cfg,Tg))}**.`],
-    res:[R`o_h=\left\lfloor\frac{H+2p-k}{s}\right\rfloor+1=\left\lfloor\frac{${H}+${2*p}-${k}}{${s}}\right\rfloor+1=${oh},\qquad o_w=\left\lfloor\frac{${W}+${2*p}-${k}}{${s}}\right\rfloor+1=${ow}`,
-      R`\text{pool: }\ \lfloor ${oh}/${q}\rfloor\times\lfloor ${ow}/${q}\rfloor=${ph}\times${pw},\qquad n=F\,p_h\,p_w=${F}\cdot${ph}\cdot${pw}=${n}`,
-      R`\#\text{parameters}=F(k^2+1)+C(n+1)=${F}(${k*k}+1)+${C}(${n}+1)=${F*(k*k+1)+C*(n+1)}`],
-    say:`Before any arithmetic, check the shapes. The size formula tells you how big every map will be. Change image size, stride or padding in the Custom tab and watch these numbers change.`});
-  // ---- forward conv
-  for(let f=0;f<F;f++)for(let i=0;i<oh;i++)for(let j=0;j<ow;j++){
-    const w=cfg.filters[f].w,b=cfg.filters[f].b,r0=i*s,c0=j*s,Wn=m.Xp.slice(r0,r0+k).map(r=>r.slice(c0,c0+k));
-    const rows=Wn.map((r,a)=>r.map((x,c)=>`${Q(x)}${Q(w[a][c])}`)),sum=Wn.reduce((t,r,a)=>t+r.reduce((u,x,c)=>u+x*w[a][c],0),0);
-    const win=winKeys(r0,c0,k,k,'X'),zk=`Z:${f}:${i}:${j}`;
-    P({ph:'F',title:`Convolve: filter ${f+1} at position (${i+1}, ${j+1})`,path:`window of X (rows ${r0+1}–${r0+k}, cols ${c0+1}–${c0+k}) · W${F>1?`(${f+1})`:''} → Z${F>1?`(${f+1})`:''}[${i+1},${j+1}]`,
-      act:[zk,...filtKeys(f),`B:${f}`],gives:[zk],ov:{boxes:[{keys:win,cls:'w'},{keys:filtKeys(f),cls:'w'}],links:[{from:win,to:zk,cls:'f'}]},
-      what:[`Place the $${k}\\times${k}$ filter on the highlighted window, multiply **element by element**, add everything and add the bias.`,R`$Z^{(${f+1})}_{${ij(i,j)}}=b_{${f+1}}+\sum_{a,b}W^{(${f+1})}_{ab}\,X_{(${i+1}-1)s+a,\,(${j+1}-1)s+b}$`,`One filter, many positions: the **same** weights are reused everywhere (weight sharing).`],
-      res:[R`\text{window}=${bm(Wn)},\quad W^{(${f+1})}=${bm(w)}`,R`\sum_{a,b}W_{ab}X_{ab}=${alignLines(rows.flatMap(r=>r),k)}=${N(sum)}`,R`Z^{(${f+1})}_{${ij(i,j)}}=${N(sum)}+${Q(b)}=${hl(m.Z[f][i][j])}`],
-      say:`This single number says how strongly the window looks like the filter pattern. Press Next to slide the window one step (stride ${s}).`});}
-  // ---- relu
-  for(let f=0;f<F;f++)P({ph:'F',title:`ReLU on feature map ${f+1}`,path:`Z${F>1?`(${f+1})`:''} → A${F>1?`(${f+1})`:''}`,act:mapKeys('A',f),gives:mapKeys('A',f),
-    what:[R`$A=\max(0,Z)$ is applied to **every** cell of the map.`,`Negative responses become $0$, positive ones pass through unchanged.`],
-    res:[R`Z^{(${f+1})}=${bm(m.Z[f])}`,R`A^{(${f+1})}=\max(0,Z^{(${f+1})})=${bm(m.A[f])}`],
-    say:`ReLU keeps only the places where the pattern was detected. Dead (zero) cells will pass no gradient backwards later.`});
-  // ---- pool
-  for(let f=0;f<F;f++)for(let i=0;i<ph;i++)for(let j=0;j<pw;j++){
-    const win=winKeys(i*q,j*q,q,q,`A:${f}`).map(x=>x),Wn=m.A[f].slice(i*q,i*q+q).map(r=>r.slice(j*q,j*q+q)),[ai,aj]=m.arg[f][i][j],pk=`P:${f}:${i}:${j}`;
-    P({ph:'F',title:`Max-pool: window (${i+1}, ${j+1}) of map ${f+1}`,path:`A${F>1?`(${f+1})`:''} window ${q}×${q} → P${F>1?`(${f+1})`:''}[${i+1},${j+1}]`,
-      act:[pk,`A:${f}:${ai}:${aj}`],gives:[pk],ov:{boxes:[{keys:win,cls:'w'}],links:[{from:win,to:pk,cls:'f'}]},
-      what:[`Keep only the **largest** value in each non-overlapping $${q}\\times${q}$ window.`,`The winner is at row ${ai+1}, column ${aj+1} of the map. Remember this position: the gradient will return exactly there.`],
-      res:[R`\text{window}=${bm(Wn)}`,R`P^{(${f+1})}_{${ij(i,j)}}=\max(\text{window})=${hl(m.P[f][i][j])}`],
-      say:`Pooling shrinks the map ${q}× in each direction and makes the result tolerant to small shifts of the pattern.`});}
-  // ---- flatten
-  P({ph:'F',title:'Flatten the pooled maps into a vector $v$',path:'P → v',act:[...allMaps('P'),...vKeys],gives:vKeys,
-    what:[`Read the pooled maps row by row (filter by filter) to get a vector of length $n=${n}$.`,`This is only a reshape: no numbers change.`],
-    res:[R`v^{\top}=\begin{bmatrix}${m.v.map(N).join(' & ')}\end{bmatrix}`],say:`The fully connected layer needs a plain list of numbers, so the 2-D maps are unrolled.`});
-  // ---- fc
-  for(let c=0;c<C;c++){const terms=cfg.V[c].map((x,nn)=>`${Q(x)}${Q(m.v[nn])}`);
-    P({ph:'F',title:`Fully connected: logit $u_${c+1}$ (${esc(cls(cfg,c))})`,path:`v, V row ${c+1}, c${c+1} → u${c+1}`,act:[`u:${c}`,...vKeys],gives:[`u:${c}`],edges:`u:${c}`,
-      what:[R`$u_${c+1}=\sum_{n}V_{${c+1}n}\,v_n+c_${c+1}$`,`Every flattened value votes for this class with its own weight.`],
-      res:[R`u_${c+1}=${alignLines(terms,4)}+${Q(cfg.c[c])}=${hl(m.u[c])}`],say:`One dot product per class, exactly like the output layer of the ANN lab.`});}
-  // ---- softmax
-  P({ph:'F',title:'Softmax: turn logits into probabilities',path:'u → p',act:[...uKeys,...pKeys],gives:pKeys,
-    what:[R`$p_c=\dfrac{e^{u_c}}{\sum_j e^{u_j}}$`,`Probabilities are positive and sum to 1.`],
-    res:[R`\sum_j e^{u_j}=${m.u.map(x=>`e^{${N(x)}}`).join('+')}=${N(m.u.reduce((t,x)=>t+Math.exp(x),0))}`,R`\begin{aligned}${m.p.map((x,c)=>`p_${c+1}&=\\frac{e^{${N(m.u[c])}}}{${N(m.u.reduce((t,y)=>t+Math.exp(y),0))}}=${hl(x)}`).join(R` \\ `)}\end{aligned}`],
-    say:`The network currently gives ${N(m.p[Tg])} to the true class (${esc(cls(cfg,Tg))}).`});
-  // ---- loss
-  P({ph:'F',title:'Cross-entropy loss $L$',path:'p, true class → L',act:[`p:${Tg}`,'L'],gives:['L'],
-    what:[R`$L=-\sum_c t_c\ln p_c=-\ln p_{${Tg+1}}$ because the target $t$ is one-hot (true class ${Tg+1}).`,`Small if the true class gets high probability, large otherwise.`],
-    res:[R`L=-\ln p_{${Tg+1}}=-\ln(${N(m.p[Tg])})=${hl(m.L)}`],say:`Forward pass finished. The backward pass will send this one number back through every layer.`});
-  // ---- backward: du
-  P({ph:'B',title:'Backward: error at the logits',path:'L → p → u',act:uKeys,grads:uKeys,
-    what:[R`Softmax + cross-entropy give a very simple result: $\delta^u_c=\dfrac{\partial L}{\partial u_c}=p_c-t_c$.`,`Wrong class too confident → positive error; true class too low → negative error.`],
-    res:[R`\begin{aligned}${g.du.map((x,c)=>`\\delta^u_${c+1}&=p_${c+1}-t_${c+1}=${Q(m.p[c])}-${c===Tg?1:0}=${hl(x)}`).join(R` \\ `)}\end{aligned}`],say:`The errors add up to zero: probability taken from one class is given to another.`});
-  // ---- backward: dV per class
-  for(let c=0;c<C;c++){const items=m.v.map((x,nn)=>R`\mathrm{d}V_{${c+1},${nn+1}}=${Q(g.du[c])}${Q(x)}=${N(g.dV[c][nn])}`);
-    P({ph:'B',title:`Gradient: FC weights of class ${c+1} (row $V_{${c+1}\\cdot}$)`,path:`δu${c+1}, v → dV row ${c+1}, dc${c+1}`,act:[`u:${c}`,...vKeys],edges:`u:${c}`,
-      what:[R`$\dfrac{\partial L}{\partial V_{${c+1}n}}=\delta^u_${c+1}\,v_n$ and $\dfrac{\partial L}{\partial c_${c+1}}=\delta^u_${c+1}$`,`Error at the logit times the value that fed the weight.`],
-      res:[R`\small ${colLines(items,2)}`,R`\mathrm{d}c_${c+1}=\delta^u_${c+1}=${hl(g.dc[c])}`],say:`Weights attached to large (active) flattened values get the largest gradients.`});}
-  // ---- backward: dv
-  P({ph:'B',title:'Backward: error arriving at the flattened vector $v$',path:'δu, V → δv',act:vKeys,grads:vKeys,edges:'all',
-    what:[R`$\delta^v_n=\sum_c V_{cn}\,\delta^u_c$`,`Each flattened value receives error from **all** classes, weighted by its FC weights.`],
-    res:[R`\small ${colLines(m.v.map((_,nn)=>R`\delta^v_{${nn+1}}=${cfg.V.map((row,c)=>`${Q(row[nn])}${Q(g.du[c])}`).join('+')}=${N(g.dv[nn])}`),1)}`],say:`This is the same hidden-error step as in the ANN lab, now at the flatten layer.`});
-  // ---- backward: reshape
-  P({ph:'B',title:'Backward: un-flatten into the pooled maps',path:'δv → δP',act:allMaps('P'),grads:allMaps('P'),
-    what:[`The reshape is undone: the same numbers are placed back into $${F}$ map${F>1?'s':''} of size $${ph}\\times${pw}$.`],
-    res:[g.dP.map((M,f)=>R`\delta^{P(${f+1})}=${bm(M)}`).join(R`,\quad `)],say:`No arithmetic here, only bookkeeping of where each number belongs.`});
-  // ---- backward: unpool
-  P({ph:'B',title:'Backward: route the error through max-pool',path:'δP → δA (only at the winners)',act:allMaps('A'),grads:allMaps('A'),
-    what:[`Max-pool passed only the **winner** forward, so it passes the error back **only to the winner**. Every other cell gets $0$.`,`Winner positions were remembered in the forward pass.`],
-    res:[...[...Array(F).keys()].flatMap(f=>[R`\small\text{map }${f+1}:\ ${m.arg[f].flatMap((r,i)=>r.map(([a,b],j)=>`\\delta^P_{${ij(i,j)}}\\to A_{${a+1},${b+1}}`)).join(',\\ ')}`]),g.dA.map((M,f)=>R`\delta^{A(${f+1})}=${bm(M)}`).join(R`,\quad `)],
-    say:`This is why pooling has no weights to learn, yet still shapes which cells learn.`});
-  // ---- backward: relu
-  for(let f=0;f<F;f++)P({ph:'B',title:`Backward: through ReLU (map ${f+1})`,path:`δA${F>1?`(${f+1})`:''} → δZ${F>1?`(${f+1})`:''}`,act:mapKeys('Z',f),grads:mapKeys('Z',f),
-    what:[R`$\delta^Z=\delta^A\odot\mathbb 1[Z>0]$: the gradient passes where $Z>0$ and is blocked where ReLU output zero.`],
-    res:[R`\mathbb 1[Z^{(${f+1})}>0]=${bmi(m.Z[f].map(r=>r.map(x=>x>0?1:0)))}`,R`\delta^{Z(${f+1})}=${bm(g.dZ[f])}`],say:`Cells with $Z\\le 0$ were switched off in the forward pass, so they learn nothing from this example.`});
-  // ---- backward: dW
-  for(let f=0;f<F;f++){for(let a=0;a<k;a++)for(let b=0;b<k;b++){
-      const terms=[];const sel=[];for(let i=0;i<oh;i++)for(let j=0;j<ow;j++){sel.push(`X:${i*s+a}:${j*s+b}`);const z=g.dZ[f][i][j];if(z!==0)terms.push(`${Q(z)}${Q(m.Xp[i*s+a][j*s+b])}`);}
-      P({ph:'B',title:`Gradient: filter weight $W^{(${f+1})}_{${a+1}${b+1}}$`,path:`δZ${F>1?`(${f+1})`:''}, X → dW${F>1?`(${f+1})`:''}[${a+1},${b+1}]`,act:[`W:${f}:${a}:${b}`,...mapKeys('Z',f)],grads:[`W:${f}:${a}:${b}`],ov:{boxes:sel.map(x=>({keys:[x],cls:'sel'}))},
-        what:[R`$\dfrac{\partial L}{\partial W_{${a+1}${b+1}}}=\sum_{i,j}\delta^Z_{ij}\,X_{(i-1)s+${a+1},\,(j-1)s+${b+1}}$`,`The **same** weight was used at every position, so its gradient is the **sum** over all positions. Highlighted pixels are the ones this weight touched.`,terms.length<oh*ow?`Terms with $\\delta^Z=0$ (dead ReLU cells) are left out.`:`All positions contribute.`],
-        res:[R`\mathrm{d}W^{(${f+1})}_{${a+1}${b+1}}=${terms.length?alignLines(terms,4):'0'}=${hl(g.dW[f][a][b])}`],say:`Weight sharing in action: one number collects evidence from the whole image.`});}
-    P({ph:'B',title:`Gradient: bias $b_${f+1}$`,path:`δZ${F>1?`(${f+1})`:''} → db${F>1?`(${f+1})`:''}`,act:[`B:${f}`,...mapKeys('Z',f)],grads:[`B:${f}`],
-      what:[R`$\dfrac{\partial L}{\partial b_${f+1}}=\sum_{i,j}\delta^Z_{ij}$ (the bias is added at every position).`],
-      res:[R`\mathrm{d}b_${f+1}=${bm(g.dZ[f])}\ \text{summed}=${hl(g.db[f])}`],say:`All gradients are now known.`});}
-  // ---- update
-  const pl=paramList(cfg),an=analyticGrads(cfg);
-  const items=pl.map(pr=>{const v0=getP(cfg,pr.path),v1=getP(cfg1,pr.path);return R`${pr.tex}\leftarrow ${Q(v0)}-${Q(eta)}${Q(an[pr.id])}=${N(v1)}`;});
-  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:[],upd:true,
-    what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`,`Filters, biases and FC weights all move against their gradient.`],
-    res:[R`\small ${colLines(items,2)}`],say:`Gradient descent. The filter cells on the diagram now show the new weights.`});
-  P({ph:'C',title:'Check: run the forward pass again',path:'new parameters → p → L′',act:[],upd:true,check:true,gives:[...uKeys,...pKeys,'L'],
-    what:[`Same image, **new** parameters.`,R`$L'=${N(m1.L)}$ against $L=${N(m.L)}$`,m1.L<m.L?`**The loss went down**, so the update helped.`:`The loss did **not** go down: try a smaller $\\eta$.`],
-    res:[R`p'=(${m1.p.map(N).join(',\\,')}),\quad p_{${Tg+1}}:\ ${N(m.p[Tg])}\to${N(m1.p[Tg])}`,R`L'=-\ln p'_{${Tg+1}}=${hl(m1.L)}\;${m1.L<m.L?'<':'\\ge'}\;${N(m.L)}=L`],
-    say:`The true class gained probability. Repeat many times and the filters learn useful patterns (Training tab).`});
-  return st;
-}
+/*INCLUDE:cnn_build.js*/
 /* ================= layout (SVG) ================= */
 let geo={},cellEls={},fcEdges=[],VW=1000,VH=560,LAY=null;
 const SV='http://www.w3.org/2000/svg';
@@ -387,10 +286,10 @@ function paint(){
         const neg=v<0,base=kind==='A'?COL.A:kind==='L'?COL.L:neg?'#E07B39':(kind==='P'||kind==='v'||kind==='u'||kind==='p')?COL.P:COL.W;
         const mag=kind==='p'||kind==='L'?Math.min(1,Math.abs(v)):Math.min(1,Math.abs(v)/nrm);fill=base;fo=.1+.6*mag;stroke=base;txt=kind==='B'?'b='+f2(v):f2(v);}}
     e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);
-    const isAct=act.has(key);e.r.setAttribute('stroke',isAct?(back?ERR:ACC):stroke);e.r.setAttribute('stroke-width',isAct?2.6:1);
+    const isAct=act.has(key),oc=cur.ops&&cur.ops.cells&&cur.ops.cells[key];e.r.setAttribute('stroke',oc||(isAct?(back?ERR:ACC):stroke));e.r.setAttribute('stroke-width',oc?4:isAct?2.6:1);
     e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
     const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;
-    const keepTxt=LAY.c>=19||isAct||winSet.has(key);
+    const keepTxt=LAY.c>=19||isAct||winSet.has(key)||!!oc;
     e.tv.textContent=keepTxt?txt:'';e.tv.setAttribute('fill',tcol);e.tg.textContent=(gvv===undefined||!keepTxt)?'':f2(gvv);
     e.tv.setAttribute('dy',gvv===undefined?'.34em':'-.05em');
     e.ti.textContent=shown&&!r.pad?`${cellName(key)} = ${N(valOf(key,M,th))}${gvv===undefined?'':' · gradient '+N(gvv)}`:'';}
@@ -402,13 +301,13 @@ function paint(){
   // overlays
   const ov=cur.ov;let oh_='';
   if(ov){const bb=keys=>{const rs=keys.map(k=>geo[k]),x0=Math.min(...rs.map(r=>r.x)),y0=Math.min(...rs.map(r=>r.y)),x1=Math.max(...rs.map(r=>r.x+r.w)),y1=Math.max(...rs.map(r=>r.y+r.h));return{x:x0,y:y0,w:x1-x0,h:y1-y0};};
-    for(const b of ov.boxes||[]){const r=bb(b.keys);oh_+=b.cls==='sel'?`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${ACC}" fill-opacity=".28" stroke="${ACC}" stroke-width="1.2"/>`:`<rect x="${r.x-1}" y="${r.y-1}" width="${r.w+2}" height="${r.h+2}" fill="none" stroke="#E0A100" stroke-width="3.2" rx="3"/>`;}
+    for(const b of ov.boxes||[]){const r=bb(b.keys);oh_+=b.cls==='sel'?`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${ACC}" fill-opacity=".28" stroke="${ACC}" stroke-width="1.2"/>`:`<rect x="${r.x-1}" y="${r.y-1}" width="${r.w+2}" height="${r.h+2}" fill="none" stroke="${b.col||'#E0A100'}" stroke-width="3.2" rx="3"/>`;}
     for(const l of ov.links||[]){const a=bb(l.from),t=geo[l.to];oh_+=`<path d="M${a.x+a.w},${a.y} L${t.x},${t.y} M${a.x+a.w},${a.y+a.h} L${t.x},${t.y+t.h}" stroke="#E0A100" stroke-width="1.6" stroke-dasharray="5 4" fill="none" opacity=".85"/>`;}}
   $('#ov').innerHTML=oh_;
   // panel
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
   $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}`;
-  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);
+  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);$('#learn').innerHTML=conceptBlock(cur.learn);$('#opkey').innerHTML=keyHTML(cur.ops&&cur.ops.key);
   $('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
   const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');
   res.querySelectorAll('.katex-display').forEach((e,j)=>e.style.animationDelay=(j*160+80)+'ms');
@@ -438,7 +337,7 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
 function renderAll(){const names={S:['Setup',''],F:['Forward pass',''],B:['Backward pass (chain rule)','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
     h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  $('#p-all').innerHTML=`<div class="row"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  $('#p-all').innerHTML=glossBlock(st_gloss())+`<div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analyticGrads(S.cfg),ng=numGrads(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one parameter up and down by ε, re-run the whole forward pass, and compare with the backprop value.</div>`;
@@ -550,7 +449,8 @@ const k_=()=>S.cfg.filters[0].w.length;
 /* ================= floating explainer + book icon ================= */
 /*PANEL_JS*/
 /* ================= wiring ================= */
-function init(){
+const st_gloss=()=>steps.gloss;
+function init(){initConcepts();
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
   steps=build();makeLayout();renderJump();paint();
   document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();

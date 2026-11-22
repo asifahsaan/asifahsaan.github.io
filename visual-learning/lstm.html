@@ -149,6 +149,24 @@ svg.chart text{font-size:11px;fill:#6b7280;font-family:inherit}
 .panel.floating:hover{background:rgba(255,255,255,.95)}
 @media(max-width:760px){.stagewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.stage{min-width:800px}.stagewrap:after{content:"← swipe the diagram →";display:block;font-size:11px;color:var(--mut);text-align:center;padding:2px}}
 .panel.floating .fnav button{background:rgba(255,255,255,.85)}
+details.concepts{background:#FAF6EA;border:1px solid #EADFB8;border-radius:10px;padding:6px 12px;margin:8px 0}
+details.concepts>summary{cursor:pointer;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b5200;list-style:none}
+details.concepts>summary::-webkit-details-marker{display:none}
+details.concepts>summary:before{content:"▸ ";color:#B58B00}
+details.concepts[open]>summary:before{content:"▾ "}
+details.concepts>summary:after{content:" · tap to hide";font-weight:400;text-transform:none;letter-spacing:0;color:#9a8440}
+details.concepts:not([open])>summary:after{content:" · tap to read"}
+.lcard{border-top:1px solid #EADFB8;margin-top:7px;padding-top:5px}
+.lcard:first-of-type{border-top:0;margin-top:5px}
+.lcard .lh{font-weight:700;font-size:14px;color:#3d3000}
+.lcard p{margin:3px 0;font-size:13.5px;line-height:1.5}
+.opkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 2px;font-size:12.5px}
+.opkey span{display:inline-flex;align-items:center;gap:6px}
+.opkey i{display:inline-block;width:14px;height:14px;border-radius:4px}
+.arrowkey{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0 0;padding:8px 12px;background:var(--card);border-radius:10px;font-size:13px}
+.arrowkey .akh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--mut);width:100%}
+.arrowkey .ak{display:inline-flex;align-items:center;gap:7px}
+.arrowkey .aw{color:#1E5873;font-size:13.5px}
 .panel.floating.drag .fhead{cursor:grabbing}
 .panel.floating.drag{box-shadow:0 26px 60px rgba(20,40,60,.38);transition:none}
 .panel.floating .fbody{flex:1;overflow:auto}
@@ -244,6 +262,7 @@ body{padding-top:10px}
         <span><i style="background:var(--ghost);border-color:#D6D6D0"></i>Not reached yet</span>
         <span><i style="background:var(--errtint);border-color:var(--err)"></i>Red small number = gradient</span>
       </div>
+      <div class="arrowkey" id="arrowkey"></div>
       <div class="mats" id="mats"></div>
     </div>
     <aside class="panel floating" id="panel">
@@ -253,6 +272,8 @@ body{padding-top:10px}
         <div class="k" id="kick"></div>
         <h2 id="title"></h2>
         <div class="path" id="path"></div>
+        <div id="learn"></div>
+        <div id="opkey" class="opkey"></div>
         <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
         <div class="res" id="res"></div>
         <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
@@ -333,6 +354,31 @@ function rt(s){return s.split(/(\$[^$]+\$)/).map(p=>(p.length>1&&p[0]==='$'&&p.e
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 function gauss(rnd){let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 const clone=o=>JSON.parse(JSON.stringify(o));
+/* ---------- concept cards, colour pairing, activation formulas (shared by the labs) ---------- */
+const PC={a:'#D9730D',b:'#7C3AED',bias:'#16A34A',c:'#0E7490',g:'#C0392B',loss:'#B7791F',dim:'#B9BFC6'};
+const ccol=(col,tex)=>R`\textcolor{${col}}{${tex}}`;
+let conceptsOpen=true;
+function makeLearn(){const seen=new Set(),gloss=[];return{L:(id,title,what,why)=>{if(seen.has(id))return[];seen.add(id);const o={title,what,why};gloss.push(o);return[o];},gloss};}
+const cardHTML=l=>`<div class="lcard"><div class="lh">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`;
+function conceptBlock(lr){return lr&&lr.length?`<details class="concepts" ${conceptsOpen?'open':''}><summary>Concept${lr.length>1?'s':''} in this step</summary>${lr.map(cardHTML).join('')}</details>`:'';}
+function glossBlock(gloss,title){return`<details class="concepts" open><summary>${title||'All concepts used in this lab'}</summary><div class="cards">${(gloss||[]).map(cardHTML).join('')}</div></details>`;}
+function keyHTML(key){return(key||[]).map(([c,t])=>`<span><i style="background:${c}"></i>${rt(t)}</span>`).join('');}
+function initConcepts(){const el=$('#learn');if(el)el.addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('concepts'))conceptsOpen=e.target.open;},true);}
+const ACTINFO2={
+  tanh:{t:'Activation function: tanh',w:R`tanh is an S-shaped curve: $\tanh(z)=\dfrac{e^{z}-e^{-z}}{e^{z}+e^{-z}}$. Very negative $z$ gives about $-1$, $z=0$ gives $0$, very positive $z$ gives about $+1$.`,y:`Without a non-linear function, many layers collapse into one big linear map and the network could not learn curved, complex patterns. tanh also keeps every value between −1 and 1 and is centred on 0, which makes learning easier.`},
+  sigmoid:{t:'Activation function: sigmoid',w:R`sigmoid is an S-shaped curve $\sigma(z)=\dfrac{1}{1+e^{-z}}$ that maps every number to a value between 0 and 1.`,y:`It adds the needed non-linearity and gives values that behave like probabilities (or like gates: 0 = closed, 1 = open). Drawback: its slope is at most 0.25, so errors shrink quickly when they travel back through many layers.`},
+  relu:{t:'Activation function: ReLU',w:R`ReLU is $\max(0,z)$: negative values become 0, positive values pass unchanged.`,y:`It adds the needed non-linearity, is very cheap, and its slope is exactly 1 for positive $z$. Drawback: no upper limit, and a unit that is stuck below 0 passes no gradient.`}};
+/* two lines: formula, then the numbers; lhs = left side symbol, sym = the argument symbol */
+function actFormulaLines(act,sv,hv,lhs,sym){
+  if(act==='tanh'){const a=Math.exp(sv),b=Math.exp(-sv);return[R`${lhs}=\tanh(${sym})=\dfrac{e^{${sym}}-e^{-${sym}}}{e^{${sym}}+e^{-${sym}}}`,R`=\dfrac{e^{${N(sv)}}-e^{${N(-sv)}}}{e^{${N(sv)}}+e^{${N(-sv)}}}=\dfrac{${N(a)}-${N(b)}}{${N(a)}+${N(b)}}=\dfrac{${N(a-b)}}{${N(a+b)}}=${hl(hv)}`];}
+  if(act==='sigmoid')return[R`${lhs}=\sigma(${sym})=\dfrac{1}{1+e^{-${sym}}}`,R`=\dfrac{1}{1+e^{${N(-sv)}}}=\dfrac{1}{1+${N(Math.exp(-sv))}}=${hl(hv)}`];
+  return[R`${lhs}=\max(0,${sym})`,R`=\max(0,${N(sv)})=${hl(hv)}`];}
+function curveSVG(kind,col){const w=46,h=26;let body='';
+  if(kind==='softmax'){const hs=[.35,.8,.45];body=hs.map((v,i)=>`<rect x="${6+i*13}" y="${h-3-v*(h-8)}" width="9" height="${v*(h-8)}" fill="${col}" opacity=".8"/>`).join('')+`<line x1="3" y1="${h-3}" x2="${w-3}" y2="${h-3}" stroke="#999" stroke-width="1"/>`;}
+  else{const f={tanh:Math.tanh,sigmoid:z=>1/(1+Math.exp(-z)),relu:z=>Math.max(0,z),identity:z=>z,linear:z=>z,none:z=>z}[kind]||(z=>z);const lo=kind==='tanh'?-1:kind==='sigmoid'?0:kind==='relu'?0:-3,hi=kind==='tanh'?1:kind==='sigmoid'?1:3;
+    const pts=Array.from({length:25},(_,i)=>{const z=-3+6*i/24;return`${(3+(w-6)*i/24).toFixed(1)},${(h-3-(h-6)*(f(z)-lo)/(hi-lo)).toFixed(1)}`;}).join(' ');
+    body=`<line x1="3" y1="${h-3}" x2="${w-3}" y2="${h-3}" stroke="#bbb"/><line x1="${w/2}" y1="2" x2="${w/2}" y2="${h-2}" stroke="#ddd"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2"/>`;}
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="vertical-align:middle;background:#fff;border:1px solid #DEDED8;border-radius:5px">${body}</svg>`;}
 
 const DEFAULTS={"lstm": {"cell": "lstm", "T": 2, "d": 2, "H": 2, "C": 2, "out": "sigmoid", "mode": "last", "p": {"f": {"W": [[-0.59, -0.0], [0.16, -0.75]], "U": [[-0.56, 0.69], [-0.69, -0.59]], "b": [0.77, 0.57]}, "i": {"W": [[-0.21, 0.02], [0.26, -0.36]], "U": [[-0.58, 0.46], [0.27, 0.02]], "b": [0.19, 0.03]}, "g": {"W": [[0.77, -0.47], [0.09, -0.03]], "U": [[-0.23, 0.15], [-0.42, 0.48]], "b": [0.22, -0.22]}, "o": {"W": [[-0.05, -0.36], [-0.67, 0.63]], "U": [[-0.11, -0.56], [0.28, -0.48]], "b": [0.24, -0.17]}}, "Why": [[-0.75, -0.48], [-0.25, -0.05]], "by": [0.16, 0.08], "x": [[-0.32, -0.97], [-0.68, 0.99]], "t": [[1, 0]], "eta": 0.5}, "gru": {"cell": "gru", "T": 2, "d": 2, "H": 2, "C": 2, "out": "sigmoid", "mode": "last", "p": {"z": {"W": [[-0.4, 0.71], [-0.5, -0.51]], "U": [[-0.24, -0.43], [0.27, -0.62]], "b": [0.24, 0.21]}, "r": {"W": [[-0.8, 0.07], [-0.63, -0.39]], "U": [[-0.13, -0.07], [-0.05, 0.68]], "b": [-0.14, -0.19]}, "n": {"W": [[0.27, 0.71], [0.68, 0.61]], "U": [[-0.7, 0.7], [0.24, 0.59]], "b": [-0.06, -0.17]}}, "Why": [[0.47, 0.26], [0.45, -0.48]], "by": [-0.15, 0.11], "x": [[-0.96, 0.89], [-0.73, 0.2]], "t": [[1, 0]], "eta": 0.5}};
 
@@ -396,95 +442,149 @@ const S={cfg:clone(DEFAULTS.lstm),i:0};S.cfg.gran='vector';let steps=[],tab='ste
 /* ================= steps ================= */
 function build(){
   const cfg=S.cfg,{T,d,H,C}=cfg,lstm=cfg.cell==='lstm',GK=GATES[cfg.cell],eta=cfg.eta,outs=outSteps(cfg);
-  const {m,g}=backward(cfg),cfg1=apply(cfg,g,eta),m1=forward(cfg1),st=[],P=o=>st.push(o);
+  const {m,g}=backward(cfg),cfg1=apply(cfg,g,eta),m1=forward(cfg1),st=[],LL=makeLearn(),L_=LL.L,P=o=>st.push(o);
   const K_=(p,t,i)=>`${p}:${t}:${i}`,rk=(p,t,n)=>[...Array(n).keys()].map(i=>K_(p,t,i));
   const gateKeys=(t)=>GK.flatMap(k=>rk(k,t,H));
-  // ---- setup
+  const colorCells=(keys,col)=>Object.fromEntries(keys.map(k=>[k,col]));
+  const matsAll=(names,col)=>Object.fromEntries(names.map(n=>[n,{all:1,col}]));
+  const gateMats=(k,cw,cu,cb)=>({[k]:{W:{all:1,col:cw},U:{all:1,col:cu},b:{all:1,col:cb}}});
+  const tname=i=>`class ${i+1}`;
+  const predInfo=t=>{const y=m.y[t],tg=cfg.t[outs.indexOf(t)],ti=tg.indexOf(Math.max(...tg)),pi=y.indexOf(Math.max(...y));return{pi,ti,py:y[pi],pt:y[ti]};};
+  const interp=t=>{if(cfg.out!=='softmax'||!outs.includes(t))return[];const q=predInfo(t);return[`Prediction: **${tname(q.pi)}** (${(q.py*100).toFixed(1)}%). The target **${tname(q.ti)}** gets ${(q.pt*100).toFixed(1)}%. A random guess would give every class ${(100/C).toFixed(1)}%.`];};
   const npar=paramList(cfg).length;
+  const vanishL=()=>L_('vanish','Vanishing and exploding gradients',R`On the way back through time the error is multiplied again and again by weight matrices and activation slopes. If these factors are mostly below 1 the error shrinks to 0 (vanishing), if above 1 it explodes.`,`A vanishing gradient means early inputs hardly influence learning, so a plain RNN forgets long-range context. Gates give the error a path that is multiplied only by a number close to 1 (the cell-state highway, or the copy path $(1-z)$), which is why LSTM and GRU can remember longer.`);
+  const bpLearn=()=>[...L_('bptt','Backpropagation through time (BPTT)',`Ordinary backpropagation on the **unrolled** network: the error starts at the loss, goes back through the output and then back through every time step, from the last to the first.`,`A weight used at step 1 influences all later steps, so its blame has to be traced through all of them.`),
+    ...L_('delta','Error signal $\\delta$',R`$\delta=\dfrac{\partial L}{\partial(\text{value})}$: how much the loss changes if that value changes a little. Red small numbers in the picture are these $\delta$ values.`,`It tells every number which way and how strongly to change. It is found with the chain rule: the error of a later quantity is multiplied by the local slope on the way back.`)];
+  // ---------- setup
   P({ph:'S',title:lstm?'Setup: the LSTM cell, unrolled in time':'Setup: the GRU cell, unrolled in time',path:'x₁ … x_T → gates → memory → h₁ … h_T → outputs',act:[],gives:[],mats:[],
-    what:lstm?[`An **LSTM** keeps two vectors: the **cell state** $c_t$ (long-term memory, the horizontal highway) and the **hidden state** $h_t$ (what it shows).`,R`Three **gates** $f,i,o$ (values in 0…1) decide what to forget, what to write and what to reveal. A **candidate** $\tilde c$ is the new content.`,R`$c_t=f_t\odot c_{t-1}+i_t\odot\tilde c_t,\quad h_t=o_t\odot\tanh(c_t)$, with $c_0=h_0=\mathbf 0$.`]
-      :[`A **GRU** keeps one state vector $h_t$ and uses two gates: **update** $z$ and **reset** $r$.`,R`A **candidate** $\tilde h$ is the new memory, built from the input and the reset past.`,R`$h_t=(1-z_t)\odot h_{t-1}+z_t\odot\tilde h_t$, with $h_0=\mathbf 0$.`],
-    res:[R`T=${T},\ d=${d},\ H=${H},\ C=${C},\ \#\text{parameters}=${npar}`,R`\text{each gate: }W\in\mathbb R^{${H}\times${d}},\ U\in\mathbb R^{${H}\times${H}},\ b\in\mathbb R^{${H}}\ (${GK.length}\text{ gates})`],
+    learn:[...L_('seq','Sequence, time step and hidden state',`A sequence is read one item at a time. At every **time step** the network updates a **hidden state** $h_t$, a vector that summarises everything seen so far (it starts as zeros).`,`Order and past matter in a sequence, so the network needs this memory.`),
+      ...(lstm?[...L_('lstm','LSTM (long short-term memory)',`A recurrent cell with two vectors: the **cell state** $c_t$ (long-term memory, the horizontal highway) and the **hidden state** $h_t$. Three **gates** ($f,i,o$, values 0…1) decide what to forget, what to write and what to show. A **candidate** $\\tilde c$ is the new content.`,`A plain RNN rewrites its whole memory at every step and forgets quickly. The LSTM changes its memory only a little at a time, so information (and error signals) can travel far.`),...L_('gate','Gate',`A vector of numbers between 0 and 1 computed with a sigmoid. It is multiplied element by element with another vector: 0 blocks, 1 lets everything through, 0.5 lets half through.`,`It is a learned on/off valve that decides, for every memory slot, how much to keep, write or reveal.`)]
+        :[...L_('gru','GRU (gated recurrent unit)',`A simpler gated cell with one state vector $h_t$ and two gates: **update** $z$ and **reset** $r$. A **candidate** $\\tilde h$ is the new memory built from the input and the (reset) past.`,`It gives much of the LSTM's ability to remember with fewer parameters.`),...L_('gate','Gate',`A vector of numbers between 0 and 1 computed with a sigmoid. It is multiplied element by element with another vector: 0 blocks, 1 lets everything through.`,`It is a learned on/off valve that decides, for every memory slot, how much to keep or replace.`)]),
+      ...L_('shared','Shared weights',`The same weight matrices are used at every time step.`,`Fewer parameters, and what is learned at one position is used at all positions.`),
+      ...L_('notation','Different names for the same thing',R`Many books write the gate weights as $W,U,b$ per gate, the cell state as $C_t$ and the candidate as $g_t$ or $\tilde c_t$. Some call the update gate $1-z$. Only the names (or the direction of $z$) differ.`,`Pick one set of names and keep it. In this lab the GRU uses $h_t=(1-z_t)h_{t-1}+z_t\\tilde h_t$.`)],
+    what:lstm?[`An **LSTM** keeps two vectors: the **cell state** $c_t$ (long-term memory, the horizontal highway) and the **hidden state** $h_t$ (what it shows).`,R`Three **gates** $f,i,o$ (values in 0…1) decide what to forget, what to write and what to reveal. A **candidate** $\tilde c$ is the new content.`,R`$c_t=f_t\odot c_{t-1}+i_t\odot\tilde c_t,\quad h_t=o_t\odot\tanh(c_t)$, with $c_0=h_0=\mathbf 0$.`,`Numbers are computed without rounding and shown with 4 decimals.`]
+      :[`A **GRU** keeps one state vector $h_t$ and uses two gates: **update** $z$ and **reset** $r$.`,R`A **candidate** $\tilde h$ is the new memory, built from the input and the reset past.`,R`$h_t=(1-z_t)\odot h_{t-1}+z_t\odot\tilde h_t$, with $h_0=\mathbf 0$.`,`Numbers are computed without rounding and shown with 4 decimals.`],
+    res:[R`T=${T},\ d=${d},\ H=${H},\ C=${C},\ \#\text{parameters}=${npar}`,R`\text{each gate: }W\in\mathbb R^{${H}\times${d}},\ U\in\mathbb R^{${H}\times${H}},\ b\in\mathbb R^{${H}}\ (${GK.length}\text{ gates}),\quad W_{hy}\in\mathbb R^{${C}\times${H}}`,R`\text{one gate: }Wx_t:\ (${H}\times${d})(${d}\times1)=(${H}\times1),\quad Uh_{t-1}:\ (${H}\times${H})(${H}\times1)=(${H}\times1)`],
     say:lstm?`Compared with a plain RNN, the LSTM adds the cell state highway. Gradients can flow along it with only a multiplication by the forget gate, which fights vanishing gradients.`:`The GRU merges the cell and hidden state and uses fewer gates, so it has fewer parameters than the LSTM.`});
-  const gateStep=(k,t)=>{const tt=t+1,x=cfg.x[t],hp=m.h[t],gg=m.G[t],Pk=cfg.p[k],hin=(!lstm&&k==='n')?hp.map((v,q)=>gg.r[q]*v):hp;
-    const lines=Pk.W.map((_,j)=>{const terms=[...Pk.W[j].map((w,i)=>`${Q(w)}${Q(x[i])}`),...Pk.U[j].map((w,q)=>`${Q(w)}${Q(hin[q])}`)];
+  // ---------- forward
+  const gateStep=(k,t)=>{const tt=t+1,x=cfg.x[t],hp=m.h[t],gg=m.G[t],Pk=cfg.p[k],hin=(!lstm&&k==='n')?hp.map((v,q)=>gg.r[q]*v):hp,isTanh=(k==='g'||k==='n');
+    const lines=Pk.W.map((_,j)=>{const tx=Pk.W[j].map((w,i)=>ccol(PC.a,`${Q(w)}${Q(x[i])}`)),th_=Pk.U[j].map((w,q)=>ccol(PC.b,`${Q(w)}${Q(hin[q])}`));
       const pre=Pk.W[j].reduce((s,w,i)=>s+w*x[i],0)+Pk.U[j].reduce((s,w,q)=>s+w*hin[q],0)+Pk.b[j];
-      return R`${GT[k]}_{${tt},${j+1}}=${gact(k)}\!\left(${alignLines(terms,3)}+${Q(Pk.b[j])}\right)=${gact(k)}(${N(pre)})=${hl(gg[k][j])}`;});
+      return R`${GT[k]}_{${tt},${j+1}}=${gact(k)}\!\left(${alignLines([...tx,...th_],3)}+${ccol(PC.bias,Q(Pk.b[j]))}\right)=${gact(k)}(${N(pre)})=${hl(gg[k][j])}`;});
+    const pre0=Pk.W[0].reduce((s,w,i)=>s+w*x[i],0)+Pk.U[0].reduce((s,w,q)=>s+w*hin[q],0)+Pk.b[0];
+    const detail=actFormulaLines(isTanh?'tanh':'sigmoid',pre0,gg[k][0],`${GT[k]}_{${tt},1}`,'p');
     const resetLine=(!lstm&&k==='n')?[R`r_${tt}\odot h_${tt-1}=${bmc(gg.r)}\odot${bmc(hp)}=${bmc(hin)}`]:[];
-    P({ph:'F',title:`Forward t=${tt}: ${GN[k]} $${GT[k]}_${tt}$`,path:`x${tt}, h${tt-1}, W${WS[k]}, U${WS[k]}, b${WS[k]} → ${k==='g'?'c̃':k==='n'?'h̃':k}${tt}`,act:[...rk('x',tt,d),...rk('h',t,H),...(k==='n'?rk('r',tt,H):[]),...rk(k,tt,H),`a:xg:${tt}`,`a:hg:${tt}`],gives:rk(k,tt,H),mats:[k],
-      what:[R`$${GT[k]}_${tt}=${gact(k)}(W_${WS[k]}x_${tt}+U_${WS[k]}${(!lstm&&k==='n')?R`(r_${tt}\odot h_${tt-1})`:`h_${tt-1}`}+b_${WS[k]})$`,`The ${GN[k]} ${GM[k]}`,t===0?R`At $t=1$ the previous state is $\mathbf 0$, so only the input contributes.`:`It looks at both the new input and the previous hidden state.`],
-      res:[...resetLine,...lines],say:k==='f'||k==='z'?`Look at the values: near 1 keeps (or updates) a lot, near 0 almost nothing.`:`Each unit has its own weights, so units can learn different jobs.`});};
-  const outStep=(t)=>{const tt=t+1,tg=cfg.t[outs.indexOf(t)];
-    P({ph:'F',title:`Forward t=${tt}: output $u_${tt}$ and prediction $y_${tt}$`,path:`h${tt}, W_hy, b_y → u${tt} → y${tt}`,act:[...rk('h',tt,H),...rk('u',tt,C),...rk('y',tt,C),`a:hu:${tt}`,`a:uy:${tt}`],gives:[...rk('u',tt,C),...rk('y',tt,C)],mats:['Why'],
+    const learn=[...L_('wuB','Weights $W$, $U$ and bias $b$ of a gate',R`Each gate has its own $W$ (applied to the input $x_t$), $U$ (applied to the previous hidden state $h_{t-1}$) and bias $b$. Row $j$ belongs to hidden unit $j$.`,`They are the learned numbers. Different gates learn different jobs from the same inputs.`),
+      ...L_(isTanh?'act-tanh':'act-sig',ACTINFO2[isTanh?'tanh':'sigmoid'].t,ACTINFO2[isTanh?'tanh':'sigmoid'].w,ACTINFO2[isTanh?'tanh':'sigmoid'].y),
+      ...L_('g-'+k,`The ${GN[k]}`,`The ${GN[k]} ${GM[k]}`,k==='f'?`Without it the memory could only grow. With it the network can drop information that is no longer useful.`:k==='i'?`It protects the memory from being overwritten by every new input.`:k==='g'||k==='n'?`Gates only decide how much; something has to supply the actual new content.`:k==='o'?`The cell state may hold things the next layer should not see yet.`:k==='z'?`One number per unit does both jobs: keep the old state and take the new one.`:`It lets the cell ignore the past when proposing something new.`)];
+    P({ph:'F',title:`Forward t=${tt}: ${GN[k]} $${GT[k]}_${tt}$`,path:`x${tt}, h${tt-1}, W${WS[k]}, U${WS[k]}, b${WS[k]} → ${k==='g'?'c̃':k==='n'?'h̃':k}${tt}`,act:[...rk(k,tt,H),`a:xg:${tt}`,`a:hg:${tt}`],gives:rk(k,tt,H),mats:[k],learn,
+      ops:{cells:{...colorCells(rk('x',tt,d),PC.a),...colorCells(rk('h',t,H),PC.b),...(k==='n'?colorCells(rk('r',tt,H),PC.c):{})},mats:gateMats(k,PC.a,PC.b,PC.bias),arrows:{[`a:xg:${tt}`]:PC.a,[`a:hg:${tt}`]:PC.b},
+        key:[[PC.a,`input $x_${tt}$ with $W_${WS[k]}$`],[PC.b,`${(!lstm&&k==='n')?`reset part $r\\odot h_${tt-1}$`:`previous state $h_${tt-1}$`} with $U_${WS[k]}$`],[PC.bias,`bias $b_${WS[k]}$`]]},
+      what:[R`$${GT[k]}_${tt}=${gact(k)}(W_${WS[k]}x_${tt}+U_${WS[k]}${(!lstm&&k==='n')?R`(r_${tt}\odot h_${tt-1})`:`h_${tt-1}`}+b_${WS[k]})$`,`The ${GN[k]} ${GM[k]}`,t===0?R`At $t=1$ the previous state is $\mathbf 0$, so only the input contributes.`:`It looks at both the new input (orange) and the previous hidden state (purple).`],
+      res:[...resetLine,...lines,R`\text{Activation in detail (unit 1, }p\text{ = the sum inside):}`,...detail],say:k==='f'||k==='z'?`Look at the values: near 1 keeps (or updates) a lot, near 0 almost nothing.`:`Each unit has its own weights, so units can learn different jobs.`});};
+  const outStep=(t)=>{const tt=t+1,tg=cfg.t[outs.indexOf(t)],ti=tg.indexOf(Math.max(...tg)),y=m.y[t],hnk=rk('h',tt,H);
+    const roLearn=[...L_('readout','Read-out layer $W_{hy}$',`An ordinary output layer on top of the hidden state: $u=W_{hy}h+b_y$.`,`The hidden state is an internal summary. We need the answer in the form of the task (a class, a probability, a number).`),
+      ...(cfg.out==='sigmoid'?L_('sigout','Sigmoid output',R`$y=\sigma(u)$ squashes each output to a number between 0 and 1.`,`Targets of 0 or 1 live in exactly this range.`):cfg.out==='linear'?L_('linout','Linear output',`The output is just $u$: no squashing.`,`Used when we predict a quantity (price, temperature) rather than a probability.`):L_('softmax','Softmax',R`Turns scores $u_k$ into probabilities $y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$ that are positive and add up to 1.`,`When exactly one class is correct, the classes compete: raising one probability lowers the others.`))];
+    P({ph:'F',title:`Forward t=${tt}: output $u_${tt}$ and prediction $y_${tt}$`,path:`h${tt}, W_hy, b_y → u${tt} → y${tt}`,act:[...rk('u',tt,C),...rk('y',tt,C),`a:hu:${tt}`,`a:uy:${tt}`],gives:[...rk('u',tt,C),...rk('y',tt,C)],mats:['Why'],learn:roLearn,
+      ops:{cells:colorCells(hnk,PC.c),mats:{Why:{all:1,col:PC.c}},arrows:{[`a:hu:${tt}`]:PC.c},key:[[PC.c,`hidden state $h_${tt}$ with $W_{hy}$`],[PC.bias,`bias $b_y$`]]},
       what:[R`$u_${tt}=W_{hy}h_${tt}+b_y$, then ${cfg.out==='sigmoid'?R`$y_${tt}=\sigma(u_${tt})$`:cfg.out==='linear'?R`$y_${tt}=u_${tt}$ (linear)`:R`$y_${tt}=\mathrm{softmax}(u_${tt})$`}.`],
-      res:[R`u_${tt}=${bmM(cfg.Why)}${bmc(m.h[t+1])}+${bmc(cfg.by)}=${bmc(m.u[t])}`,R`y_${tt}=${bmc(m.y[t])},\quad t_${tt}=${bmc(tg)}`],say:`An ordinary read-out layer on the hidden state.`});
-    P({ph:'F',title:outs.length>1?`Forward: loss $L_${tt}$ at step ${tt}`:'Forward: loss $L$',path:`y${tt}, t → L${outs.length>1?tt:''}`,act:[...rk('y',tt,C),`l:${tt}`,`a:yl:${tt}`],gives:[`l:${tt}`,...(outs.length===1?['L']:[])],mats:[],
-      what:cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`],
-      res:[cfg.out==='softmax'?R`L_${tt}=-\left[${m.y[t].map((v,q)=>`${N(tg[q])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.lt[t])}`:R`L_${tt}=\tfrac12\left[${m.y[t].map((v,q)=>`(${N(v)}-${N(tg[q])})^2`).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});};
+      res:[R`u_${tt}=${ccol(PC.c,bmM(cfg.Why)+bmc(m.h[t+1]))}+${ccol(PC.bias,bmc(cfg.by))}=${bmc(m.u[t])}`,R`y_${tt}=${bmc(m.y[t])},\quad t_${tt}=${bmc(tg)}`],say:`An ordinary read-out layer on the hidden state.`});
+    const lossLearn=cfg.out==='softmax'?L_('ce','Cross-entropy loss',R`$L=-\sum_k t_k\ln y_k$. With a one-hot target only the true class counts: the loss is $-\ln$ of the probability given to it.`,`Small when the true class gets a high probability, very large when it gets a low one. With softmax it gives the simple error $y-t$.`):L_('mse','Squared-error loss',R`$L=\tfrac12\sum_k (y_k-t_k)^2$: the squared gap between each prediction $y$ and its target $t$.`,`Training needs one number that says how wrong the network is. Squaring makes errors positive and punishes big mistakes more.`);
+    const soft=cfg.out==='softmax';
+    P({ph:'F',title:outs.length>1?`Forward: loss $L_${tt}$ at step ${tt}`:'Forward: loss $L$',path:`y${tt}, t → L${outs.length>1?tt:''}`,act:[...rk('y',tt,C),`l:${tt}`,`a:yl:${tt}`],gives:[`l:${tt}`,...(outs.length===1?['L']:[])],mats:[],learn:lossLearn,
+      ops:{cells:{...Object.fromEntries(rk('y',tt,C).map((kk,c)=>[kk,soft?(tg[c]===1?PC.loss:PC.dim):PC.loss])),[`l:${tt}`]:PC.loss},arrows:{[`a:yl:${tt}`]:PC.loss},key:soft?[[PC.loss,'probability of the **target** class (t = 1): the only one that counts'],[PC.dim,'other classes (t = 0): multiplied by 0, they drop out']]:[[PC.loss,'each prediction y is compared with its target t']]},
+      what:[...(soft?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$ (note the minus sign: $\ln$ of a probability is negative, so the loss is positive)`,`The target class is outlined in amber, the others in grey: only the amber one is used.`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`,`Every output $y$ (amber) is compared with its own target $t$.`]),...interp(t)],
+      res:soft?[R`L_${tt}=-\sum_k t_k\ln y_{${tt},k}`,R`=-\left[${y.map((v,c)=>ccol(tg[c]===1?PC.loss:'#9aa0a6',tg[c]===1?R`\mathbf{${N(tg[c])}\cdot\ln(${N(v)})}`:R`${N(tg[c])}\cdot\ln(${N(v)})`)).join('+')}\right]`,R`\text{only the target term is left, the others are multiplied by }0:\quad L_${tt}=-\ln(${N(y[ti])})=${hl(m.lt[t])}`]
+        :[R`L_${tt}=\tfrac12\left[${y.map((v,c)=>ccol(PC.loss,`(${N(v)}-${N(tg[c])})^2`)).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});};
   for(let t=0;t<T;t++){const tt=t+1,x=cfg.x[t],hp=m.h[t],gg=m.G[t];
     if(lstm){
       for(const k of ['f','i','g','o'])gateStep(k,t);
       const cp=m.c[t],ct=m.c[t+1];
-      P({ph:'F',title:`Forward t=${tt}: cell state $c_${tt}$ (the memory highway)`,path:`f, c${t}, i, c̃ → c${tt}`,act:[...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H),...rk('c',t,H),...rk('c',tt,H),`a:gc:${tt}`,`a:cc:${tt}`],gives:rk('c',tt,H),mats:[],
-        what:[R`$c_${tt}=f_${tt}\odot c_${t}+i_${tt}\odot\tilde c_${tt}$`,`**Forget** part of the old memory, **add** part of the new candidate.`,t===0?R`At $t=1$ the old cell state is $\mathbf 0$, so only the written part remains.`:`The old memory $c_${t}$ travels along the highway, scaled by $f$.`],
-        res:ct.map((v,j)=>R`c_{${tt},${j+1}}=f\,c_{${t},${j+1}}+i\,\tilde c=${Q(gg.f[j])}${Q(cp[j])}+${Q(gg.i[j])}${Q(gg.g[j])}=${hl(v)}`),say:`This addition (not a multiplication by a weight matrix) is why gradients survive over many steps.`});
-      P({ph:'F',title:`Forward t=${tt}: hidden state $h_${tt}$`,path:`o, tanh(c${tt}) → h${tt}`,act:[...rk('o',tt,H),...rk('c',tt,H),...rk('h',tt,H),`a:ch:${tt}`],gives:rk('h',tt,H),mats:[],
-        what:[R`$h_${tt}=o_${tt}\odot\tanh(c_${tt})$`,`The output gate decides how much of the memory is revealed.`],
-        res:m.h[t+1].map((v,j)=>R`h_{${tt},${j+1}}=o\tanh(c)=${Q(gg.o[j])}\tanh${Q(m.c[t+1][j])}=${Q(gg.o[j])}(${N(Math.tanh(m.c[t+1][j]))})=${hl(v)}`),say:`h goes to the next time step and to the read-out layer.`});
+      P({ph:'F',title:`Forward t=${tt}: cell state $c_${tt}$ (the memory highway)`,path:`f, c${t}, i, c̃ → c${tt}`,act:[`a:gc:${tt}`,`a:cc:${tt}`],gives:rk('c',tt,H),mats:[],
+        learn:L_('cellstate','Cell state $c_t$',`The long-term memory vector. It runs along the top of the cell and is changed only by a **forget** (multiply) and a **write** (add).`,`Because it is updated by a small multiply and an add, not by a full matrix and squashing, information can stay in it for many steps.`),
+        ops:{cells:{...colorCells([...rk('f',tt,H),...rk('c',t,H)],PC.a),...colorCells([...rk('i',tt,H),...rk('g',tt,H)],PC.c)},arrows:{[`a:cc:${tt}`]:PC.a,[`a:gc:${tt}`]:PC.c},key:[[PC.a,'forget part: $f_t\\odot c_{t-1}$ (how much old memory stays)'],[PC.c,'write part: $i_t\\odot\\tilde c_t$ (how much new content is added)']]},
+        what:[R`$c_${tt}=f_${tt}\odot c_${t}+i_${tt}\odot\tilde c_${tt}$`,`**Forget** part of the old memory (orange), **add** part of the new candidate (teal).`,t===0?R`At $t=1$ the old cell state is $\mathbf 0$, so only the written part remains.`:`The old memory $c_${t}$ travels along the highway, scaled by $f$.`],
+        res:ct.map((v,j)=>R`c_{${tt},${j+1}}=${ccol(PC.a,R`f\,c_{${t},${j+1}}`)}+${ccol(PC.c,R`i\,\tilde c`)}=${ccol(PC.a,`${Q(gg.f[j])}${Q(cp[j])}`)}+${ccol(PC.c,`${Q(gg.i[j])}${Q(gg.g[j])}`)}=${hl(v)}`),say:`This addition (not a multiplication by a weight matrix) is why gradients survive over many steps.`});
+      P({ph:'F',title:`Forward t=${tt}: hidden state $h_${tt}$`,path:`o, tanh(c${tt}) → h${tt}`,act:[`a:ch:${tt}`],gives:rk('h',tt,H),mats:[],
+        ops:{cells:{...colorCells(rk('o',tt,H),PC.a),...colorCells(rk('c',tt,H),PC.c)},arrows:{[`a:ch:${tt}`]:PC.c},key:[[PC.a,'output gate $o_t$ (how much to reveal)'],[PC.c,'cell state $c_t$ (squashed with tanh first)']]},
+        what:[R`$h_${tt}=o_${tt}\odot\tanh(c_${tt})$`,`The output gate (orange) decides how much of the squashed memory (teal) is revealed.`],
+        res:m.h[t+1].map((v,j)=>R`h_{${tt},${j+1}}=${ccol(PC.a,R`o`)}\tanh(${ccol(PC.c,'c')})=${ccol(PC.a,Q(gg.o[j]))}\tanh${ccol(PC.c,Q(m.c[t+1][j]))}=${ccol(PC.a,Q(gg.o[j]))}(${N(Math.tanh(m.c[t+1][j]))})=${hl(v)}`),say:`h goes to the next time step and to the read-out layer.`});
     }else{
       gateStep('z',t);gateStep('r',t);gateStep('n',t);
-      P({ph:'F',title:`Forward t=${tt}: new hidden state $h_${tt}$`,path:`z, h${t}, h̃ → h${tt}`,act:[...rk('z',tt,H),...rk('n',tt,H),...rk('h',t,H),...rk('h',tt,H),`a:gh:${tt}`,`a:hh:${tt}`],gives:rk('h',tt,H),mats:[],
-        what:[R`$h_${tt}=(1-z_${tt})\odot h_${t}+z_${tt}\odot\tilde h_${tt}$`,`An **interpolation**: $z$ near 0 copies the old state, $z$ near 1 takes the new candidate.`],
-        res:m.h[t+1].map((v,j)=>R`h_{${tt},${j+1}}=(1-z)\,h_{${t},${j+1}}+z\,\tilde h=(1-${N(gg.z[j])})${Q(hp[j])}+${Q(gg.z[j])}${Q(gg.n[j])}=${hl(v)}`),say:`The copy path (1−z)·h is the GRU's highway for memory and gradients.`});}
+      P({ph:'F',title:`Forward t=${tt}: new hidden state $h_${tt}$`,path:`z, h${t}, h̃ → h${tt}`,act:[`a:gh:${tt}`,`a:hh:${tt}`],gives:rk('h',tt,H),mats:[],
+        learn:L_('interp','Interpolation with the update gate',`$h_t=(1-z)\\odot h_{t-1}+z\\odot\\tilde h$ mixes the old state and the candidate. Where $z$ is near 0 the old value is copied, where $z$ is near 1 it is replaced.`,`A learned, per-unit choice between keeping memory and taking new content. The copy path is also a short road for the gradient.`),
+        ops:{cells:{...colorCells(rk('z',tt,H),PC.g),...colorCells(rk('h',t,H),PC.a),...colorCells(rk('n',tt,H),PC.c)},arrows:{[`a:hh:${tt}`]:PC.a,[`a:gh:${tt}`]:PC.c},key:[[PC.a,'copy part: $(1-z)\\,h_{t-1}$'],[PC.c,'new part: $z\\,\\tilde h_t$'],[PC.g,'update gate $z$ (chooses between them)']]},
+        what:[R`$h_${tt}=(1-z_${tt})\odot h_${t}+z_${tt}\odot\tilde h_${tt}$`,`An **interpolation**: $z$ near 0 copies the old state (orange), $z$ near 1 takes the new candidate (teal).`],
+        res:m.h[t+1].map((v,j)=>R`h_{${tt},${j+1}}=${ccol(PC.a,R`(1-z)\,h_{${t},${j+1}}`)}+${ccol(PC.c,R`z\,\tilde h`)}=${ccol(PC.a,`(1-${N(gg.z[j])})${Q(hp[j])}`)}+${ccol(PC.c,`${Q(gg.z[j])}${Q(gg.n[j])}`)}=${hl(v)}`),say:`The copy path (1−z)·h is the GRU's highway for memory and gradients.`});}
     if(outs.includes(t))outStep(t);
   }
   if(outs.length>1)P({ph:'F',title:'Forward: total loss $L$ (sum over time)',path:'L₁ + … + L_T → L',act:[...outs.map(t=>`l:${t+1}`),'L'],gives:['L'],mats:[],what:[R`$L=\sum_t L_t$`],res:[R`L=${outs.map(t=>N(m.lt[t])).join('+')}=${hl(m.L)}`],say:`Forward pass finished. Backpropagation through time starts here.`});
   else st[st.length-1].say='Forward pass finished. Backpropagation through time starts here.';
-  // ---- backward
+  // ---------- backward
   for(let t=T-1;t>=0;t--){const tt=t+1,s=g.steps[t],gg=m.G[t],hp=m.h[t],x=cfg.x[t],fromOut=outs.includes(t),fromNext=t<T-1;
-    if(fromOut){const tg=cfg.t[outs.indexOf(t)];
-      P({ph:'B',title:`Backward t=${tt}: error at the output`,path:`L → y${tt} → u${tt}`,act:[...rk('y',tt,C),...rk('u',tt,C),`l:${tt}`,`a:yl:${tt}`,`a:uy:${tt}`],grads:[...rk('u',tt,C),...(cfg.out==='softmax'?[]:rk('y',tt,C))],mats:[],
+    if(fromOut){
+      P({ph:'B',title:`Backward t=${tt}: error at the output`,path:`L → y${tt} → u${tt}`,act:[...rk('y',tt,C),...rk('u',tt,C),`l:${tt}`,`a:yl:${tt}`,`a:uy:${tt}`],grads:[...rk('u',tt,C),...(cfg.out==='softmax'?[]:rk('y',tt,C))],mats:[],learn:bpLearn(),
         what:cfg.out==='sigmoid'?[R`$\delta^y=y-t$, then $\delta^u=\delta^y\odot y\odot(1-y)$`]:[R`$\delta^u=y-t$`],res:[cfg.out==='sigmoid'?R`\delta^y_${tt}=${bmc(s.dy)},\quad\delta^u_${tt}=${bmc(s.du)}`:R`\delta^u_${tt}=${bmc(s.du)}`],say:`Prediction minus target, as in every other lab.`});
-      P({ph:'B',title:`Gradient t=${tt}: contribution to $W_{hy}$ and $b_y$`,path:`δu${tt}, h${tt} → dW_hy, db_y`,act:[...rk('u',tt,C),...rk('h',tt,H),`a:hu:${tt}`],mats:['Why'],
-        what:[R`$\mathrm{d}W_{hy}\mathrel{+}=\delta^u_${tt}\,h_${tt}^{\top}$, $\mathrm{d}b_y\mathrel{+}=\delta^u_${tt}$`],res:[R`\mathrm{d}W_{hy}\mathrel{+}=${bmM(outer(s.du,m.h[t+1]))},\quad\mathrm{d}b_y\mathrel{+}=${bmc(s.du)}`],say:`The read-out weights are shared across output steps too.`});}
-    P({ph:'B',title:`Backward t=${tt}: error arriving at $h_${tt}$`,path:`${fromOut?'output':''}${fromOut&&fromNext?' + ':''}${fromNext?'next step':''} → δh${tt}`,act:[...rk('h',tt,H),...(fromOut?[...rk('u',tt,C),`a:hu:${tt}`]:[]),...(fromNext?[...gateKeys(tt+1),`a:hg:${tt+1}`]:[])],grads:rk('h',tt,H),mats:[...(fromOut?['Why']:[]),...(fromNext?GK:[])],
-      what:[`$\\delta^h_${tt}$ collects error from ${fromOut&&fromNext?'**two** places: the read-out at this step and the gates of the next step':fromOut?'the read-out (this is the last step)':'the gates of the next step (no output here)'}.`],
-      res:[R`\delta^h_${tt}=${[...(fromOut?[R`W_{hy}^{\top}\delta^u=${bmc(s.dhOut)}`]:[]),...(fromNext?[R`\text{(from step ${tt+1})}=${bmc(s.dhRec)}`]:[])].join('+')}=${bmc(s.dh)}`],say:fromNext?`The part from the next step is the error travelling back through time.`:`Only the output error reaches the last step.`});
+      P({ph:'B',title:`Gradient t=${tt}: contribution to $W_{hy}$ and $b_y$`,path:`δu${tt}, h${tt} → dW_hy, db_y`,act:[`a:hu:${tt}`],mats:['Why'],
+        ops:{cells:{...colorCells(rk('u',tt,C),PC.g),...colorCells(rk('h',tt,H),PC.c)},mats:{Why:{all:1,col:PC.g}},arrows:{[`a:hu:${tt}`]:PC.g},key:[[PC.g,'matrices that **receive** a gradient'],[PC.c,`hidden state $h_${tt}$ (the input of this weight)`]]},
+        what:[R`$\mathrm{d}W_{hy}\mathrel{+}=\delta^u_${tt}\,h_${tt}^{\top}$, $\mathrm{d}b_y\mathrel{+}=\delta^u_${tt}$`,`Each weight's gradient = (error at the unit it feeds) × (value that went into it).`],res:[R`\mathrm{d}W_{hy}\mathrel{+}=${bmM(outer(s.du,m.h[t+1]))},\quad\mathrm{d}b_y\mathrel{+}=${bmc(s.du)}`],say:`The read-out weights are shared across output steps too.`});}
+    P({ph:'B',title:`Backward t=${tt}: error arriving at $h_${tt}$`,path:`${fromOut?'output':''}${fromOut&&fromNext?' + ':''}${fromNext?'next step':''} → δh${tt}`,act:[...(fromOut?[`a:hu:${tt}`]:[]),...(fromNext?[`a:hg:${tt+1}`]:[])],grads:rk('h',tt,H),mats:[...(fromOut?['Why']:[]),...(fromNext?GK:[])],
+      learn:[...L_('dhtime','Error through time',`A hidden state affects the loss twice: through the output at its own step and through the gates of the next step. Its error has **two parts** that add up.`,`The part from the next step is the error travelling backwards through time.`),...(fromNext?vanishL():[])],
+      ops:{cells:{...(fromOut?colorCells(rk('u',tt,C),PC.c):{}),...(fromNext?colorCells(gateKeys(tt+1),PC.b):{})},mats:{...(fromOut?{Why:{all:1,col:PC.c}}:{}),...(fromNext?Object.assign({},...GK.map(k=>gateMats(k,PC.dim,PC.b,PC.dim))):{})},arrows:{...(fromOut?{[`a:hu:${tt}`]:PC.c}:{}),...(fromNext?{[`a:hg:${tt+1}`]:PC.b}:{})},key:[...(fromOut?[[PC.c,'error from the output through $W_{hy}$']]:[]),...(fromNext?[[PC.b,`error from the gates of step ${tt+1} through the matrices $U$`]]:[])]},
+      what:[`$\\delta^h_${tt}$ collects error from ${fromOut&&fromNext?'**two** places: the read-out at this step (teal) and the gates of the next step (purple)':fromOut?'the read-out (this is the last step)':'the gates of the next step (no output here)'}.`],
+      res:[R`\delta^h_${tt}=${[...(fromOut?[ccol(PC.c,R`W_{hy}^{\top}\delta^u=${bmc(s.dhOut)}`)]:[]),...(fromNext?[ccol(PC.b,R`\text{(from step ${tt+1})}=${bmc(s.dhRec)}`)]:[])].join('+')}=${bmc(s.dh)}`],say:fromNext?`The part from the next step is the error travelling back through time.`:`Only the output error reaches the last step.`});
     if(lstm){
       const th=m.c[t+1].map(Math.tanh);
-      P({ph:'B',title:`Backward t=${tt}: output gate $o_${tt}$`,path:`δh${tt}, tanh(c${tt}) → δo${tt} → δ(pre-activation)`,act:[...rk('h',tt,H),...rk('o',tt,H),`a:ch:${tt}`],grads:rk('o',tt,H),mats:['o'],
-        what:[R`$\delta o=\delta h\odot\tanh(c)$, then through the sigmoid: $\delta p_o=\delta o\odot o\odot(1-o)$`],res:[R`\delta o_${tt}=${bmc(s.dh)}\odot${bmc(th)}=${bmc(s.dpost.o)}`,R`\delta p_o=\delta o\odot o(1-o)=${bmc(s.dp.o)}`],say:`"p" denotes the pre-activation, the value before the sigmoid.`});
-      P({ph:'B',title:`Backward t=${tt}: error at the cell state $c_${tt}$`,path:`δh${tt}, o, tanh′(c) + error from c${tt+1} → δc${tt}`,act:[...rk('c',tt,H),...rk('h',tt,H),`a:ch:${tt}`,...(fromNext?[`a:cc:${tt+1}`]:[])],grads:rk('c',tt,H),mats:[],
-        what:[R`$\delta c_${tt}=\underbrace{\delta c_${tt+1}\odot f_${tt+1}}_{\text{along the highway}}+\underbrace{\delta h_${tt}\odot o_${tt}\odot(1-\tanh^2c_${tt})}_{\text{through }h_${tt}}$`,fromNext?`The first term travels backward along the cell-state highway, scaled only by the forget gate $f$.`:`There is no later step, so only the second term exists.`],
-        res:[R`\delta c_${tt}=${bmc(s.dcIn)}+${bmc(s.dh)}\odot${bmc(gg.o)}\odot${bmc(th.map(v=>1-v*v))}=${bmc(s.dc)}`],say:`This path has no weight matrix and no squashing, so the error survives many steps when f is close to 1.`});
-      P({ph:'B',title:`Backward t=${tt}: forget, input gates and candidate`,path:`δc${tt}, c${t}, g, i → δf, δi, δc̃`,act:[...rk('c',tt,H),...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H),`a:gc:${tt}`],grads:[...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H)],mats:['f','i','g'],
+      P({ph:'B',title:`Backward t=${tt}: output gate $o_${tt}$`,path:`δh${tt}, tanh(c${tt}) → δo${tt} → δ(pre-activation)`,act:[`a:ch:${tt}`],grads:rk('o',tt,H),mats:['o'],
+        learn:L_('slope','Activation slope $f\'(\\cdot)$',R`How steep the activation curve is at the current value: sigmoid $\sigma'=a(1-a)$, tanh $\tanh'=1-a^2$.`,`The error has to pass through the activation on the way back, so it is multiplied by this slope. Where the curve is flat the error is cut down.`),
+        ops:{cells:{...colorCells(rk('h',tt,H),PC.a),...colorCells(rk('c',tt,H),PC.c)},arrows:{[`a:ch:${tt}`]:PC.g},key:[[PC.a,'$\\delta h$ (error at the hidden state)'],[PC.c,'$\\tanh(c_t)$ (what $h$ was multiplied by)']]},
+        what:[R`$\delta o=\delta h\odot\tanh(c)$, then through the sigmoid: $\delta p_o=\delta o\odot o\odot(1-o)$`],res:[R`\delta o_${tt}=${ccol(PC.a,bmc(s.dh))}\odot${ccol(PC.c,bmc(th))}=${bmc(s.dpost.o)}`,R`\delta p_o=\delta o\odot o(1-o)=${bmc(s.dp.o)}`],say:`"p" denotes the pre-activation, the value before the sigmoid.`});
+      P({ph:'B',title:`Backward t=${tt}: error at the cell state $c_${tt}$`,path:`δh${tt}, o, tanh′(c) + error from c${tt+1} → δc${tt}`,act:[`a:ch:${tt}`,...(fromNext?[`a:cc:${tt+1}`]:[])],grads:rk('c',tt,H),mats:[],
+        learn:L_('highway','The cell-state highway for the error',R`The error at $c_t$ has two parts: one arriving **along the highway** from $c_{t+1}$ (multiplied only by the forget gate $f_{t+1}$) and one **through $h_t$**.`,`The highway part has no weight matrix and no squashing, so it stays large when $f$ is close to 1. This is the main reason LSTMs can learn long-range dependencies.`),
+        ops:{cells:{...(fromNext?colorCells(rk('c',tt+1,H),PC.a):{}),...colorCells(rk('h',tt,H),PC.c)},arrows:{...(fromNext?{[`a:cc:${tt+1}`]:PC.a}:{}),[`a:ch:${tt}`]:PC.c},key:[...(fromNext?[[PC.a,'along the highway from the next step']]:[]),[PC.c,'through the hidden state $h_t$']]},
+        what:[R`$\delta c_${tt}=\underbrace{\delta c_${tt+1}\odot f_${tt+1}}_{\text{along the highway}}+\underbrace{\delta h_${tt}\odot o_${tt}\odot(1-\tanh^2c_${tt})}_{\text{through }h_${tt}}$`,fromNext?`The first term (orange) travels back along the highway, scaled only by the forget gate.`:`There is no later step, so only the second term (teal) exists.`],
+        res:[R`\delta c_${tt}=${ccol(PC.a,bmc(s.dcIn))}+${ccol(PC.c,R`${bmc(s.dh)}\odot${bmc(gg.o)}\odot${bmc(th.map(v=>1-v*v))}`)}=${bmc(s.dc)}`],say:`This path has no weight matrix and no squashing, so the error survives many steps when f is close to 1.`});
+      P({ph:'B',title:`Backward t=${tt}: forget, input gates and candidate`,path:`δc${tt}, c${t}, g, i → δf, δi, δc̃`,act:[`a:gc:${tt}`],grads:[...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H)],mats:['f','i','g'],
+        ops:{cells:{...colorCells(rk('c',tt,H),PC.g),...colorCells(rk('c',t,H),PC.a),...colorCells([...rk('i',tt,H),...rk('g',tt,H),...rk('f',tt,H)],PC.c)},arrows:{[`a:gc:${tt}`]:PC.g},key:[[PC.g,'$\\delta c_t$ (error at the cell state)'],[PC.a,'old cell state $c_{t-1}$ (partner of $f$)'],[PC.c,'the other factor: $i$, $\\tilde c$ or $f$']]},
         what:[R`$\delta f=\delta c\odot c_${t}$, $\delta i=\delta c\odot\tilde c$, $\delta\tilde c=\delta c\odot i$`,R`Through the activations: $\delta p_f=\delta f\odot f(1-f)$, $\delta p_i=\delta i\odot i(1-i)$, $\delta p_{\tilde c}=\delta\tilde c\odot(1-\tilde c^2)$`],
         res:[R`\delta f=${bmc(s.dpost.f)},\ \delta i=${bmc(s.dpost.i)},\ \delta\tilde c=${bmc(s.dpost.g)}`,R`\delta p_f=${bmc(s.dp.f)},\ \delta p_i=${bmc(s.dp.i)},\ \delta p_{\tilde c}=${bmc(s.dp.g)}`,R`\delta c_${t}\ (\text{to step }${t})=\delta c_${tt}\odot f_${tt}=${bmc(s.dcPrev)}`],say:`Now every gate has its pre-activation error.`});
     }else{
-      P({ph:'B',title:`Backward t=${tt}: update gate and candidate`,path:`δh${tt}, z, h̃, h${t} → δz, δh̃`,act:[...rk('h',tt,H),...rk('z',tt,H),...rk('n',tt,H),`a:gh:${tt}`],grads:[...rk('z',tt,H),...rk('n',tt,H)],mats:['z','n'],
+      P({ph:'B',title:`Backward t=${tt}: update gate and candidate`,path:`δh${tt}, z, h̃, h${t} → δz, δh̃`,act:[`a:gh:${tt}`],grads:[...rk('z',tt,H),...rk('n',tt,H)],mats:['z','n'],
+        learn:L_('slope','Activation slope $f\'(\\cdot)$',R`How steep the activation curve is at the current value: sigmoid $\sigma'=a(1-a)$, tanh $\tanh'=1-a^2$.`,`The error has to pass through the activation on the way back, so it is multiplied by this slope. Where the curve is flat the error is cut down.`),
+        ops:{cells:{...colorCells(rk('h',tt,H),PC.g),...colorCells(rk('z',tt,H),PC.c),...colorCells(rk('n',tt,H),PC.a),...colorCells(rk('h',t,H),PC.b)},arrows:{[`a:gh:${tt}`]:PC.g},key:[[PC.g,'$\\delta h_t$'],[PC.c,'update gate $z$'],[PC.a,'candidate $\\tilde h$'],[PC.b,'old state $h_{t-1}$']]},
         what:[R`$\delta z=\delta h\odot(\tilde h-h_${t})$, $\delta\tilde h=\delta h\odot z$, and $\delta h_${t}\mathrel{+}=\delta h\odot(1-z)$`,R`Through activations: $\delta p_z=\delta z\odot z(1-z)$, $\delta p_{\tilde h}=\delta\tilde h\odot(1-\tilde h^2)$`],
         res:[R`\delta z=${bmc(s.dpost.z)},\quad\delta\tilde h=${bmc(s.dpost.n)}`,R`\delta p_z=${bmc(s.dp.z)},\quad\delta p_{\tilde h}=${bmc(s.dp.n)}`],say:`The copy path $(1-z)\odot h_{t-1}$ gives the old state a direct line for the gradient.`});
-      P({ph:'B',title:`Backward t=${tt}: reset gate`,path:`δp_h̃, U_h, h${t}, r → δr`,act:[...rk('n',tt,H),...rk('r',tt,H),...rk('h',t,H),`a:hg:${tt}`],grads:rk('r',tt,H),mats:['n','r'],
+      P({ph:'B',title:`Backward t=${tt}: reset gate`,path:`δp_h̃, U_h, h${t}, r → δr`,act:[`a:hg:${tt}`],grads:rk('r',tt,H),mats:['n','r'],
+        ops:{cells:{...colorCells(rk('n',tt,H),PC.g),...colorCells(rk('h',t,H),PC.b)},mats:{...gateMats('n',PC.dim,PC.g,PC.dim)},arrows:{[`a:hg:${tt}`]:PC.g},key:[[PC.g,'error at the candidate, sent back through $U_h$'],[PC.b,'old state $h_{t-1}$']]},
         what:[R`$\delta(r\odot h_${t})=U_h^{\top}\delta p_{\tilde h}$, then $\delta r=\delta(r\odot h_${t})\odot h_${t}$ and $\delta p_r=\delta r\odot r(1-r)$`],
         res:[R`\delta(r\odot h)=${bmM(cfg.p.n.U)}^{\top}${bmc(s.dp.n)}=${bmc(s.drh)}`,R`\delta r=${bmc(s.dpost.r)},\quad\delta p_r=${bmc(s.dp.r)}`],say:`The reset gate only matters through the candidate, so its error arrives via $U_h$.`});}
-    // gradient contributions
     const items=GK.flatMap(k=>[R`\mathrm{d}W_{${WS[k]}}\mathrel{+}=${bmM(outer(s.dp[k],x))}`,R`\mathrm{d}U_{${WS[k]}}\mathrel{+}=${bmM(outer(s.dp[k],(!lstm&&k==='n')?hp.map((v,q)=>gg.r[q]*v):hp))}`,R`\mathrm{d}b_{${WS[k]}}\mathrel{+}=${bmc(s.dp[k])}`]);
-    P({ph:'B',title:`Gradient t=${tt}: contributions to the ${lstm?'four gates':'three gates'} and the error for step ${t}`,path:`δp, x${tt}, h${t} → dW, dU, db`,act:[...gateKeys(tt),...rk('x',tt,d),...rk('h',t,H),`a:xg:${tt}`,`a:hg:${tt}`],mats:[...GK],
-      what:[R`For every gate $k$: $\mathrm{d}W_k\mathrel{+}=\delta p_k\,x_${tt}^{\top}$, $\mathrm{d}U_k\mathrel{+}=\delta p_k\,h_${t}^{\top}$, $\mathrm{d}b_k\mathrel{+}=\delta p_k$`,`The same weights are used at every step, so each step adds its own contribution.`,t===0?`At $t=1$ the previous state is $\\mathbf 0$, so the $U$ contributions are zero.`:`The error passed to step ${t} is shown on the last line.`],
+    P({ph:'B',title:`Gradient t=${tt}: contributions to the ${lstm?'four gates':'three gates'} and the error for step ${t}`,path:`δp, x${tt}, h${t} → dW, dU, db`,act:[`a:xg:${tt}`,`a:hg:${tt}`],mats:[...GK],
+      learn:L_('share','Gradients of shared weights add up',`The same matrix is used at every time step, so every step produces its own gradient contribution for it. The total gradient is the **sum** of all contributions.`,`Each use of the weight influenced the loss, so each use must be counted.`),
+      ops:{cells:{...colorCells(gateKeys(tt),PC.g),...colorCells(rk('x',tt,d),PC.a),...colorCells(rk('h',t,H),PC.b)},mats:Object.assign({},...GK.map(k=>gateMats(k,PC.g,PC.g,PC.g))),arrows:{[`a:xg:${tt}`]:PC.a,[`a:hg:${tt}`]:PC.b},key:[[PC.g,'matrices that **receive** a gradient'],[PC.a,`input $x_${tt}$ (feeds $W$)`],[PC.b,`previous state $h_${t}$ (feeds $U$)`]]},
+      what:[R`For every gate $k$: $\mathrm{d}W_k\mathrel{+}=\delta p_k\,x_${tt}^{\top}$, $\mathrm{d}U_k\mathrel{+}=\delta p_k\,h_${t}^{\top}$, $\mathrm{d}b_k\mathrel{+}=\delta p_k$`,`Each weight's gradient = (error at the unit it feeds) × (value that went into it).`,t===0?`At $t=1$ the previous state is $\\mathbf 0$, so the $U$ contributions are zero.`:`The error passed to step ${t} is shown on the last line.`],
       res:[R`\small ${colLines(items,3)}`,R`\delta h_${t}\ (\text{to step }${t})=${lstm?R`\sum_k U_k^{\top}\delta p_k`:R`\delta h\odot(1-z)+r\odot\delta(r\odot h)+U_z^{\top}\delta p_z+U_r^{\top}\delta p_r`}=${bmc(s.dhPrev)}`],say:`These matrices are added up over all time steps in the next phase.`});
   }
-  // sum over time
   const sumItems=GK.map(k=>R`\mathrm{d}W_{${WS[k]}}=${bmM(g.gr[k].W)},\ \mathrm{d}U_{${WS[k]}}=${bmM(g.gr[k].U)},\ \mathrm{d}b_{${WS[k]}}=${bmc(g.gr[k].b)}`);
-  P({ph:'B',title:'Gradients: add up the contributions of all time steps',path:'Σ over t → all gate gradients and dW_hy',act:[],mats:[...GK,'Why'],what:[`Each weight matrix is shared by every time step, so its total gradient is the **sum** of the per-step contributions.`],
+  P({ph:'B',title:'Gradients: add up the contributions of all time steps',path:'Σ over t → all gate gradients and dW_hy',act:[],mats:[...GK,'Why'],ops:{mats:{...Object.assign({},...GK.map(k=>gateMats(k,PC.g,PC.g,PC.g))),Why:{all:1,col:PC.g}},key:[[PC.g,'matrices whose gradients are summed']]},what:[`Each weight matrix is shared by every time step, so its total gradient is the **sum** of the per-step contributions.`],
     res:[...sumItems,R`\mathrm{d}W_{hy}=${bmM(g.dWhy)},\ \mathrm{d}b_y=${bmc(g.dby)}`],say:`These totals are everything the update step needs.`});
   const pl=paramList(cfg),an=analytic(cfg);
   const items2=pl.map(pr=>R`${pr.tex}\leftarrow ${Q(getP(cfg,pr.path))}-${Q(eta)}${Q(an[pr.id])}=${N(getP(cfg1,pr.path))}`);
-  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:[],upd:true,mats:[...GK,'Why'],what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`],res:[R`\small ${colLines(items2,3)}`],say:`Gradient descent. The matrices below the diagram now show the new weights.`});
+  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:[],upd:true,mats:[...GK,'Why'],ops:{mats:{...Object.assign({},...GK.map(k=>gateMats(k,PC.bias,PC.bias,PC.bias))),Why:{all:1,col:PC.bias}},key:[[PC.bias,'parameters that change (now showing the new values)']]},
+    learn:L_('gd','Gradient descent and learning rate $\\eta$',R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$: every parameter takes a small step **against** its gradient. $\eta$ sets the size of the step.`,`That direction reduces the loss fastest. Too large an $\eta$ overshoots, too small is slow.`),
+    what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`],res:[R`\small ${colLines(items2,3)}`],say:`Gradient descent. The matrices below the diagram now show the new weights.`});
   P({ph:'C',title:'Check: run the forward pass again',path:'new weights → y → L′',act:[],upd:true,check:true,mats:[],what:[`Same sequence, **new** weights.`,R`$L'=${N(m1.L)}$ against $L=${N(m.L)}$`,m1.L<m.L?`**The loss went down**, so the update helped.`:`The loss did **not** go down: try a smaller $\\eta$.`],res:[R`L'=${hl(m1.L)}\;${m1.L<m.L?'<':'\\ge'}\;${N(m.L)}=L`],say:`Repeat many times and you get training (see the Training tab).`});
+  st.gloss=LL.gloss;
   return st;
 }
+
 /* ================= layout ================= */
 let geo={},cellEls={},arrEls={},LAY=null,VH=560;
+function rowKey(){const cfg=S.cfg,lstm=cfg.cell==='lstm',it=(sym,txt,ic)=>`<span class="ak">${sym}${ic||''}<span>${txt}</span></span>`;
+  const items=lstm?[it('<b class="aw">f · i · o</b>','gates (0…1): forget, input and output valves',curveSVG('sigmoid','#E0A100')),it('<b class="aw">c̃</b>','candidate: new content (−1…1)',curveSVG('tanh','#2E9E6B')),it('<b class="aw">c</b>','cell state: long-term memory, the horizontal highway'),it('<b class="aw">h</b>','hidden state: what the cell shows')]
+    :[it('<b class="aw">z · r</b>','gates (0…1): update and reset valves',curveSVG('sigmoid','#E0A100')),it('<b class="aw">h̃</b>','candidate: new memory (−1…1)',curveSVG('tanh','#2E9E6B')),it('<b class="aw">h</b>','hidden state, copied along the highway where z is small')];
+  items.push(it('<b class="aw">orange · purple · green</b>','in a gate step: input part · previous-state part · bias'));
+  $('#arrowkey').innerHTML='<div class="akh">How to read the rows</div>'+items.join('');}
 function makeLayout(){
   const cfg=S.cfg,{T,d,H,C}=cfg,lstm=cfg.cell==='lstm',outs=outSteps(cfg),md=Math.max(d,H,C);
   const order=[...(outs.length?['l','y','u']:[]),'h',...(lstm?['c','o','g','i','f']:['n','r','z']),'x'];
@@ -514,7 +614,7 @@ function makeLayout(){
   for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.s||(t.b?12:10.5)}" fill="${t.col||(t.b?'#444':'#6b7280')}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
   h+='<g id="arrg">';for(const a of arrows)h+=`<line class="arr" id="${a.id}" x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#9aa0a6" stroke-width="1.6" stroke-linecap="round" marker-end="url(#ar)"/>${a.label?`<text x="${a.lx}" y="${a.ly}" font-size="9.5" fill="#1E5873" font-weight="700">${esc(a.label)}</text>`:''}`;h+='</g>';
   for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><title></title><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7.5,c*.32)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.09)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
-  svg.innerHTML=h;LAY={c};cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,ti:g.querySelector('title'),r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
+  svg.innerHTML=h;LAY={c};rowKey();cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,ti:g.querySelector('title'),r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
   arrEls={};svg.querySelectorAll('.arr').forEach(l=>arrEls[l.id]=l);
 }
 const f2=v=>{const a=Math.abs(v)<.005?0:v;return a.toFixed(2)};
@@ -533,17 +633,19 @@ function paint(){
   for(const [key,r] of Object.entries(geo)){const e=cellEls[key],kind=r.kind;const given=kind==='x'||isZero0(key),shown=given||cs.vis.has(key);let fill='#EFEFEA',fo=1,stroke='#D6D6D0',txt='';
     if(shown){const v=isZero0(key)?0:valOf(key,M,th),nrm=nm[kind]||1;const gate='fiozr'.includes(kind);const base=v<0&&!gate?'#E07B39':KC[kind];
       const mag=(gate||kind==='y'||kind==='l'||kind==='L')?Math.min(1,Math.abs(v)):Math.min(1,Math.abs(v)/nrm);fill=base;fo=.1+.62*mag;stroke=base;txt=(kind==='L'||kind==='l')?v.toFixed(3):f2(v);}
-    e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);const isAct=act.has(key);e.r.setAttribute('stroke',isAct?(back?ERR:ACC):stroke);e.r.setAttribute('stroke-width',isAct?2.6:1);e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
-    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;const keep=LAY.c>=19||isAct;
+    e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);const isAct=act.has(key);const oc=cur.ops&&cur.ops.cells&&cur.ops.cells[key];e.r.setAttribute('stroke',oc||(isAct?(back?ERR:ACC):stroke));e.r.setAttribute('stroke-width',oc?4:isAct?2.6:1);e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
+    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;const keep=LAY.c>=19||isAct||!!oc;
     e.tv.textContent=keep?txt:'';e.tv.setAttribute('fill','#1d2229');e.tg.textContent=(gvv===undefined||!keep)?'':f2(gvv);e.tv.setAttribute('dy',gvv===undefined?'.34em':'-.05em');
     e.ti.textContent=shown?`${cellName(key)} = ${N(isZero0(key)?0:valOf(key,M,th))}${gvv===undefined?'':' · gradient '+N(gvv)}`:'';}
-  for(const [id,ln] of Object.entries(arrEls)){const on=act.has(id);ln.style.stroke=on?(back?ERR:ACC):'#9aa0a6';ln.style.strokeWidth=on?3.2:1.6;ln.style.opacity=on?1:.55;ln.classList.toggle('flow',on);ln.classList.toggle('rev',on&&back);ln.setAttribute('marker-end',on?'':'url(#ar)');}
-  const hi=new Set(cur.mats||[]);const heat=(rows)=>{const mx=Math.max(.05,...rows.flat().map(Math.abs));return`<div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${rows.flat().map(v=>`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`}">${v.toFixed(2)}</i>`).join('')}</div>`;};
-  $('#mats').innerHTML=GATES[cfg.cell].map(k=>`<div class="mat ${hi.has(k)?'hi':''}"><div class="mk">${GN[k]} ${K(GT[k])}</div><div class="row3"><div><div class="ml">W (H×d)</div>${heat(th.p[k].W)}</div><div><div class="ml">U (H×H)</div>${heat(th.p[k].U)}</div><div><div class="ml">b</div>${heat(th.p[k].b.map(v=>[v]))}</div></div></div>`).join('')
-    +`<div class="mat ${hi.has('Why')?'hi':''}"><div class="mk">read-out</div><div class="row3"><div><div class="ml">W<sub>hy</sub> (C×H)</div>${heat(th.Why)}</div><div><div class="ml">b<sub>y</sub></div>${heat(th.by.map(v=>[v]))}</div></div></div>`;
+  for(const [id,ln] of Object.entries(arrEls)){const ao=cur.ops&&cur.ops.arrows&&cur.ops.arrows[id],on=act.has(id)||!!ao;ln.style.stroke=on?(ao||(back?ERR:ACC)):'#9aa0a6';ln.style.strokeWidth=on?3.2:1.6;ln.style.opacity=on?1:.55;ln.classList.toggle('flow',on);ln.classList.toggle('rev',on&&back);ln.setAttribute('marker-end',on?'':'url(#ar)');}
+  const hi=new Set(cur.mats||[]),om=cur.ops&&cur.ops.mats;
+  const heat=(rows,sp)=>{const mx=Math.max(.05,...rows.flat().map(Math.abs));const used=(r,c)=>sp&&(sp.all||(sp.rows&&sp.rows.includes(r))||(sp.cols&&sp.cols.includes(c))||(sp.idx&&sp.idx.includes(r)));
+    return`<div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${rows.map((row,r)=>row.map((v,c)=>{const u=used(r,c);return`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`};${u?`outline:3px solid ${sp.col};outline-offset:-1px;font-weight:800`:(om?'opacity:.3':'')}">${v.toFixed(2)}</i>`;}).join('')).join('')}</div>`;};
+  $('#mats').innerHTML=GATES[cfg.cell].map(k=>{const sc=om&&om[k];return`<div class="mat ${(om?!!sc:hi.has(k))?'hi':''}" style="${om&&!sc?'opacity:.5':''}"><div class="mk">${GN[k]} ${K(GT[k])}</div><div class="row3"><div><div class="ml">W (H×d)</div>${heat(th.p[k].W,sc&&sc.W)}</div><div><div class="ml">U (H×H)</div>${heat(th.p[k].U,sc&&sc.U)}</div><div><div class="ml">b</div>${heat(th.p[k].b.map(v=>[v]),sc&&sc.b)}</div></div></div>`;}).join('')
+    +(()=>{const sc=om&&om.Why;return`<div class="mat ${(om?!!sc:hi.has('Why'))?'hi':''}" style="${om&&!sc?'opacity:.5':''}"><div class="mk">read-out</div><div class="row3"><div><div class="ml">W<sub>hy</sub> (C×H)</div>${heat(th.Why,sc)}</div><div><div class="ml">b<sub>y</sub></div>${heat(th.by.map(v=>[v]),sc&&{all:1,col:sc.col})}</div></div></div>`;})();
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
   $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]} · ${cfg.cell.toUpperCase()}`;
-  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);$('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
+  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);$('#learn').innerHTML=conceptBlock(cur.learn);$('#opkey').innerHTML=keyHTML(cur.ops&&cur.ops.key);$('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
   const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');res.querySelectorAll('.katex-display').forEach((e,j)=>e.style.animationDelay=(j*160+80)+'ms');
   $('#say').innerHTML=rt(cur.say||'');if(i!==lastI){const fb=$('#fbody');fb.classList.remove('swap');void fb.offsetWidth;fb.classList.add('swap');lastI=i;}
   $('#slider').max=steps.length-1;$('#slider').value=i;$('#cnt').textContent=`${i+1} / ${steps.length}`;$('#cnt2').textContent=`${i+1} / ${steps.length}`;$('#fabn').textContent=i+1;$('#bar').style.width=((i+1)/steps.length*100)+'%';
@@ -559,7 +661,7 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
   if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  $('#p-all').innerHTML=`<div class="row"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  $('#p-all').innerHTML=glossBlock(steps.gloss)+`<div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;
@@ -652,7 +754,7 @@ addEventListener('resize',()=>{placeFab();if(!panelOpen)return;const r=panel.get
   if(r.right>innerWidth)panel.style.left=Math.max(8,innerWidth-r.width-8)+'px';if(r.top>innerHeight-44)panel.style.top=Math.max(8,innerHeight-120)+'px';});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panelOpen&&tab==='step'&&panel.style.display!=='none')closePanel();});
 /* ================= wiring ================= */
-function init(){
+function init(){initConcepts();
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
   steps=build();makeLayout();renderJump();paint();document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();
   $('#prev2').onclick=()=>{stopPlay();go(S.i-1)};$('#next2').onclick=()=>{stopPlay();go(S.i+1)};if(innerWidth<700){panelOpen=false;syncPanel();}else openPanel();

@@ -82,6 +82,8 @@ body{padding-top:10px}
         <div class="k" id="kick"></div>
         <h2 id="title"></h2>
         <div class="path" id="path"></div>
+        <div id="learn"></div>
+        <div id="opkey" class="opkey"></div>
         <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
         <div class="res" id="res"></div>
         <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
@@ -193,119 +195,7 @@ const lname=l=>l===0?'Input':l===NL?'Output':(NL===2?'Hidden':`Hidden ${l}`);
 /* ================= state ================= */
 const S={cfg:defaultCfg(),i:0};let steps=[],tab='step';
 /* ================= steps ================= */
-function build(){
-  const cfg=S.cfg,sz=cfg.sizes,L=sz.length-1;NL=L;const A=ACTS[cfg.act],eta=cfg.eta;
-  const {m,g}=backward(cfg),cfg1=apply(cfg,g,eta),m1=forward(cfg1),st=[],P=o=>st.push(o);
-  const nk=(l,j)=>`n:${l}:${j}`,ek=(l,j,i)=>`e:${l}:${j}:${i}`;
-  const layerNodes=l=>[...Array(sz[l]).keys()].map(j=>nk(l,j));
-  const layerEdges=l=>[...Array(sz[l]).keys()].flatMap(j=>[...Array(sz[l-1]).keys()].map(i=>ek(l,j,i)));
-  const actTex=(l)=>l<L?A.tex:(cfg.out==='sigmoid'?R`\sigma`:cfg.out==='linear'?'':R`\mathrm{softmax}`);
-  const sub=(t)=>t;
-  const layerMode=cfg.gran==='layer';
-  const outNote=cfg.out==='sigmoid'?'sigmoid output with squared error':cfg.out==='linear'?'linear output with squared error':'softmax output with cross-entropy';
-  // ---- forward
-  for(let l=1;l<=L;l++){
-    if(layerMode){
-      P({ph:'F',title:`Forward: all $${tZv(l)}$ of layer ${l} (${lname(l).toLowerCase()})`,path:`${tAv(l-1)}, ${tWm(l)}, ${tBv(l)} → ${tZv(l)}`,act:{n:[...layerNodes(l-1),...layerNodes(l)],e:layerEdges(l)},
-        what:[R`$${tZv(l)}=${tWm(l)}\,${tAv(l-1)}+${tBv(l)}$ (matrix times vector, plus bias).`,`Row $j$ of the matrix is the weights of neuron $j$.`],
-        res:[R`${tZv(l)}=${bmM(cfg.W[l-1])}${bmc(m.a[l-1])}+${bmc(cfg.b[l-1])}=${bmc(m.z[l-1])}`],
-        gives:m.z[l-1].map((v,j)=>({k:`z:${l}:${j}`})),say:`Layer ${l} computes all its weighted sums at once.`});
-      if(!(l===L&&cfg.out==='linear'))P({ph:'F',title:l<L?`Forward: activation of layer ${l}`:`Forward: output $y$`,path:`${tZv(l)} → ${tAv(l)}`,act:{n:layerNodes(l),e:[]},
-        what:[l<L?R`$${tAv(l)}=${A.tex}(${tZv(l)})$ applied to every neuron.`:cfg.out==='softmax'?R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$ (softmax).`:R`$y=\sigma(${tZv(l)})$ (sigmoid output).`],
-        res:[R`${tAv(l)}=${actTex(l)}\!\left(${bmc(m.z[l-1])}\right)=${bmc(m.a[l])}`],gives:m.a[l].map((v,j)=>({k:`a:${l}:${j}`})),say:`Same activation for every neuron of the layer.`});
-      else P({ph:'F',title:'Forward: linear output $y=z$',path:`${tZv(l)} → y`,act:{n:layerNodes(l),e:[]},what:['Linear output: no squashing, $y=z$.'],res:[R`y=${bmc(m.a[l])}`],gives:m.a[l].map((v,j)=>({k:`a:${l}:${j}`})),say:'Useful for regression.'});
-    }else{
-      for(let j=0;j<sz[l];j++){
-        const terms=cfg.W[l-1][j].map((w,i)=>`${Q(w)}${Q(m.a[l-1][i])}`),srcs=cfg.W[l-1][j].map((_,i)=>tW(l,j,i)+tA(l-1,i)).join('+');
-        P({ph:'F',title:`Forward: $${tZ(l,j)}$ of ${lname(l).toLowerCase()} neuron ${j+1}`,path:`${[...Array(sz[l-1]).keys()].map(i=>tA(l-1,i).replace(/[_{}^()]/g,'')).join(', ')}, weights, bias → ${tZ(l,j).replace(/[_{}^()]/g,'')}`,
-          act:{n:[...layerNodes(l-1),nk(l,j)],e:[...Array(sz[l-1]).keys()].map(i=>ek(l,j,i))},
-          what:[`Neuron ${j+1} of this layer sees **all** ${sz[l-1]} value${sz[l-1]>1?'s':''} from the previous layer.`,R`$${tZ(l,j)}=\sum_i W_{${j+1}i}\,a_i+${tB(l,j)}$`,`One row of the weight matrix times the input vector, plus the bias.`],
-          res:[R`${tZ(l,j)}=${srcs}+${tB(l,j)}`,R`=${terms.length>3?alignLines(terms,3)+'+':terms.join('+')+'+'}${Q(cfg.b[l-1][j])}=${hl(m.z[l-1][j])}`],gives:[{k:`z:${l}:${j}`}],
-          say:`Weighted sum plus bias: the same dot product as a single neuron.`});
-        if(!(l===L&&(cfg.out==='softmax'||cfg.out==='linear'))){
-          const zz=m.z[l-1][j];const isOut=l===L;
-          const body=isOut?R`y_${j+1}=\sigma(${tZ(l,j)})=\frac{1}{1+e^{-${Q(zz)}}}`:cfg.act==='sigmoid'?R`${tA(l,j)}=\sigma(${tZ(l,j)})=\frac{1}{1+e^{-${Q(zz)}}}`:cfg.act==='tanh'?R`${tA(l,j)}=\tanh(${tZ(l,j)})=\tanh${Q(zz)}`:R`${tA(l,j)}=\max(0,${tZ(l,j)})=\max(0,${Q(zz)})`;
-          P({ph:'F',title:isOut?`Forward: prediction $y_${j+1}$`:`Forward: activation $${tA(l,j)}$`,path:`${tZ(l,j).replace(/[_{}^()]/g,'')} → ${tA(l,j).replace(/[_{}^()]/g,'')}`,act:{n:[nk(l,j)],e:[]},
-            what:[isOut?R`$y_${j+1}=\sigma(${tZ(l,j)})$ (sigmoid output). Compare with the target $t_${j+1}=${N(cfg.t[j])}$ next.`:R`Squash $${tZ(l,j)}$ with ${A.name}: $${tA(l,j)}=${A.tex}(${tZ(l,j)})$.`,cfg.act==='relu'&&!isOut?`ReLU keeps positive values and sets negative ones to 0.`:`The output of this neuron feeds the next layer.`],
-            res:[body+R`=${hl(m.a[l][j])}`],gives:[{k:`a:${l}:${j}`}],say:isOut?`Target is ${N(cfg.t[j])}, prediction is ${N(m.a[l][j])}.`:`The nonlinearity is what lets a network model more than a straight line.`});
-        }else if(l===L&&cfg.out==='linear'){
-          P({ph:'F',title:`Forward: linear output $y_${j+1}$`,path:`${tZ(l,j).replace(/[_{}^()]/g,'')} → y`,act:{n:[nk(l,j)],e:[]},what:[R`Linear output: $y_${j+1}=${tZ(l,j)}$, no squashing (regression).`],res:[R`y_${j+1}=${tZ(l,j)}=${hl(m.a[l][j])}`],gives:[{k:`a:${l}:${j}`}],say:`Target is ${N(cfg.t[j])}, prediction is ${N(m.a[l][j])}.`});
-        }
-      }
-      if(l===L&&cfg.out==='softmax')P({ph:'F',title:'Forward: softmax over all outputs',path:'u → y',act:{n:layerNodes(L),e:[]},
-        what:[R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$: positive numbers that sum to 1.`],
-        res:[R`\sum_j e^{u_j}=${m.z[L-1].map(v=>`e^{${N(v)}}`).join('+')}=${N(m.z[L-1].reduce((s,v)=>s+Math.exp(v),0))}`,R`\begin{aligned}${m.a[L].map((v,k)=>`y_${k+1}&=\\frac{e^{${N(m.z[L-1][k])}}}{${N(m.z[L-1].reduce((s,q)=>s+Math.exp(q),0))}}=${hl(v)}`).join(R` \\ `)}\end{aligned}`],gives:m.a[L].map((v,k)=>({k:`a:${L}:${k}`})),say:`Class probabilities. The target is one-hot.`});
-    }
-  }
-  // ---- loss
-  const lossNodes=[...layerNodes(L),'n:loss'],lossEdges=[...Array(sz[L]).keys()].map(j=>`eL:${j}`);
-  if(cfg.out==='softmax')P({ph:'F',title:'Forward: cross-entropy loss $L$',path:'y, t → L',act:{n:lossNodes,e:lossEdges},what:[R`$L=-\sum_k t_k\ln y_k$`,`Only the true class contributes when $t$ is one-hot.`],
-    res:[R`L=-\sum_k t_k\ln y_k=-\left[${m.a[L].map((v,k)=>`${N(cfg.t[k])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.L)}`],gives:[{k:'L'}],say:`Forward pass finished. Every backward step reuses the numbers already shown.`});
-  else P({ph:'F',title:'Forward: squared-error loss $L$',path:'y, t → L',act:{n:lossNodes,e:lossEdges},what:[R`$L=\tfrac12\sum_k (y_k-t_k)^2$`,`One number that says how wrong all outputs are together.`],
-    res:[R`L=\tfrac12\sum_k (y_k-t_k)^2=\tfrac12\left[${m.a[L].map((v,k)=>`(${N(v)}-${N(cfg.t[k])})^2`).join('+')}\right]=${hl(m.L)}`],gives:[{k:'L'}],say:`Forward pass finished. Every backward step reuses the numbers already shown.`});
-  // ---- backward
-  const gradsOfLayer=(l)=>{ // l = 1..L (weights into layer l)
-    if(layerMode){
-      P({ph:'B',title:`Gradient: weights and biases of layer ${l}`,path:`${tDZv(l)}, ${tAv(l-1)} → d${tWm(l)}, d${tBv(l)}`,act:{n:[...layerNodes(l-1),...layerNodes(l)],e:layerEdges(l)},
-        gradsOut:{w:[...Array(sz[l]).keys()].flatMap(j=>[...Array(sz[l-1]).keys()].map(i=>`gw:${l}:${j}:${i}`)),b:[...Array(sz[l]).keys()].map(j=>`gb:${l}:${j}`)},
-        what:[R`$\mathrm{d}${tWm(l)}=${tDZv(l)}\,(${tAv(l-1)})^{\top}$ (outer product) and $\mathrm{d}${tBv(l)}=${tDZv(l)}$.`,`Entry $(j,i)$ is the error at neuron $j$ times the activation that fed the weight.`],
-        res:[R`\mathrm{d}${tWm(l)}=${bmc(g.dz[l-1])}${R`\begin{bmatrix}${m.a[l-1].map(N).join(' & ')}\end{bmatrix}`}=${bmM(g.dW[l-1])}`,R`\mathrm{d}${tBv(l)}=${bmc(g.db[l-1])}`],say:`All weights of this layer get their gradients at once.`});
-    }else for(let j=0;j<sz[l];j++){
-      for(let i=0;i<sz[l-1];i++)P({ph:'B',title:`Gradient: $\\mathrm{d}${tW(l,j,i)}$`,path:`δ${j+1}, ${tA(l-1,i).replace(/[_{}^()]/g,'')} → d${tW(l,j,i).replace(/[_{}^()]/g,'')}`,act:{n:[nk(l,j),nk(l-1,i)],e:[ek(l,j,i)]},gradsOut:{w:[`gw:${l}:${j}:${i}`]},
-        what:[R`$\dfrac{\partial L}{\partial ${tW(l,j,i)}}=${tDZ(l,j)}\,${tA(l-1,i)}$`,`Error at the neuron times the activation that fed this weight.`],
-        res:[R`\mathrm{d}${tW(l,j,i)}=${tDZ(l,j)}\,${tA(l-1,i)}=${Q(g.dz[l-1][j])}${Q(m.a[l-1][i])}=${hl(g.dW[l-1][j][i])}`],say:`One weight, one gradient. A big activation means a big share of the blame.`});
-      P({ph:'B',title:`Gradient: $\\mathrm{d}${tB(l,j)}$ (bias)`,path:`δ${j+1} → bias`,act:{n:[nk(l,j)],e:[]},gradsOut:{b:[`gb:${l}:${j}`]},
-        what:[R`$\dfrac{\partial L}{\partial ${tB(l,j)}}=${tDZ(l,j)}$`,`A bias is a weight whose input is always 1.`],res:[R`\mathrm{d}${tB(l,j)}=${tDZ(l,j)}\cdot 1=${hl(g.db[l-1][j])}`],say:`Bias gradient equals the error signal itself.`});
-    }
-  };
-  // output deltas
-  const dyk=k=>R`${Q(m.a[L][k])}-${Q(cfg.t[k])}`;
-  if(layerMode){
-    if(cfg.out==='sigmoid')P({ph:'B',title:'Backward: error at the output layer',path:'L → y → u',act:{n:[...lossNodes,...layerNodes(L)],e:lossEdges},grads:[...layerNodes(L).flatMap((_,k)=>[`da:${L}:${k}`,`dz:${L}:${k}`])],
-      what:[R`$\delta^y=y-t$, then $\delta^u=\delta^y\odot y\odot(1-y)$ (sigmoid slope).`],res:[R`\delta^y=${bmc(g.da[L])},\quad\delta^u=${bmc(g.dz[L-1])}`],say:`Start of the chain rule.`});
-    else P({ph:'B',title:'Backward: error at the output layer',path:'L → y → z',act:{n:[...lossNodes,...layerNodes(L)],e:lossEdges},grads:layerNodes(L).map((_,k)=>`dz:${L}:${k}`),
-      what:[cfg.out==='softmax'?R`Softmax + cross-entropy give $\delta^u=y-t$.`:R`Linear output + squared error give $\delta^u=y-t$.`],res:[R`${tDZv(L)}=y-t=${bmc(g.dz[L-1])}`],say:`Prediction minus target. That is all.`});
-  }else if(cfg.out==='sigmoid'){
-    for(let k=0;k<sz[L];k++){
-      P({ph:'B',title:`Backward: error at output $y_${k+1}$`,path:`L → y${k+1}`,act:{n:['n:loss',nk(L,k)],e:[`eL:${k}`]},grads:[`da:${L}:${k}`],
-        what:[R`$${tDA(L,k)}=\dfrac{\partial L}{\partial y_${k+1}}=y_${k+1}-t_${k+1}$`,`Sign tells the direction: ${m.a[L][k]<cfg.t[k]?'prediction too low':'prediction too high'}.`],
-        res:[R`${tDA(L,k)}=y_${k+1}-t_${k+1}=${dyk(k)}=${hl(g.da[L][k])}`],say:`Start of the chain rule. The derivative of ½(y−t)² is simply y−t.`});
-      P({ph:'B',title:`Backward: error at $${tZ(L,k)}$ (through the sigmoid)`,path:`y${k+1} → ${tZ(L,k).replace(/[_{}^()]/g,'')}`,act:{n:[nk(L,k)],e:[]},grads:[`dz:${L}:${k}`],
-        what:[R`$${tDZ(L,k)}=${tDA(L,k)}\,\sigma'(${tZ(L,k)})$, with $\sigma'=y(1-y)$`],
-        res:[R`${tDZ(L,k)}=${tDA(L,k)}\,y_${k+1}(1-y_${k+1})=${Q(g.da[L][k])}${Q(m.a[L][k])}(1-${N(m.a[L][k])})=${hl(g.dz[L-1][k])}`],say:`σ′ is at most 0.25, so errors shrink as they pass through sigmoids: the seed of vanishing gradients.`});}
-  }else{
-    for(let k=0;k<sz[L];k++)P({ph:'B',title:`Backward: error at $${tZ(L,k)}$`,path:`L → y${k+1} → ${tZ(L,k).replace(/[_{}^()]/g,'')}`,act:{n:['n:loss',nk(L,k)],e:[`eL:${k}`]},grads:[`dz:${L}:${k}`],
-      what:[cfg.out==='softmax'?R`Softmax + cross-entropy collapse to $${tDZ(L,k)}=y_${k+1}-t_${k+1}$.`:R`Linear output + squared error: $${tDZ(L,k)}=y_${k+1}-t_${k+1}$.`,`No separate activation-slope step is needed.`],
-      res:[R`${tDZ(L,k)}=y_${k+1}-t_${k+1}=${dyk(k)}=${hl(g.dz[L-1][k])}`],say:`Prediction minus target: the simplest possible error signal.`});
-  }
-  gradsOfLayer(L);
-  for(let l=L-1;l>=1;l--){
-    if(layerMode){
-      P({ph:'B',title:`Backward: error arriving at layer ${l}`,path:`${tDZv(l+1)}, ${tWm(l+1)} → ${tDAv(l)}`,act:{n:[...layerNodes(l+1),...layerNodes(l)],e:layerEdges(l+1)},grads:layerNodes(l).map((_,j)=>`da:${l}:${j}`),
-        what:[R`$${tDAv(l)}=(${tWm(l+1)})^{\top}${tDZv(l+1)}$: errors travel back along the same weights.`],res:[R`${tDAv(l)}=${bmM(cfg.W[l])}^{\top}${bmc(g.dz[l])}=${bmc(g.da[l])}`],say:`Every neuron gets error from all neurons it feeds; contributions add.`});
-      P({ph:'B',title:`Backward: error at the pre-activation of layer ${l}`,path:`${tDAv(l)} → ${tDZv(l)}`,act:{n:layerNodes(l),e:[]},grads:layerNodes(l).map((_,j)=>`dz:${l}:${j}`),
-        what:[R`$${tDZv(l)}=${tDAv(l)}\odot f'(${tZv(l)})$ with $f'=${A.dtex}$`],res:[R`${tDZv(l)}=${bmc(g.da[l])}\odot${bmc(m.a[l].map((a,j)=>A.d(m.z[l-1][j],a)))}=${bmc(g.dz[l-1])}`],say:`Multiply by the slope of the activation.`});
-    }else for(let j=0;j<sz[l];j++){
-      const terms=cfg.W[l].map((row,k)=>`${Q(row[j])}${Q(g.dz[l][k])}`);
-      P({ph:'B',title:`Backward: error arriving at $${tA(l,j)}$`,path:`δ of next layer, weights → ${tA(l,j).replace(/[_{}^()]/g,'')}`,act:{n:[...layerNodes(l+1),nk(l,j)],e:cfg.W[l].map((_,k)=>ek(l+1,k,j))},grads:[`da:${l}:${j}`],
-        what:[R`$${tDA(l,j)}=\sum_k W_{kj}\,\delta^{z}_k$ over the ${sz[l+1]} neuron${sz[l+1]>1?'s':''} it feeds`,sz[l+1]>1?`**All** of them send error back, so the contributions add.`:`Only one neuron receives this value, so there is one contribution.`],
-        res:[R`${tDA(l,j)}=${cfg.W[l].map((_,k)=>`${tW(l+1,k,j)}${tDZ(l+1,k)}`).join('+')}`,R`=${terms.join('+')}=${hl(g.da[l][j])}`],say:`This extra step (compared with a network without hidden layers) spreads the blame over earlier neurons.`});
-      P({ph:'B',title:`Backward: error at $${tZ(l,j)}$ (through ${A.name})`,path:`${tA(l,j).replace(/[_{}^()]/g,'')} → ${tZ(l,j).replace(/[_{}^()]/g,'')}`,act:{n:[nk(l,j)],e:[]},grads:[`dz:${l}:${j}`],
-        what:[R`$${tDZ(l,j)}=${tDA(l,j)}\,f'(${tZ(l,j)})$, with $f'=${A.dtex}$`],
-        res:[R`${tDZ(l,j)}=${Q(g.da[l][j])}\cdot ${N(A.d(m.z[l-1][j],m.a[l][j]))}=${hl(g.dz[l-1][j])}`],say:cfg.act==='relu'?`ReLU slope is 1 where $z>0$ and 0 elsewhere.`:`Same slope scaling as before.`});
-    }
-    gradsOfLayer(l);
-  }
-  // ---- update
-  const pl=paramList(cfg),an=analytic(cfg);
-  const items=pl.map(pr=>R`${pr.tex}\leftarrow ${Q(getP(cfg,pr.path))}-${Q(eta)}${Q(an[pr.id])}=${N(getP(cfg1,pr.path))}`);
-  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:{n:[],e:[]},upd:true,what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`,`Step against the gradient, so the loss should go down.`],
-    res:[R`\small ${colLines(items,2)}`],say:`Gradient descent. Edge labels on the diagram now show the new weights.`});
-  P({ph:'C',title:'Check: run the forward pass again',path:'new weights → y → L′',act:{n:[],e:[]},upd:true,check:true,
-    what:[`Same inputs, **new** weights.`,R`$L'=${N(m1.L)}$ against $L=${N(m.L)}$`,m1.L<m.L?`**The loss went down**, so the update helped.`:`The loss did **not** go down: try a smaller $\\eta$.`],
-    res:[R`y'=(${m1.a[L].map(N).join(',\\,')}),\quad t=(${cfg.t.map(N).join(',\\,')})`,R`L'=${hl(m1.L)}\;${m1.L<m.L?'<':'\\ge'}\;${N(m.L)}=L`],say:`Repeat this loop many times and you get training (see the Training tab).`});
-  return st;
-}
+/*INCLUDE:nn_build.js*/
 /* ================= diagram (SVG) ================= */
 let POS={},nodeEls={},edgeEls={},VH=500,GEO=null;const LC={in:'#64748B',hid:['#2B7A9B','#3B8F7A','#4B6CB7','#8A6D3B'],out:'#7C4DDB',loss:'#E0A100'};
 const layerColor=l=>l===0?LC.in:l===NL?LC.out:LC.hid[(l-1)%4];
@@ -362,6 +252,7 @@ function paint(){
   for(const [id,e] of Object.entries(edgeEls)){const ln=e.ln;let col,op,wd,flow=false;
     if(e.isL){col=LOSSC;wd=3.2;}else{const [,l,j,ii]=id.split(':').map(Number),w=th.W[l-1][j][ii];col=w>=0?POSC:NEGC;wd=1.3+4.6*Math.abs(w)/mx;}
     if(act.e.has(id)){if(back)col=ERR;op=1;wd+=2.2;flow=true;}else if(cs.de.has(id)||(cs.upd&&!e.isL))op=.7;else op=.2;
+    {const eo=cur.ops&&cur.ops.edges&&cur.ops.edges[id];if(eo){col=eo;op=1;wd=Math.max(wd,4.5);}else if(cur.ops&&cur.ops.edges)op=Math.min(op,.12);}
     ln.style.stroke=col;ln.style.strokeWidth=wd;ln.style.opacity=op;ln.setAttribute('marker-end',`url(#${col===POSC?'mp':col===NEGC?'mn':col===ERR?'me':'ml'})`);
     ln.classList.toggle('flow',flow);ln.classList.toggle('rev',flow&&back);
     if(!e.isL){const [,l,j,ii]=id.split(':').map(Number),w=th.W[l-1][j][ii],a=act.e.has(id),vis=GEO.showAll||a,gk=`gw:${l}:${j}:${ii}`;
@@ -371,7 +262,7 @@ function paint(){
   for(const [id,n] of Object.entries(nodeEls)){const isL=n.isL,c=isL?LC.loss:layerColor(n.l);let cls='nc',fill,stroke=c,tcol='#222';
     if(act.n.has(id)){cls+=back?' err':' active';fill=back?'#FDE8E6':c;stroke=back?ERR:c;tcol=back?ERR:'#fff';}
     else if(cs.dn.has(id)){fill=tint(c);}else if(n.l===0&&!isL){fill='#fff';tcol=c;}else{fill='#EFEFEA';stroke='#D6D6D0';tcol='#a6a6a0';}
-    n.c.setAttribute('class',cls);n.c.setAttribute('fill',fill);n.c.setAttribute('stroke',stroke);n.c.setAttribute('stroke-width',2.4);n.lab.setAttribute('fill',tcol);
+    const no=cur.ops&&cur.ops.nodes&&cur.ops.nodes[id];n.c.setAttribute('class',cls);n.c.setAttribute('fill',fill);n.c.setAttribute('stroke',no||stroke);n.c.setAttribute('stroke-width',no?5.5:2.4);n.lab.setAttribute('fill',tcol);
     if(isL){setT(n.fl[0],cs.vis.has('L')?`L=${N(M.L)}`:'');continue;}
     const l=n.l,j=n.j;
     if(l===0){setT(n.fl[0],`x=${N(cfg.x[j])}`);continue;}
@@ -379,9 +270,9 @@ function paint(){
     setT(n.bl[0],showG&&cs.gv.has(`da:${l}:${j}`)?`${nodeTxt.da(l)}=${N(g.da[l][j])}`:'');setT(n.bl[1],showG&&cs.gv.has(`dz:${l}:${j}`)?`${nodeTxt.dz(l)}=${N(g.dz[l-1][j])}`:'');
     if(n.tg)setT(n.tg,`t=${N(cfg.t[j])}`);}
   // panel
-  const names={F:'Forward',B:'Backward',U:'Update',C:'Check'};
+  const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
   $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}`;
-  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);
+  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);$('#learn').innerHTML=conceptBlock(cur.learn);$('#opkey').innerHTML=keyHTML(cur.ops&&cur.ops.key);
   $('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
   const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');
   res.querySelectorAll('.katex-display').forEach((e,j)=>e.style.animationDelay=(j*160+80)+'ms');
@@ -398,15 +289,15 @@ let playTimer=null;
 function go(i){S.i=Math.max(0,Math.min(steps.length-1,i));paint();}
 function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
 function rebuild(relayout=true){$('#gran').value=S.cfg.gran;steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
-function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];
+function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Setup','S'],['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];
   $('#jump').innerHTML=L.map(([n,p])=>`<button class="btn" data-i="${first(p)}">⏭ ${n}</button>`).join('');$('#jump').querySelectorAll('button').forEach(b=>b.onclick=()=>{stopPlay();go(+b.dataset.i)});}
 function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   for(const id of ['step','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
   if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
-function renderAll(){const names={F:['Forward pass',''],B:['Backward pass (chain rule)','B'],U:['Update',''],C:['Check','']};let h='',last='';
+function renderAll(){const names={S:['Setup',''],F:['Forward pass',''],B:['Backward pass (chain rule)','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
     h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  $('#p-all').innerHTML=`<div class="row"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  $('#p-all').innerHTML=glossBlock(steps.gloss)+`<div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;NL=S.cfg.sizes.length-1;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one parameter up and down by ε, re-run the forward pass, and compare with the backprop value.</div>`;
@@ -472,7 +363,7 @@ function wireCustom(){const cfg=S.cfg,L=cfg.sizes.length-1;
 /* ================= floating explainer + book icon ================= */
 /*PANEL_JS*/
 /* ================= wiring ================= */
-function init(){
+function init(){initConcepts();
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
   steps=build();makeLayout();renderJump();paint();
   document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();

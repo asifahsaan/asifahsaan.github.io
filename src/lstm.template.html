@@ -79,6 +79,7 @@ body{padding-top:10px}
         <span><i style="background:var(--ghost);border-color:#D6D6D0"></i>Not reached yet</span>
         <span><i style="background:var(--errtint);border-color:var(--err)"></i>Red small number = gradient</span>
       </div>
+      <div class="arrowkey" id="arrowkey"></div>
       <div class="mats" id="mats"></div>
     </div>
     <aside class="panel floating" id="panel">
@@ -88,6 +89,8 @@ body{padding-top:10px}
         <div class="k" id="kick"></div>
         <h2 id="title"></h2>
         <div class="path" id="path"></div>
+        <div id="learn"></div>
+        <div id="opkey" class="opkey"></div>
         <div class="what"><h3>What happens</h3><ul id="what"></ul></div>
         <div class="res" id="res"></div>
         <div class="say"><h3>Teaching note</h3><div id="say"></div></div>
@@ -214,97 +217,14 @@ const gact=k=>(k==='g'||k==='n')?R`\tanh`:R`\sigma`;
 /* ================= state ================= */
 const S={cfg:clone(DEFAULTS.lstm),i:0};S.cfg.gran='vector';let steps=[],tab='step';
 /* ================= steps ================= */
-function build(){
-  const cfg=S.cfg,{T,d,H,C}=cfg,lstm=cfg.cell==='lstm',GK=GATES[cfg.cell],eta=cfg.eta,outs=outSteps(cfg);
-  const {m,g}=backward(cfg),cfg1=apply(cfg,g,eta),m1=forward(cfg1),st=[],P=o=>st.push(o);
-  const K_=(p,t,i)=>`${p}:${t}:${i}`,rk=(p,t,n)=>[...Array(n).keys()].map(i=>K_(p,t,i));
-  const gateKeys=(t)=>GK.flatMap(k=>rk(k,t,H));
-  // ---- setup
-  const npar=paramList(cfg).length;
-  P({ph:'S',title:lstm?'Setup: the LSTM cell, unrolled in time':'Setup: the GRU cell, unrolled in time',path:'x₁ … x_T → gates → memory → h₁ … h_T → outputs',act:[],gives:[],mats:[],
-    what:lstm?[`An **LSTM** keeps two vectors: the **cell state** $c_t$ (long-term memory, the horizontal highway) and the **hidden state** $h_t$ (what it shows).`,R`Three **gates** $f,i,o$ (values in 0…1) decide what to forget, what to write and what to reveal. A **candidate** $\tilde c$ is the new content.`,R`$c_t=f_t\odot c_{t-1}+i_t\odot\tilde c_t,\quad h_t=o_t\odot\tanh(c_t)$, with $c_0=h_0=\mathbf 0$.`]
-      :[`A **GRU** keeps one state vector $h_t$ and uses two gates: **update** $z$ and **reset** $r$.`,R`A **candidate** $\tilde h$ is the new memory, built from the input and the reset past.`,R`$h_t=(1-z_t)\odot h_{t-1}+z_t\odot\tilde h_t$, with $h_0=\mathbf 0$.`],
-    res:[R`T=${T},\ d=${d},\ H=${H},\ C=${C},\ \#\text{parameters}=${npar}`,R`\text{each gate: }W\in\mathbb R^{${H}\times${d}},\ U\in\mathbb R^{${H}\times${H}},\ b\in\mathbb R^{${H}}\ (${GK.length}\text{ gates})`],
-    say:lstm?`Compared with a plain RNN, the LSTM adds the cell state highway. Gradients can flow along it with only a multiplication by the forget gate, which fights vanishing gradients.`:`The GRU merges the cell and hidden state and uses fewer gates, so it has fewer parameters than the LSTM.`});
-  const gateStep=(k,t)=>{const tt=t+1,x=cfg.x[t],hp=m.h[t],gg=m.G[t],Pk=cfg.p[k],hin=(!lstm&&k==='n')?hp.map((v,q)=>gg.r[q]*v):hp;
-    const lines=Pk.W.map((_,j)=>{const terms=[...Pk.W[j].map((w,i)=>`${Q(w)}${Q(x[i])}`),...Pk.U[j].map((w,q)=>`${Q(w)}${Q(hin[q])}`)];
-      const pre=Pk.W[j].reduce((s,w,i)=>s+w*x[i],0)+Pk.U[j].reduce((s,w,q)=>s+w*hin[q],0)+Pk.b[j];
-      return R`${GT[k]}_{${tt},${j+1}}=${gact(k)}\!\left(${alignLines(terms,3)}+${Q(Pk.b[j])}\right)=${gact(k)}(${N(pre)})=${hl(gg[k][j])}`;});
-    const resetLine=(!lstm&&k==='n')?[R`r_${tt}\odot h_${tt-1}=${bmc(gg.r)}\odot${bmc(hp)}=${bmc(hin)}`]:[];
-    P({ph:'F',title:`Forward t=${tt}: ${GN[k]} $${GT[k]}_${tt}$`,path:`x${tt}, h${tt-1}, W${WS[k]}, U${WS[k]}, b${WS[k]} → ${k==='g'?'c̃':k==='n'?'h̃':k}${tt}`,act:[...rk('x',tt,d),...rk('h',t,H),...(k==='n'?rk('r',tt,H):[]),...rk(k,tt,H),`a:xg:${tt}`,`a:hg:${tt}`],gives:rk(k,tt,H),mats:[k],
-      what:[R`$${GT[k]}_${tt}=${gact(k)}(W_${WS[k]}x_${tt}+U_${WS[k]}${(!lstm&&k==='n')?R`(r_${tt}\odot h_${tt-1})`:`h_${tt-1}`}+b_${WS[k]})$`,`The ${GN[k]} ${GM[k]}`,t===0?R`At $t=1$ the previous state is $\mathbf 0$, so only the input contributes.`:`It looks at both the new input and the previous hidden state.`],
-      res:[...resetLine,...lines],say:k==='f'||k==='z'?`Look at the values: near 1 keeps (or updates) a lot, near 0 almost nothing.`:`Each unit has its own weights, so units can learn different jobs.`});};
-  const outStep=(t)=>{const tt=t+1,tg=cfg.t[outs.indexOf(t)];
-    P({ph:'F',title:`Forward t=${tt}: output $u_${tt}$ and prediction $y_${tt}$`,path:`h${tt}, W_hy, b_y → u${tt} → y${tt}`,act:[...rk('h',tt,H),...rk('u',tt,C),...rk('y',tt,C),`a:hu:${tt}`,`a:uy:${tt}`],gives:[...rk('u',tt,C),...rk('y',tt,C)],mats:['Why'],
-      what:[R`$u_${tt}=W_{hy}h_${tt}+b_y$, then ${cfg.out==='sigmoid'?R`$y_${tt}=\sigma(u_${tt})$`:cfg.out==='linear'?R`$y_${tt}=u_${tt}$ (linear)`:R`$y_${tt}=\mathrm{softmax}(u_${tt})$`}.`],
-      res:[R`u_${tt}=${bmM(cfg.Why)}${bmc(m.h[t+1])}+${bmc(cfg.by)}=${bmc(m.u[t])}`,R`y_${tt}=${bmc(m.y[t])},\quad t_${tt}=${bmc(tg)}`],say:`An ordinary read-out layer on the hidden state.`});
-    P({ph:'F',title:outs.length>1?`Forward: loss $L_${tt}$ at step ${tt}`:'Forward: loss $L$',path:`y${tt}, t → L${outs.length>1?tt:''}`,act:[...rk('y',tt,C),`l:${tt}`,`a:yl:${tt}`],gives:[`l:${tt}`,...(outs.length===1?['L']:[])],mats:[],
-      what:cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`],
-      res:[cfg.out==='softmax'?R`L_${tt}=-\left[${m.y[t].map((v,q)=>`${N(tg[q])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.lt[t])}`:R`L_${tt}=\tfrac12\left[${m.y[t].map((v,q)=>`(${N(v)}-${N(tg[q])})^2`).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});};
-  for(let t=0;t<T;t++){const tt=t+1,x=cfg.x[t],hp=m.h[t],gg=m.G[t];
-    if(lstm){
-      for(const k of ['f','i','g','o'])gateStep(k,t);
-      const cp=m.c[t],ct=m.c[t+1];
-      P({ph:'F',title:`Forward t=${tt}: cell state $c_${tt}$ (the memory highway)`,path:`f, c${t}, i, c̃ → c${tt}`,act:[...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H),...rk('c',t,H),...rk('c',tt,H),`a:gc:${tt}`,`a:cc:${tt}`],gives:rk('c',tt,H),mats:[],
-        what:[R`$c_${tt}=f_${tt}\odot c_${t}+i_${tt}\odot\tilde c_${tt}$`,`**Forget** part of the old memory, **add** part of the new candidate.`,t===0?R`At $t=1$ the old cell state is $\mathbf 0$, so only the written part remains.`:`The old memory $c_${t}$ travels along the highway, scaled by $f$.`],
-        res:ct.map((v,j)=>R`c_{${tt},${j+1}}=f\,c_{${t},${j+1}}+i\,\tilde c=${Q(gg.f[j])}${Q(cp[j])}+${Q(gg.i[j])}${Q(gg.g[j])}=${hl(v)}`),say:`This addition (not a multiplication by a weight matrix) is why gradients survive over many steps.`});
-      P({ph:'F',title:`Forward t=${tt}: hidden state $h_${tt}$`,path:`o, tanh(c${tt}) → h${tt}`,act:[...rk('o',tt,H),...rk('c',tt,H),...rk('h',tt,H),`a:ch:${tt}`],gives:rk('h',tt,H),mats:[],
-        what:[R`$h_${tt}=o_${tt}\odot\tanh(c_${tt})$`,`The output gate decides how much of the memory is revealed.`],
-        res:m.h[t+1].map((v,j)=>R`h_{${tt},${j+1}}=o\tanh(c)=${Q(gg.o[j])}\tanh${Q(m.c[t+1][j])}=${Q(gg.o[j])}(${N(Math.tanh(m.c[t+1][j]))})=${hl(v)}`),say:`h goes to the next time step and to the read-out layer.`});
-    }else{
-      gateStep('z',t);gateStep('r',t);gateStep('n',t);
-      P({ph:'F',title:`Forward t=${tt}: new hidden state $h_${tt}$`,path:`z, h${t}, h̃ → h${tt}`,act:[...rk('z',tt,H),...rk('n',tt,H),...rk('h',t,H),...rk('h',tt,H),`a:gh:${tt}`,`a:hh:${tt}`],gives:rk('h',tt,H),mats:[],
-        what:[R`$h_${tt}=(1-z_${tt})\odot h_${t}+z_${tt}\odot\tilde h_${tt}$`,`An **interpolation**: $z$ near 0 copies the old state, $z$ near 1 takes the new candidate.`],
-        res:m.h[t+1].map((v,j)=>R`h_{${tt},${j+1}}=(1-z)\,h_{${t},${j+1}}+z\,\tilde h=(1-${N(gg.z[j])})${Q(hp[j])}+${Q(gg.z[j])}${Q(gg.n[j])}=${hl(v)}`),say:`The copy path (1−z)·h is the GRU's highway for memory and gradients.`});}
-    if(outs.includes(t))outStep(t);
-  }
-  if(outs.length>1)P({ph:'F',title:'Forward: total loss $L$ (sum over time)',path:'L₁ + … + L_T → L',act:[...outs.map(t=>`l:${t+1}`),'L'],gives:['L'],mats:[],what:[R`$L=\sum_t L_t$`],res:[R`L=${outs.map(t=>N(m.lt[t])).join('+')}=${hl(m.L)}`],say:`Forward pass finished. Backpropagation through time starts here.`});
-  else st[st.length-1].say='Forward pass finished. Backpropagation through time starts here.';
-  // ---- backward
-  for(let t=T-1;t>=0;t--){const tt=t+1,s=g.steps[t],gg=m.G[t],hp=m.h[t],x=cfg.x[t],fromOut=outs.includes(t),fromNext=t<T-1;
-    if(fromOut){const tg=cfg.t[outs.indexOf(t)];
-      P({ph:'B',title:`Backward t=${tt}: error at the output`,path:`L → y${tt} → u${tt}`,act:[...rk('y',tt,C),...rk('u',tt,C),`l:${tt}`,`a:yl:${tt}`,`a:uy:${tt}`],grads:[...rk('u',tt,C),...(cfg.out==='softmax'?[]:rk('y',tt,C))],mats:[],
-        what:cfg.out==='sigmoid'?[R`$\delta^y=y-t$, then $\delta^u=\delta^y\odot y\odot(1-y)$`]:[R`$\delta^u=y-t$`],res:[cfg.out==='sigmoid'?R`\delta^y_${tt}=${bmc(s.dy)},\quad\delta^u_${tt}=${bmc(s.du)}`:R`\delta^u_${tt}=${bmc(s.du)}`],say:`Prediction minus target, as in every other lab.`});
-      P({ph:'B',title:`Gradient t=${tt}: contribution to $W_{hy}$ and $b_y$`,path:`δu${tt}, h${tt} → dW_hy, db_y`,act:[...rk('u',tt,C),...rk('h',tt,H),`a:hu:${tt}`],mats:['Why'],
-        what:[R`$\mathrm{d}W_{hy}\mathrel{+}=\delta^u_${tt}\,h_${tt}^{\top}$, $\mathrm{d}b_y\mathrel{+}=\delta^u_${tt}$`],res:[R`\mathrm{d}W_{hy}\mathrel{+}=${bmM(outer(s.du,m.h[t+1]))},\quad\mathrm{d}b_y\mathrel{+}=${bmc(s.du)}`],say:`The read-out weights are shared across output steps too.`});}
-    P({ph:'B',title:`Backward t=${tt}: error arriving at $h_${tt}$`,path:`${fromOut?'output':''}${fromOut&&fromNext?' + ':''}${fromNext?'next step':''} → δh${tt}`,act:[...rk('h',tt,H),...(fromOut?[...rk('u',tt,C),`a:hu:${tt}`]:[]),...(fromNext?[...gateKeys(tt+1),`a:hg:${tt+1}`]:[])],grads:rk('h',tt,H),mats:[...(fromOut?['Why']:[]),...(fromNext?GK:[])],
-      what:[`$\\delta^h_${tt}$ collects error from ${fromOut&&fromNext?'**two** places: the read-out at this step and the gates of the next step':fromOut?'the read-out (this is the last step)':'the gates of the next step (no output here)'}.`],
-      res:[R`\delta^h_${tt}=${[...(fromOut?[R`W_{hy}^{\top}\delta^u=${bmc(s.dhOut)}`]:[]),...(fromNext?[R`\text{(from step ${tt+1})}=${bmc(s.dhRec)}`]:[])].join('+')}=${bmc(s.dh)}`],say:fromNext?`The part from the next step is the error travelling back through time.`:`Only the output error reaches the last step.`});
-    if(lstm){
-      const th=m.c[t+1].map(Math.tanh);
-      P({ph:'B',title:`Backward t=${tt}: output gate $o_${tt}$`,path:`δh${tt}, tanh(c${tt}) → δo${tt} → δ(pre-activation)`,act:[...rk('h',tt,H),...rk('o',tt,H),`a:ch:${tt}`],grads:rk('o',tt,H),mats:['o'],
-        what:[R`$\delta o=\delta h\odot\tanh(c)$, then through the sigmoid: $\delta p_o=\delta o\odot o\odot(1-o)$`],res:[R`\delta o_${tt}=${bmc(s.dh)}\odot${bmc(th)}=${bmc(s.dpost.o)}`,R`\delta p_o=\delta o\odot o(1-o)=${bmc(s.dp.o)}`],say:`"p" denotes the pre-activation, the value before the sigmoid.`});
-      P({ph:'B',title:`Backward t=${tt}: error at the cell state $c_${tt}$`,path:`δh${tt}, o, tanh′(c) + error from c${tt+1} → δc${tt}`,act:[...rk('c',tt,H),...rk('h',tt,H),`a:ch:${tt}`,...(fromNext?[`a:cc:${tt+1}`]:[])],grads:rk('c',tt,H),mats:[],
-        what:[R`$\delta c_${tt}=\underbrace{\delta c_${tt+1}\odot f_${tt+1}}_{\text{along the highway}}+\underbrace{\delta h_${tt}\odot o_${tt}\odot(1-\tanh^2c_${tt})}_{\text{through }h_${tt}}$`,fromNext?`The first term travels backward along the cell-state highway, scaled only by the forget gate $f$.`:`There is no later step, so only the second term exists.`],
-        res:[R`\delta c_${tt}=${bmc(s.dcIn)}+${bmc(s.dh)}\odot${bmc(gg.o)}\odot${bmc(th.map(v=>1-v*v))}=${bmc(s.dc)}`],say:`This path has no weight matrix and no squashing, so the error survives many steps when f is close to 1.`});
-      P({ph:'B',title:`Backward t=${tt}: forget, input gates and candidate`,path:`δc${tt}, c${t}, g, i → δf, δi, δc̃`,act:[...rk('c',tt,H),...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H),`a:gc:${tt}`],grads:[...rk('f',tt,H),...rk('i',tt,H),...rk('g',tt,H)],mats:['f','i','g'],
-        what:[R`$\delta f=\delta c\odot c_${t}$, $\delta i=\delta c\odot\tilde c$, $\delta\tilde c=\delta c\odot i$`,R`Through the activations: $\delta p_f=\delta f\odot f(1-f)$, $\delta p_i=\delta i\odot i(1-i)$, $\delta p_{\tilde c}=\delta\tilde c\odot(1-\tilde c^2)$`],
-        res:[R`\delta f=${bmc(s.dpost.f)},\ \delta i=${bmc(s.dpost.i)},\ \delta\tilde c=${bmc(s.dpost.g)}`,R`\delta p_f=${bmc(s.dp.f)},\ \delta p_i=${bmc(s.dp.i)},\ \delta p_{\tilde c}=${bmc(s.dp.g)}`,R`\delta c_${t}\ (\text{to step }${t})=\delta c_${tt}\odot f_${tt}=${bmc(s.dcPrev)}`],say:`Now every gate has its pre-activation error.`});
-    }else{
-      P({ph:'B',title:`Backward t=${tt}: update gate and candidate`,path:`δh${tt}, z, h̃, h${t} → δz, δh̃`,act:[...rk('h',tt,H),...rk('z',tt,H),...rk('n',tt,H),`a:gh:${tt}`],grads:[...rk('z',tt,H),...rk('n',tt,H)],mats:['z','n'],
-        what:[R`$\delta z=\delta h\odot(\tilde h-h_${t})$, $\delta\tilde h=\delta h\odot z$, and $\delta h_${t}\mathrel{+}=\delta h\odot(1-z)$`,R`Through activations: $\delta p_z=\delta z\odot z(1-z)$, $\delta p_{\tilde h}=\delta\tilde h\odot(1-\tilde h^2)$`],
-        res:[R`\delta z=${bmc(s.dpost.z)},\quad\delta\tilde h=${bmc(s.dpost.n)}`,R`\delta p_z=${bmc(s.dp.z)},\quad\delta p_{\tilde h}=${bmc(s.dp.n)}`],say:`The copy path $(1-z)\odot h_{t-1}$ gives the old state a direct line for the gradient.`});
-      P({ph:'B',title:`Backward t=${tt}: reset gate`,path:`δp_h̃, U_h, h${t}, r → δr`,act:[...rk('n',tt,H),...rk('r',tt,H),...rk('h',t,H),`a:hg:${tt}`],grads:rk('r',tt,H),mats:['n','r'],
-        what:[R`$\delta(r\odot h_${t})=U_h^{\top}\delta p_{\tilde h}$, then $\delta r=\delta(r\odot h_${t})\odot h_${t}$ and $\delta p_r=\delta r\odot r(1-r)$`],
-        res:[R`\delta(r\odot h)=${bmM(cfg.p.n.U)}^{\top}${bmc(s.dp.n)}=${bmc(s.drh)}`,R`\delta r=${bmc(s.dpost.r)},\quad\delta p_r=${bmc(s.dp.r)}`],say:`The reset gate only matters through the candidate, so its error arrives via $U_h$.`});}
-    // gradient contributions
-    const items=GK.flatMap(k=>[R`\mathrm{d}W_{${WS[k]}}\mathrel{+}=${bmM(outer(s.dp[k],x))}`,R`\mathrm{d}U_{${WS[k]}}\mathrel{+}=${bmM(outer(s.dp[k],(!lstm&&k==='n')?hp.map((v,q)=>gg.r[q]*v):hp))}`,R`\mathrm{d}b_{${WS[k]}}\mathrel{+}=${bmc(s.dp[k])}`]);
-    P({ph:'B',title:`Gradient t=${tt}: contributions to the ${lstm?'four gates':'three gates'} and the error for step ${t}`,path:`δp, x${tt}, h${t} → dW, dU, db`,act:[...gateKeys(tt),...rk('x',tt,d),...rk('h',t,H),`a:xg:${tt}`,`a:hg:${tt}`],mats:[...GK],
-      what:[R`For every gate $k$: $\mathrm{d}W_k\mathrel{+}=\delta p_k\,x_${tt}^{\top}$, $\mathrm{d}U_k\mathrel{+}=\delta p_k\,h_${t}^{\top}$, $\mathrm{d}b_k\mathrel{+}=\delta p_k$`,`The same weights are used at every step, so each step adds its own contribution.`,t===0?`At $t=1$ the previous state is $\\mathbf 0$, so the $U$ contributions are zero.`:`The error passed to step ${t} is shown on the last line.`],
-      res:[R`\small ${colLines(items,3)}`,R`\delta h_${t}\ (\text{to step }${t})=${lstm?R`\sum_k U_k^{\top}\delta p_k`:R`\delta h\odot(1-z)+r\odot\delta(r\odot h)+U_z^{\top}\delta p_z+U_r^{\top}\delta p_r`}=${bmc(s.dhPrev)}`],say:`These matrices are added up over all time steps in the next phase.`});
-  }
-  // sum over time
-  const sumItems=GK.map(k=>R`\mathrm{d}W_{${WS[k]}}=${bmM(g.gr[k].W)},\ \mathrm{d}U_{${WS[k]}}=${bmM(g.gr[k].U)},\ \mathrm{d}b_{${WS[k]}}=${bmc(g.gr[k].b)}`);
-  P({ph:'B',title:'Gradients: add up the contributions of all time steps',path:'Σ over t → all gate gradients and dW_hy',act:[],mats:[...GK,'Why'],what:[`Each weight matrix is shared by every time step, so its total gradient is the **sum** of the per-step contributions.`],
-    res:[...sumItems,R`\mathrm{d}W_{hy}=${bmM(g.dWhy)},\ \mathrm{d}b_y=${bmc(g.dby)}`],say:`These totals are everything the update step needs.`});
-  const pl=paramList(cfg),an=analytic(cfg);
-  const items2=pl.map(pr=>R`${pr.tex}\leftarrow ${Q(getP(cfg,pr.path))}-${Q(eta)}${Q(an[pr.id])}=${N(getP(cfg1,pr.path))}`);
-  P({ph:'U',title:`Update all ${pl.length} parameters`,path:'θ ← θ − η · dθ',act:[],upd:true,mats:[...GK,'Why'],what:[R`$\theta\leftarrow\theta-\eta\,\dfrac{\partial L}{\partial\theta}$ with $\eta=${N(eta)}$`],res:[R`\small ${colLines(items2,3)}`],say:`Gradient descent. The matrices below the diagram now show the new weights.`});
-  P({ph:'C',title:'Check: run the forward pass again',path:'new weights → y → L′',act:[],upd:true,check:true,mats:[],what:[`Same sequence, **new** weights.`,R`$L'=${N(m1.L)}$ against $L=${N(m.L)}$`,m1.L<m.L?`**The loss went down**, so the update helped.`:`The loss did **not** go down: try a smaller $\\eta$.`],res:[R`L'=${hl(m1.L)}\;${m1.L<m.L?'<':'\\ge'}\;${N(m.L)}=L`],say:`Repeat many times and you get training (see the Training tab).`});
-  return st;
-}
+/*INCLUDE:lstm_build.js*/
 /* ================= layout ================= */
 let geo={},cellEls={},arrEls={},LAY=null,VH=560;
+function rowKey(){const cfg=S.cfg,lstm=cfg.cell==='lstm',it=(sym,txt,ic)=>`<span class="ak">${sym}${ic||''}<span>${txt}</span></span>`;
+  const items=lstm?[it('<b class="aw">f · i · o</b>','gates (0…1): forget, input and output valves',curveSVG('sigmoid','#E0A100')),it('<b class="aw">c̃</b>','candidate: new content (−1…1)',curveSVG('tanh','#2E9E6B')),it('<b class="aw">c</b>','cell state: long-term memory, the horizontal highway'),it('<b class="aw">h</b>','hidden state: what the cell shows')]
+    :[it('<b class="aw">z · r</b>','gates (0…1): update and reset valves',curveSVG('sigmoid','#E0A100')),it('<b class="aw">h̃</b>','candidate: new memory (−1…1)',curveSVG('tanh','#2E9E6B')),it('<b class="aw">h</b>','hidden state, copied along the highway where z is small')];
+  items.push(it('<b class="aw">orange · purple · green</b>','in a gate step: input part · previous-state part · bias'));
+  $('#arrowkey').innerHTML='<div class="akh">How to read the rows</div>'+items.join('');}
 function makeLayout(){
   const cfg=S.cfg,{T,d,H,C}=cfg,lstm=cfg.cell==='lstm',outs=outSteps(cfg),md=Math.max(d,H,C);
   const order=[...(outs.length?['l','y','u']:[]),'h',...(lstm?['c','o','g','i','f']:['n','r','z']),'x'];
@@ -334,7 +254,7 @@ function makeLayout(){
   for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.s||(t.b?12:10.5)}" fill="${t.col||(t.b?'#444':'#6b7280')}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
   h+='<g id="arrg">';for(const a of arrows)h+=`<line class="arr" id="${a.id}" x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#9aa0a6" stroke-width="1.6" stroke-linecap="round" marker-end="url(#ar)"/>${a.label?`<text x="${a.lx}" y="${a.ly}" font-size="9.5" fill="#1E5873" font-weight="700">${esc(a.label)}</text>`:''}`;h+='</g>';
   for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><title></title><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7.5,c*.32)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.09)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
-  svg.innerHTML=h;LAY={c};cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,ti:g.querySelector('title'),r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
+  svg.innerHTML=h;LAY={c};rowKey();cellEls={};svg.querySelectorAll('.cell').forEach(g=>{cellEls[g.dataset.k]={g,ti:g.querySelector('title'),r:g.querySelector('rect'),tv:g.querySelector('.tv'),tg:g.querySelector('.tg')};});
   arrEls={};svg.querySelectorAll('.arr').forEach(l=>arrEls[l.id]=l);
 }
 const f2=v=>{const a=Math.abs(v)<.005?0:v;return a.toFixed(2)};
@@ -353,17 +273,19 @@ function paint(){
   for(const [key,r] of Object.entries(geo)){const e=cellEls[key],kind=r.kind;const given=kind==='x'||isZero0(key),shown=given||cs.vis.has(key);let fill='#EFEFEA',fo=1,stroke='#D6D6D0',txt='';
     if(shown){const v=isZero0(key)?0:valOf(key,M,th),nrm=nm[kind]||1;const gate='fiozr'.includes(kind);const base=v<0&&!gate?'#E07B39':KC[kind];
       const mag=(gate||kind==='y'||kind==='l'||kind==='L')?Math.min(1,Math.abs(v)):Math.min(1,Math.abs(v)/nrm);fill=base;fo=.1+.62*mag;stroke=base;txt=(kind==='L'||kind==='l')?v.toFixed(3):f2(v);}
-    e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);const isAct=act.has(key);e.r.setAttribute('stroke',isAct?(back?ERR:ACC):stroke);e.r.setAttribute('stroke-width',isAct?2.6:1);e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
-    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;const keep=LAY.c>=19||isAct;
+    e.r.setAttribute('fill',fill);e.r.setAttribute('fill-opacity',fo);const isAct=act.has(key);const oc=cur.ops&&cur.ops.cells&&cur.ops.cells[key];e.r.setAttribute('stroke',oc||(isAct?(back?ERR:ACC):stroke));e.r.setAttribute('stroke-width',oc?4:isAct?2.6:1);e.g.setAttribute('class','cell'+(isAct?(back?' err':' active'):''));
+    const gvv=showG&&cs.gv.has(key)?gradOf(key,g):undefined;const keep=LAY.c>=19||isAct||!!oc;
     e.tv.textContent=keep?txt:'';e.tv.setAttribute('fill','#1d2229');e.tg.textContent=(gvv===undefined||!keep)?'':f2(gvv);e.tv.setAttribute('dy',gvv===undefined?'.34em':'-.05em');
     e.ti.textContent=shown?`${cellName(key)} = ${N(isZero0(key)?0:valOf(key,M,th))}${gvv===undefined?'':' · gradient '+N(gvv)}`:'';}
-  for(const [id,ln] of Object.entries(arrEls)){const on=act.has(id);ln.style.stroke=on?(back?ERR:ACC):'#9aa0a6';ln.style.strokeWidth=on?3.2:1.6;ln.style.opacity=on?1:.55;ln.classList.toggle('flow',on);ln.classList.toggle('rev',on&&back);ln.setAttribute('marker-end',on?'':'url(#ar)');}
-  const hi=new Set(cur.mats||[]);const heat=(rows)=>{const mx=Math.max(.05,...rows.flat().map(Math.abs));return`<div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${rows.flat().map(v=>`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`}">${v.toFixed(2)}</i>`).join('')}</div>`;};
-  $('#mats').innerHTML=GATES[cfg.cell].map(k=>`<div class="mat ${hi.has(k)?'hi':''}"><div class="mk">${GN[k]} ${K(GT[k])}</div><div class="row3"><div><div class="ml">W (H×d)</div>${heat(th.p[k].W)}</div><div><div class="ml">U (H×H)</div>${heat(th.p[k].U)}</div><div><div class="ml">b</div>${heat(th.p[k].b.map(v=>[v]))}</div></div></div>`).join('')
-    +`<div class="mat ${hi.has('Why')?'hi':''}"><div class="mk">read-out</div><div class="row3"><div><div class="ml">W<sub>hy</sub> (C×H)</div>${heat(th.Why)}</div><div><div class="ml">b<sub>y</sub></div>${heat(th.by.map(v=>[v]))}</div></div></div>`;
+  for(const [id,ln] of Object.entries(arrEls)){const ao=cur.ops&&cur.ops.arrows&&cur.ops.arrows[id],on=act.has(id)||!!ao;ln.style.stroke=on?(ao||(back?ERR:ACC)):'#9aa0a6';ln.style.strokeWidth=on?3.2:1.6;ln.style.opacity=on?1:.55;ln.classList.toggle('flow',on);ln.classList.toggle('rev',on&&back);ln.setAttribute('marker-end',on?'':'url(#ar)');}
+  const hi=new Set(cur.mats||[]),om=cur.ops&&cur.ops.mats;
+  const heat=(rows,sp)=>{const mx=Math.max(.05,...rows.flat().map(Math.abs));const used=(r,c)=>sp&&(sp.all||(sp.rows&&sp.rows.includes(r))||(sp.cols&&sp.cols.includes(c))||(sp.idx&&sp.idx.includes(r)));
+    return`<div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${rows.map((row,r)=>row.map((v,c)=>{const u=used(r,c);return`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`};${u?`outline:3px solid ${sp.col};outline-offset:-1px;font-weight:800`:(om?'opacity:.3':'')}">${v.toFixed(2)}</i>`;}).join('')).join('')}</div>`;};
+  $('#mats').innerHTML=GATES[cfg.cell].map(k=>{const sc=om&&om[k];return`<div class="mat ${(om?!!sc:hi.has(k))?'hi':''}" style="${om&&!sc?'opacity:.5':''}"><div class="mk">${GN[k]} ${K(GT[k])}</div><div class="row3"><div><div class="ml">W (H×d)</div>${heat(th.p[k].W,sc&&sc.W)}</div><div><div class="ml">U (H×H)</div>${heat(th.p[k].U,sc&&sc.U)}</div><div><div class="ml">b</div>${heat(th.p[k].b.map(v=>[v]),sc&&sc.b)}</div></div></div>`;}).join('')
+    +(()=>{const sc=om&&om.Why;return`<div class="mat ${(om?!!sc:hi.has('Why'))?'hi':''}" style="${om&&!sc?'opacity:.5':''}"><div class="mk">read-out</div><div class="row3"><div><div class="ml">W<sub>hy</sub> (C×H)</div>${heat(th.Why,sc)}</div><div><div class="ml">b<sub>y</sub></div>${heat(th.by.map(v=>[v]),sc&&{all:1,col:sc.col})}</div></div></div>`;})();
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
   $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]} · ${cfg.cell.toUpperCase()}`;
-  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);$('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
+  $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);$('#learn').innerHTML=conceptBlock(cur.learn);$('#opkey').innerHTML=keyHTML(cur.ops&&cur.ops.key);$('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
   const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');res.querySelectorAll('.katex-display').forEach((e,j)=>e.style.animationDelay=(j*160+80)+'ms');
   $('#say').innerHTML=rt(cur.say||'');if(i!==lastI){const fb=$('#fbody');fb.classList.remove('swap');void fb.offsetWidth;fb.classList.add('swap');lastI=i;}
   $('#slider').max=steps.length-1;$('#slider').value=i;$('#cnt').textContent=`${i+1} / ${steps.length}`;$('#cnt2').textContent=`${i+1} / ${steps.length}`;$('#fabn').textContent=i+1;$('#bar').style.width=((i+1)/steps.length*100)+'%';
@@ -379,7 +301,7 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
   if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  $('#p-all').innerHTML=`<div class="row"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  $('#p-all').innerHTML=glossBlock(steps.gloss)+`<div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;
@@ -443,7 +365,7 @@ function wireCustom(){const cfg=S.cfg;
 /* ================= floating explainer + book icon ================= */
 /*PANEL_JS*/
 /* ================= wiring ================= */
-function init(){
+function init(){initConcepts();
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
   steps=build();makeLayout();renderJump();paint();document.body.appendChild(panel);$('#fmin').onclick=closePanel;placeFab();
   $('#prev2').onclick=()=>{stopPlay();go(S.i-1)};$('#next2').onclick=()=>{stopPlay();go(S.i+1)};if(innerWidth<700){panelOpen=false;syncPanel();}else openPanel();
