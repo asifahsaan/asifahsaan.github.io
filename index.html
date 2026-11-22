@@ -3,167 +3,234 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Asif Ahsan · Lecturer in Machine Learning &amp; AI</title>
+<title>Asif Ahsan · Machine Learning &amp; AI</title>
 <meta name="description" content="Asif Ahsan, Lecturer in Machine Learning and AI at The University of Lahore. Healthcare AI, medical imaging, NLP and time-series learning.">
+<meta name="theme-color" content="#0b1118">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>try{var t=localStorage.getItem('theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme='dark'}</script>
 <style>
-:root{--bg:#0f1720;--panel:#16212d;--line:#243344;--tx:#e6edf3;--mut:#9fb0c0;--acc:#2B7A9B;--acc2:#5cc0e6;--vio:#7C4DDB;--amb:#E0A100}
-*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:70px}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:"IBM Plex Sans",Arial,sans-serif;line-height:1.6}
-a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
-nav{position:sticky;top:0;z-index:5;background:rgba(15,23,32,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-nav .in{max-width:1000px;margin:auto;padding:10px 20px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
-nav .logo{display:flex;align-items:center;gap:10px;margin-right:auto;color:var(--tx);font-weight:700;font-size:17px}
-nav .logo img{width:32px;height:32px}
-nav a.l{color:var(--mut);font-size:14px}nav a.l:hover{color:var(--tx);text-decoration:none}
-nav a.vl{background:var(--acc);color:#fff;padding:6px 14px;border-radius:999px;font-weight:600;font-size:14px}
-nav a.vl:hover{background:#348fb4;text-decoration:none}
-.wrap{max-width:1000px;margin:auto;padding:0 20px}
-.hero{padding:70px 0 40px;display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
-.hero img{width:130px;height:130px}
-h1{font-size:clamp(34px,6vw,52px);margin:0;letter-spacing:-.5px}
-h1 span{background:linear-gradient(90deg,var(--acc2),var(--vio));-webkit-background-clip:text;background-clip:text;color:transparent}
-.role{font-size:19px;color:var(--tx);margin:6px 0 4px}
-.where{color:var(--mut);margin:0 0 16px}
-.links{display:flex;gap:10px;flex-wrap:wrap}
-.links a{border:1px solid var(--line);border-radius:999px;padding:6px 16px;font-size:14px;color:var(--tx)}
-.links a:hover{border-color:var(--acc2);text-decoration:none}
-.links a.p{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
-section{padding:34px 0;border-top:1px solid var(--line)}
-h2{font-size:24px;margin:0 0 16px}
-h3{margin:0;font-size:17px}
-.mut{color:var(--mut)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chips span{background:#1d3a4a;color:var(--acc2);padding:3px 12px;border-radius:999px;font-size:13.5px}
-.chips.v span{background:#2e2350;color:#b79cf5}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
-.card p{margin:8px 0 0;color:var(--mut);font-size:14.5px}
-.feat{display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(120deg,#16303d,#241c42);border:1px solid var(--line);border-radius:16px;padding:24px}
-.feat p{margin:6px 0 0;color:var(--mut);max-width:560px}
-.btn{background:var(--acc);color:#fff;padding:10px 22px;border-radius:999px;font-weight:600}
-.btn:hover{background:#348fb4;text-decoration:none}
-.tl{border-left:2px solid var(--line);margin-left:6px}
-.item{position:relative;padding:0 0 22px 22px}
-.item:before{content:"";position:absolute;left:-7px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--acc2)}
-.item .d{color:var(--amb);font-size:13px;font-weight:600}
-.item .o{color:var(--mut);font-size:14.5px}
-.item ul{margin:6px 0 0;padding-left:18px;color:var(--mut);font-size:14.5px}
-.award{color:var(--amb);font-weight:600}
-table{border-collapse:collapse;width:100%;font-size:14.5px}
-td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-td:first-child{color:var(--acc2);font-weight:600;width:150px}
-footer{border-top:1px solid var(--line);padding:26px 20px;text-align:center;color:var(--mut);font-size:14px;margin-top:20px}
-@media(max-width:600px){.hero{grid-template-columns:1fr;text-align:center}.hero img{margin:auto}.links{justify-content:center}}
+:root{--bg:#0b1118;--bg2:#101923;--card:rgba(255,255,255,.045);--bd:rgba(255,255,255,.09);--tx:#eef3f8;--mut:#93a4b5;--a:#5cc0e6;--b:#8b6cf0;--c:#f0b429;--glow:rgba(92,192,230,.16);--nav:rgba(11,17,24,.72)}
+[data-theme=light]{--bg:#f6f8fb;--bg2:#ffffff;--card:rgba(255,255,255,.8);--bd:rgba(15,30,50,.1);--tx:#0e1a27;--mut:#55677a;--a:#1d7fa6;--b:#6a47d6;--c:#b97d00;--glow:rgba(29,127,166,.14);--nav:rgba(246,248,251,.78)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.65 Inter,system-ui,Arial,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.sg{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1120px;margin:auto;padding:0 22px}
+/* nav */
+nav{position:fixed;inset:12px 0 auto;z-index:20;display:flex;justify-content:center;padding:0 12px}
+nav .bar{display:flex;align-items:center;gap:6px;background:var(--nav);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--bd);border-radius:999px;padding:6px 8px 6px 14px;max-width:100%}
+nav .logo{display:flex;align-items:center;gap:8px;font-weight:700;font-family:"Space Grotesk";margin-right:10px}
+nav .logo img{width:26px;height:26px}
+nav .lk{padding:7px 12px;border-radius:999px;font-size:14px;color:var(--mut);transition:.2s}
+nav .lk:hover{color:var(--tx);background:var(--card)}
+nav .cta{background:linear-gradient(120deg,var(--a),var(--b));color:#fff;padding:8px 16px;border-radius:999px;font-weight:600;font-size:14px;margin-left:4px;white-space:nowrap}
+#tg{width:34px;height:34px;border-radius:50%;border:0;background:var(--card);color:var(--tx);cursor:pointer;font-size:15px;margin-left:4px}
+@media(max-width:760px){nav .lk{display:none}}
+/* hero */
+.hero{position:relative;min-height:100svh;display:flex;align-items:center;padding:110px 0 60px;isolation:isolate}
+#net{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.hero:before{content:"";position:absolute;z-index:-2;inset:0;background:radial-gradient(60% 50% at 75% 30%,var(--glow),transparent 70%),radial-gradient(50% 40% at 15% 80%,rgba(139,108,240,.14),transparent 70%)}
+.hero .wrap{width:100%;min-width:0}
+.pill{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--bd);background:var(--card);border-radius:999px;padding:6px 14px;font-size:13.5px;color:var(--mut)}
+.pill i{width:8px;height:8px;border-radius:50%;background:#3ddc97;box-shadow:0 0 0 0 rgba(61,220,151,.6);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+h1{font-size:clamp(40px,7.4vw,86px);line-height:1.02;margin:22px 0 20px;font-weight:700}
+.grad{background:linear-gradient(100deg,var(--a),var(--b) 55%,var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(17px,2vw,21px);color:var(--mut);max-width:620px;margin:0 0 30px}
+.btns{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:999px;font-weight:600;transition:transform .2s,box-shadow .2s}
+.btn.p{background:linear-gradient(120deg,var(--a),var(--b));color:#fff;box-shadow:0 10px 30px -10px var(--b)}
+.btn.s{border:1px solid var(--bd);background:var(--card)}
+.btn:hover{transform:translateY(-2px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:54px;max-width:820px}
+.stat{border-top:1px solid var(--bd);padding-top:14px}
+.stat b{display:block;font:700 34px "Space Grotesk";background:linear-gradient(100deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{font-size:13.5px;color:var(--mut)}
+/* sections */
+section{padding:90px 0}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--a);font-weight:600;margin-bottom:10px}
+h2{font-size:clamp(30px,4.4vw,48px);line-height:1.1;margin:0 0 36px}
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.cell{background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:26px;position:relative;overflow:hidden;transition:transform .25s,border-color .25s}
+.cell:hover{border-color:color-mix(in srgb,var(--a) 50%,var(--bd))}
+.cell h3{margin:0 0 8px;font-size:21px}
+.cell p{margin:0;color:var(--mut)}
+.s6{grid-column:span 6}.s4{grid-column:span 4}.s3{grid-column:span 3}.s2{grid-column:span 2}
+@media(max-width:860px){.s4,.s3,.s2{grid-column:span 6}}
+.vl{background:linear-gradient(135deg,rgba(92,192,230,.16),rgba(139,108,240,.2));display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:center}
+@media(max-width:700px){.vl{grid-template-columns:1fr}}
+.vl svg{width:100%;height:auto}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chips span{border:1px solid var(--bd);background:var(--card);padding:5px 13px;border-radius:999px;font-size:13.5px}
+.big{font:700 44px "Space Grotesk";background:linear-gradient(100deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1}
+.small{font-size:13.5px;color:var(--mut)}
+/* timeline */
+.tl{position:relative;padding-left:28px}
+.tl:before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--a),var(--b),transparent)}
+.it{position:relative;margin-bottom:16px;background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px 24px}
+.it:before{content:"";position:absolute;left:-28px;top:26px;width:14px;height:14px;border-radius:50%;background:var(--bg);border:3px solid var(--a)}
+.it .d{font-size:13px;color:var(--c);font-weight:600}
+.it h3{margin:2px 0;font-size:19px}
+.it .o{color:var(--mut);font-size:14.5px}
+.it ul{margin:8px 0 0;padding-left:18px;color:var(--mut);font-size:14.5px}
+.aw{color:var(--c);font-weight:600}
+/* marquee */
+.mq{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.mq div{display:flex;gap:12px;width:max-content;animation:mv 38s linear infinite}
+.mq:hover div{animation-play-state:paused}
+.mq span{border:1px solid var(--bd);background:var(--card);padding:9px 20px;border-radius:999px;font-weight:500;white-space:nowrap}
+@keyframes mv{to{transform:translateX(-50%)}}
+.sk{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:30px}
+/* contact */
+.contact{text-align:center;background:linear-gradient(135deg,rgba(92,192,230,.14),rgba(139,108,240,.18));border:1px solid var(--bd);border-radius:32px;padding:64px 24px}
+.contact h2{margin-bottom:14px}.contact p{color:var(--mut);max-width:520px;margin:0 auto 26px}
+footer{padding:30px 22px;text-align:center;color:var(--mut);font-size:14px}
+/* reveal */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}.mq div,.pill i{animation:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
-<nav><div class="in">
-  <a class="logo" href="#top" style="text-decoration:none"><img src="favicon.svg" alt="AA logo">Asif Ahsan</a>
-  <a class="l" href="#about">About</a><a class="l" href="#research">Research</a><a class="l" href="#experience">Experience</a><a class="l" href="#projects">Projects</a><a class="l" href="#skills">Skills</a>
-  <a class="vl" href="visual-learning/">Visual Learning</a>
+<nav><div class="bar">
+  <a class="logo" href="#top"><img src="favicon.svg" alt="AA">Asif Ahsan</a>
+  <a class="lk" href="#about">About</a><a class="lk" href="#research">Research</a><a class="lk" href="#experience">Experience</a><a class="lk" href="#projects">Projects</a><a class="lk" href="#contact">Contact</a>
+  <a class="cta" href="visual-learning/">Visual Learning</a>
+  <button id="tg" aria-label="Toggle light and dark theme">◐</button>
 </div></nav>
 
-<main class="wrap" id="top">
-<div class="hero">
-  <img src="favicon.svg" alt="Asif Ahsan logo">
-  <div>
-    <h1>Asif <span>Ahsan</span></h1>
-    <p class="role">Lecturer, Machine Learning &amp; AI</p>
-    <p class="where">Department of Computer Science &amp; IT, The University of Lahore · Lahore, Pakistan</p>
-    <div class="links">
-      <a class="p" href="visual-learning/">Visual Learning →</a>
-      <a href="mailto:asifahsaan1@gmail.com">Email</a>
-      <a href="https://github.com/asifahsaan">GitHub</a>
+<header class="hero" id="top">
+  <canvas id="net" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <span class="pill"><i></i>Lecturer · The University of Lahore</span>
+    <h1>I teach machines to learn, and people to <span class="grad">understand them.</span></h1>
+    <p class="lead">Asif Ahsan. Machine Learning and AI lecturer working on healthcare AI, medical imaging, NLP and trustworthy, well-evaluated models.</p>
+    <div class="btns">
+      <a class="btn p" href="visual-learning/">Try Visual Learning →</a>
+      <a class="btn s" href="#contact">Get in touch</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><b data-n="277524" data-f="int">0</b><span>histopathology patches classified</span></div>
+      <div class="stat"><b data-n="0.982" data-f="dec">0</b><span>mAP on brand logo detection</span></div>
+      <div class="stat"><b data-n="5" data-f="raw">0</b><span>teaching and industry roles</span></div>
+      <div class="stat"><b data-n="2025" data-f="raw">0</b><span>Best Supervisor Award</span></div>
     </div>
   </div>
-</div>
+</header>
 
-<section id="about" style="border-top:0">
-  <h2>About</h2>
-  <p>Research-oriented lecturer in Machine Learning and Artificial Intelligence with experience in healthcare AI (medical imaging), NLP and text mining, and robust model evaluation. I hold an MS in Data Science, with thesis research in time-series forecasting, focused on reproducible experiments, feature engineering and generalisation under non-stationarity.</p>
-  <p>I teach core AI and ML courses, supervise applied ML projects, and build ML pipelines from experiment to deployment. I am open to PhD research topics in deep learning, evaluation and generalisation, including healthcare AI, computer vision, NLP, trustworthy ML and time-series learning.</p>
-</section>
-
-<section>
-  <div class="feat">
-    <div>
-      <h3>Visual Learning</h3>
-      <p>Free interactive explainers I build for my students and for anyone learning AI. Step through every calculation of a neural network, then change the numbers and train it yourself.</p>
+<main class="wrap">
+<section id="about" style="padding-top:40px">
+  <div class="eyebrow rv">About</div>
+  <h2 class="rv">Research-minded, classroom-tested.</h2>
+  <div class="bento">
+    <div class="cell s4 rv">
+      <h3>Profile</h3>
+      <p>Research-oriented lecturer in ML and AI with experience in healthcare AI, NLP and text mining, and robust model evaluation. MS in Data Science, with thesis research in time-series forecasting focused on reproducible experiments, feature engineering and generalisation under non-stationarity.</p>
+      <p style="margin-top:12px">I teach core AI and ML courses, supervise applied projects, and build ML pipelines from experiment to deployment. Open to PhD research topics in deep learning, evaluation and generalisation.</p>
     </div>
-    <a class="btn" href="visual-learning/">Explore the modules</a>
+    <div class="cell s2 rv"><div class="big">MS</div><h3>Data Science</h3><p class="small">FAST–NUCES, Lahore · 2020–2023<br>Thesis on store sales forecasting, XGBoost vs ARIMA family.</p></div>
+    <div class="cell s6 vl rv">
+      <div>
+        <div class="eyebrow">Featured · Free</div>
+        <h3 style="font-size:30px">Visual Learning</h3>
+        <p>Interactive explainers I build for my students and anyone learning AI. Step through every calculation of a neural network, edit the numbers, and train it live. More modules are on the way.</p>
+        <div class="btns" style="margin-top:20px"><a class="btn p" href="visual-learning/">Explore modules →</a></div>
+      </div>
+      <svg viewBox="0 0 320 180" aria-hidden="true"><g stroke="currentColor" stroke-opacity=".28" stroke-width="1.5" fill="none">
+        <path d="M40 50L150 40M40 50L150 140M40 130L150 40M40 130L150 140M150 40L270 60M150 40L270 120M150 140L270 60M150 140L270 120"/></g>
+        <g><circle cx="40" cy="50" r="13" fill="#64748B"/><circle cx="40" cy="130" r="13" fill="#64748B"/><circle cx="150" cy="40" r="15" fill="#2B7A9B"/><circle cx="150" cy="140" r="15" fill="#2B7A9B"/><circle cx="270" cy="60" r="15" fill="#7C4DDB"/><circle cx="270" cy="120" r="15" fill="#7C4DDB"/></g>
+        <circle r="4" fill="#f0b429"><animateMotion dur="2.4s" repeatCount="indefinite" path="M40 50L150 40L270 60"/></circle>
+        <circle r="4" fill="#f0b429"><animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M40 130L150 140L270 120"/></circle></svg>
+    </div>
   </div>
 </section>
 
 <section id="research">
-  <h2>Research interests</h2>
-  <div class="chips">
-    <span>Healthcare AI &amp; Medical Imaging</span><span>Clinical NLP / Text Mining</span><span>Representation Learning</span><span>Trustworthy Explainable ML</span><span>Time-Series Learning</span><span>Evaluation &amp; Generalisation</span>
-  </div>
-  <h3 style="margin:24px 0 10px">Manuscripts in preparation</h3>
-  <div class="grid">
-    <div class="card"><b>A Lightweight Domain-Generalised Deep Learning Framework for Cross-Dataset Diabetic Retinopathy Screening</b><p>Ahsan, A. · intended for an IEEE journal</p></div>
-    <div class="card"><b>Active Learning Based Citation Context Analysis using Scholarly Big Data</b><p>Riaz, A., Ahsan, A., &amp; Safder, I.</p></div>
-    <div class="card"><b>Store Sales Forecasting with Comparative Analysis</b><p>Ahsan, A., &amp; Irteza, S. M.</p></div>
+  <div class="eyebrow rv">Research</div>
+  <h2 class="rv">What I work on</h2>
+  <div class="bento">
+    <div class="cell s3 rv"><h3>Interests</h3><div class="chips"><span>Healthcare AI &amp; Medical Imaging</span><span>Clinical NLP / Text Mining</span><span>Representation Learning</span><span>Trustworthy Explainable ML</span><span>Time-Series Learning</span><span>Evaluation &amp; Generalisation</span></div></div>
+    <div class="cell s3 rv"><h3>Manuscripts in preparation</h3>
+      <p style="margin:8px 0"><b>Lightweight Domain-Generalised DL Framework for Cross-Dataset Diabetic Retinopathy Screening</b><br><span class="small">Ahsan · intended for an IEEE journal</span></p>
+      <p style="margin:8px 0"><b>Active Learning Based Citation Context Analysis using Scholarly Big Data</b><br><span class="small">Riaz, Ahsan &amp; Safder</span></p>
+      <p style="margin:8px 0"><b>Store Sales Forecasting with Comparative Analysis</b><br><span class="small">Ahsan &amp; Irteza</span></p></div>
   </div>
 </section>
 
 <section id="experience">
-  <h2>Experience</h2>
+  <div class="eyebrow rv">Experience</div>
+  <h2 class="rv">Teaching and building</h2>
   <div class="tl">
-    <div class="item"><div class="d">Feb 2023 – Present</div><h3>Lecturer (Machine Learning &amp; AI)</h3><div class="o">The University of Lahore</div>
-      <ul><li>Teach ML, data science and AI; design syllabi and research-oriented assessments.</li><li>Supervise undergraduate projects in ML/DL and applied healthcare analytics.</li><li class="award">Best Supervisor Award, FIT EXPO UOL 2025</li></ul></div>
-    <div class="item"><div class="d">Jan 2024 – Present</div><h3>Visiting Lecturer (Data Science &amp; Business Analytics)</h3><div class="o">FAST School of Management, Lahore</div>
-      <ul><li>Teach predictive modelling and text mining; mentor analytics projects and case studies.</li></ul></div>
-    <div class="item"><div class="d">Aug 2022 – Jan 2024</div><h3>Teaching Assistant (AI, Data Science &amp; NLP)</h3><div class="o">FAST NUCES, Lahore</div>
-      <ul><li>Supported AI/NLP and data science courses; assisted student research and project coordination.</li></ul></div>
-    <div class="item"><div class="d">Sep 2021 – Dec 2022</div><h3>Visiting Lab Instructor (Data Science &amp; ML)</h3><div class="o">FAST NUCES, Lahore</div>
-      <ul><li>Conducted ML and data analysis labs; designed lab material and supervised coursework projects.</li></ul></div>
-    <div class="item"><div class="d">Aug 2020 – Present</div><h3>Software Developer (ML Integration, Remote)</h3><div class="o">WestEnd Enterprises, USA</div>
-      <ul><li>Built data pipelines and integrated ML components into applications and automation workflows.</li></ul></div>
-  </div>
-</section>
-
-<section id="education">
-  <h2>Education</h2>
-  <div class="tl">
-    <div class="item"><div class="d">2020 – 2023</div><h3>MS Data Science</h3><div class="o">FAST – National University of Computer and Emerging Sciences, Lahore</div>
-      <ul><li>Thesis: <i>Store Sales Forecasting with Comparative Analysis</i> (supervisor Dr. Syed Muhammad Irteza).</li><li>Compared ARIMA, SARIMA and SARIMAX with machine learning models; strong results with XGBoost.</li></ul></div>
-    <div class="item"><div class="d">2014 – 2019</div><h3>BS Computer Science</h3><div class="o">University of South Asia, Lahore</div></div>
+    <div class="it rv"><div class="d">Feb 2023 – Present</div><h3>Lecturer, Machine Learning &amp; AI</h3><div class="o">The University of Lahore</div><ul><li>Teach ML, data science and AI; design syllabi and research-oriented assessments.</li><li>Supervise undergraduate projects in ML/DL and applied healthcare analytics.</li><li class="aw">Best Supervisor Award, FIT EXPO UOL 2025</li></ul></div>
+    <div class="it rv"><div class="d">Jan 2024 – Present</div><h3>Visiting Lecturer, Data Science &amp; Business Analytics</h3><div class="o">FAST School of Management, Lahore</div><ul><li>Teach predictive modelling and text mining; mentor analytics projects and case studies.</li></ul></div>
+    <div class="it rv"><div class="d">Aug 2020 – Present</div><h3>Software Developer, ML Integration (Remote)</h3><div class="o">WestEnd Enterprises, USA</div><ul><li>Built data pipelines and integrated ML components into applications and automation workflows.</li></ul></div>
+    <div class="it rv"><div class="d">Aug 2022 – Jan 2024</div><h3>Teaching Assistant, AI, Data Science &amp; NLP</h3><div class="o">FAST NUCES, Lahore</div><ul><li>Supported AI/NLP and data science courses; assisted student research and projects.</li></ul></div>
+    <div class="it rv"><div class="d">Sep 2021 – Dec 2022</div><h3>Visiting Lab Instructor, Data Science &amp; ML</h3><div class="o">FAST NUCES, Lahore</div><ul><li>Conducted ML labs; designed lab material and supervised coursework projects.</li></ul></div>
   </div>
 </section>
 
 <section id="projects">
-  <h2>Projects</h2>
-  <div class="grid">
-    <div class="card"><b>Breast Cancer Detection from Histopathology</b><p>AlexNet / DenseNet / VGG on 277,524 patches from 162 patients. 90.90% accuracy, 90.50% balanced accuracy.</p></div>
-    <div class="card"><b>Brand Logo Detection (YOLOv5)</b><p>Self-created dataset of 5,085 images, eight brands. Precision 0.988, recall 0.951, mAP 0.982; tested on live footage.</p></div>
-    <div class="card"><b>Image Segmentation &amp; Classification</b><p>Deep learning models with focus on validation, performance evaluation and error analysis.</p></div>
-    <div class="card"><b>Visual Learning</b><p>Interactive step-by-step AI explainers for teaching. <a href="visual-learning/">Open →</a></p></div>
+  <div class="eyebrow rv">Projects</div>
+  <h2 class="rv">Selected work</h2>
+  <div class="bento">
+    <div class="cell s2 rv"><div class="big">90.9%</div><h3>Breast cancer detection</h3><p class="small">AlexNet / DenseNet / VGG on 277,524 histopathology patches from 162 patients. 90.50% balanced accuracy.</p></div>
+    <div class="cell s2 rv"><div class="big">0.982</div><h3>Logo detection, YOLOv5</h3><p class="small">Self-created dataset, 5,085 images, eight brands. Precision 0.988, recall 0.951. Tested on live footage.</p></div>
+    <div class="cell s2 rv"><div class="big">Seg</div><h3>Segmentation &amp; classification</h3><p class="small">Deep learning models with focus on validation, performance evaluation and error analysis.</p></div>
   </div>
 </section>
 
 <section id="skills">
-  <h2>Skills</h2>
-  <table>
-    <tr><td>Methods</td><td>Deep Learning (CNNs), Computer Vision, NLP / Text Mining, Time-Series Forecasting, Feature Engineering, Model Generalisation</td></tr>
-    <tr><td>Evaluation</td><td>Cross-validation, balanced accuracy, precision/recall, mAP, RMSE/RMSPE, error analysis</td></tr>
-    <tr><td>Tools</td><td>Python, SQL, PyTorch, TensorFlow, OpenCV</td></tr>
-    <tr><td>Applied</td><td>Reproducible ML pipelines, experiment tracking, deployment support, monitoring and validation</td></tr>
-  </table>
+  <div class="eyebrow rv">Skills</div>
+  <h2 class="rv">Toolbox</h2>
+  <div class="mq rv"><div>
+    <span>Deep Learning</span><span>Computer Vision</span><span>NLP / Text Mining</span><span>Time-Series</span><span>Feature Engineering</span><span>Python</span><span>SQL</span><span>PyTorch</span><span>TensorFlow</span><span>OpenCV</span><span>Cross-validation</span><span>mAP</span><span>RMSE / RMSPE</span><span>Reproducible ML</span>
+    <span>Deep Learning</span><span>Computer Vision</span><span>NLP / Text Mining</span><span>Time-Series</span><span>Feature Engineering</span><span>Python</span><span>SQL</span><span>PyTorch</span><span>TensorFlow</span><span>OpenCV</span><span>Cross-validation</span><span>mAP</span><span>RMSE / RMSPE</span><span>Reproducible ML</span>
+  </div></div>
+  <div class="sk">
+    <div class="cell rv"><h3>Awards</h3><p><span class="aw">2025</span> Best Supervisor Award, FIT EXPO UOL<br><span class="aw">2024</span> Faculty Development and Training<br><span class="aw">2023</span> Generative AI in Higher Education (PHEC, iHub UOL)<br><span class="aw">2022</span> Deep Learning Specialisation (DeepLearning.AI)</p></div>
+    <div class="cell rv"><h3>Education</h3><p><b>MS Data Science</b>, FAST–NUCES (2020–23)<br><b>BS Computer Science</b>, University of South Asia (2014–19)</p></div>
+  </div>
 </section>
 
-<section id="awards">
-  <h2>Awards &amp; certifications</h2>
-  <div class="tl">
-    <div class="item"><div class="d">2025</div><b class="award">Best Supervisor Award</b>, FIT EXPO UOL 2025</div>
-    <div class="item"><div class="d">2024</div>Certificate of Attendance, Faculty Development and Training</div>
-    <div class="item"><div class="d">2023</div>Certificate on the Use of Generative AI in Higher Education (PHEC and iHub, University of Lahore)</div>
-    <div class="item"><div class="d">2022</div>Deep Learning Specialisation (DeepLearning.AI)</div>
+<section id="contact" style="padding-bottom:40px">
+  <div class="contact rv">
+    <div class="eyebrow">Contact</div>
+    <h2>Let's talk AI, research or teaching.</h2>
+    <p>Open to PhD research collaborations in healthcare AI, computer vision, NLP, trustworthy ML and time-series learning.</p>
+    <div class="btns" style="justify-content:center"><a class="btn p" href="mailto:asifahsaan1@gmail.com">Email me</a><a class="btn s" href="https://github.com/asifahsaan">GitHub</a><a class="btn s" href="visual-learning/">Visual Learning</a></div>
   </div>
 </section>
 </main>
-<footer>© Asif Ahsan · <a href="mailto:asifahsaan1@gmail.com">asifahsaan1@gmail.com</a> · <a href="https://github.com/asifahsaan">github.com/asifahsaan</a></footer>
+<footer>© Asif Ahsan · Lahore, Pakistan</footer>
+
+<script>
+// theme
+const tg=document.getElementById('tg');
+tg.onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(e){}};
+// reveal
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+// counters
+const fmt={int:v=>Math.round(v).toLocaleString('en-US'),dec:v=>v.toFixed(3),plus:v=>Math.round(v)+'+',raw:v=>Math.round(v)};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const co=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;co.unobserve(e.target);const el=e.target,n=+el.dataset.n,f=fmt[el.dataset.f];if(reduce){el.textContent=f(n);return}const t0=performance.now();(function step(t){const p=Math.min(1,(t-t0)/1400),k=1-Math.pow(1-p,3);el.textContent=f(n*k);if(p<1)requestAnimationFrame(step)})(t0)}),{threshold:.5});
+document.querySelectorAll('[data-n]').forEach(el=>co.observe(el));
+// neural-network background
+(function(){const c=document.getElementById('net'),x=c.getContext('2d');let W,H,P=[],m={x:-999,y:-999};
+function size(){const r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);const n=Math.round(Math.min(70,W*H/16000));P=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25}))}
+addEventListener('resize',size);size();
+c.parentElement.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();m.x=e.clientX-r.left;m.y=e.clientY-r.top});
+c.parentElement.addEventListener('pointerleave',()=>{m.x=m.y=-999});
+function col(){return getComputedStyle(document.documentElement).getPropertyValue('--a').trim()}
+let run=true;new IntersectionObserver(e=>run=e[0].isIntersecting).observe(c);
+function draw(){if(run){x.clearRect(0,0,W,H);const a=col();
+for(const p of P){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;const dx=p.x-m.x,dy=p.y-m.y,d=Math.hypot(dx,dy);if(d<120){p.x+=dx/d*.8;p.y+=dy/d*.8}}
+for(let i=0;i<P.length;i++){const p=P[i];for(let j=i+1;j<P.length;j++){const q=P[j],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<130){x.strokeStyle=a;x.globalAlpha=(1-d/130)*.35;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}
+x.globalAlpha=.7;x.fillStyle=a;x.beginPath();x.arc(p.x,p.y,2.2,0,7);x.fill()}x.globalAlpha=1}
+if(!reduce)requestAnimationFrame(draw)}
+draw();if(reduce){run=true;draw()}})();
+</script>
 </body>
 </html>
