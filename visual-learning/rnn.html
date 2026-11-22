@@ -194,8 +194,14 @@ body{padding-top:10px}
 .mat .mg{display:inline-grid;gap:2px}
 .mat .mg i{display:block;min-width:46px;padding:2px 3px;font:600 11px/16px "IBM Plex Sans",sans-serif;text-align:center;font-style:normal;border-radius:3px}
 .mat.hi .mk{color:var(--acc)}
-.learn{background:#FFF7E0;border:1px solid #F0D68A;border-left:5px solid #E0A100;border-radius:10px;padding:8px 12px;margin:8px 0}
-.learn .lt{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:#8a6500;margin-bottom:2px}
+details.learn{background:#FAF6EA;border:1px solid #EADFB8;border-radius:8px;padding:5px 10px;margin:5px 0}
+details.learn summary{cursor:pointer;font-weight:600;font-size:13px;color:#6b5200;list-style:none}
+details.learn summary::-webkit-details-marker{display:none}
+details.learn summary:before{content:"▸ ";color:#B58B00}
+details.learn[open] summary:before{content:"▾ "}
+.tkn{display:inline-block;background:#EBE3FA;border-radius:99px;padding:1px 9px;margin:0 4px 2px 0;font-weight:600;color:#5b2fa0;font-size:12.5px}
+.vocabline{margin:8px 2px 0;font-size:13px;color:#444;line-height:1.7}
+.vocabline .vl2{margin-top:4px;color:#333}
 .learn p{margin:3px 0;font-size:13.5px;line-height:1.5}
 .opkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 2px;font-size:12.5px}
 .opkey span{display:inline-flex;align-items:center;gap:6px}
@@ -244,6 +250,7 @@ body{padding-top:10px}
         <span>The <b>same</b> weights are reused at every time step.</span>
       </div>
       <div class="mats" id="mats"></div>
+      <div class="vocabline" id="vocabline"></div>
     </div>
     <aside class="panel floating" id="panel">
       <div class="fhead" id="fhead"><span class="grip">⋮⋮</span><span class="ft">Explainer · drag me anywhere</span>
@@ -285,6 +292,9 @@ body{padding-top:10px}
   <h2 style="font-size:18px;margin:26px 0 4px">How does the error signal change as it travels back in time?</h2>
   <div class="note">Length of the error vector at each time step. If it shrinks towards earlier steps the gradient is <b>vanishing</b>; if it grows it is <b>exploding</b>. Try a sigmoid hidden layer with small recurrent weights in the Custom tab.</div>
   <div class="gf" id="gflow"></div>
+  <h2 style="font-size:18px;margin:26px 0 4px">How much does each input influence the loss?</h2>
+  <div class="note">Length of $\partial L/\partial x_t$ for every input. This is the idea of the “connectivity” plot used to compare memory in RNNs: an input far in the past with a tiny bar is hardly used. Accuracy alone cannot show this, two models can have the same accuracy and look back very differently.</div>
+  <div class="gf" id="influence"></div>
 </section>
 
 <section id="p-train" class="hide">
@@ -302,11 +312,14 @@ body{padding-top:10px}
       <div class="card" style="margin-top:12px"><div class="k">Parameters (start → now)</div><div class="vscroll" id="tpar"></div></div>
     </div>
   </div>
+  <div id="textra"></div>
 </section>
 
 <section id="p-cust" class="hide cust">
   <div class="row"><h2 style="margin:0;font-size:20px">Build your own recurrent network</h2><span class="note">Change the sequence, the sizes, the activation, the numbers. Everything recomputes. Then open <b>Step by step</b>.</span></div>
   <div class="row"><button class="btn" id="creset">Reset to the default example</button><button class="btn" id="crand">Randomise weights</button><button class="btn pri" id="cgo">▶ See it step by step</button><span id="cmsg"></span></div>
+  <h3>0 · Words or letters (your own example, like the slides' d-o-g)</h3>
+  <div id="c-words"></div>
   <h3>1 · Architecture</h3>
   <div class="row"><label>Ready-made examples<select id="cpre"></select></label></div>
   <div class="row" id="c-arch"></div>
@@ -394,6 +407,16 @@ function build(){
   const K=(p,t,i)=>`${p}:${t}:${i}`;
   const rowKeys=(p,t,n)=>[...Array(n).keys()].map(i=>K(p,t,i));
   const colorCells=(keys,col)=>Object.fromEntries(keys.map(k=>[k,col]));
+  const tkTxt=t=>cfg.tok?` (input “${cfg.tok.vocab[cfg.tok.seq[t]]}”)`:'';
+  const tname=i=>cfg.tok?cfg.tok.vocab[i]:`class ${i+1}`;
+  const predInfo=t=>{const y=m.y[t],k=outs.indexOf(t),tg=cfg.t[k],ti=tg.indexOf(Math.max(...tg)),pi=y.indexOf(Math.max(...y));return{pi,ti,py:y[pi],pt:y[ti]};};
+  const interp=t=>{if(cfg.out!=='softmax'||!outs.includes(t))return[];const q=predInfo(t);return[`Prediction: **${tname(q.pi)}** (${(q.py*100).toFixed(1)}%). The target **${tname(q.ti)}** gets ${(q.pt*100).toFixed(1)}%. A random guess would give every token ${(100/C).toFixed(1)}%.`,q.pi===q.ti?`The network already ranks the target first.`:`The target is not first yet. This gap is what training removes.`];};
+  const predLine=t=>{if(cfg.out!=='softmax'||!cfg.tok)return[];const q=predInfo(t);return[R`\text{most likely next token: }\mathrm{${safeTok(tname(q.pi))}}\ (${N(q.py)}),\quad\text{target: }\mathrm{${safeTok(tname(q.ti))}}\ (${N(q.pt)})`];};
+  const vanishL=()=>L_('vanish','Vanishing and exploding gradients',R`On the way back through time the error is multiplied again and again by $W_{hh}$ and by the activation slope. If these factors are mostly below 1 the error shrinks towards 0 (vanishing). If they are above 1 it grows without limit (exploding).`,`A vanishing gradient means early inputs hardly influence learning, so the network forgets long-range context. This is why LSTM and GRU cells were invented. The Gradient check tab shows the length of the error at every step.`);
+  const setupExtra=[...L_('types','Kinds of sequence tasks',`One-to-many (an image gives a caption), many-to-one (a review gives positive/negative, or the words so far give the next word) and many-to-many (translation, or the next token at every step). This lab shows many-to-one and many-to-many.`,`The recurrent cell is the same in all of them. Only the place where the output is read changes.`),
+    ...L_('notation','Different names for the same thing',R`Our $W_{xh},W_{hh},W_{hy}$ are called $U,W,V$ in some articles and $W_x,W_h,W_y$ in many slides. Some books call the pre-activation $a_t$, others $z_t$ or $s_t$.`,`Only the names differ, the maths is identical. Pick one set of names and keep it.`),
+    ...(cfg.tok?[...(cfg.tok.emb?L_('embed','Embedding',`A short list of numbers that stands for a word. Here the numbers are chosen by hand, in a real model they are learned.`,`Shorter than one-hot, and similar words can get similar numbers.`):L_('onehot','One-hot vector',`A list as long as the vocabulary with a single 1 at the word's own position and 0 everywhere else. With vocabulary [${cfg.tok.vocab.slice(0,4).join(', ')}${cfg.tok.vocab.length>4?', …':''}] the first word is ${oneHot(cfg.tok.vocab.length,0).join(' ')}.`,R`Machines cannot multiply letters. One-hot is the simplest number code, and multiplying $W_{xh}$ by it simply picks out one column of $W_{xh}$.`)),
+      ...L_('nexttoken','Next-token prediction',`The task: given the tokens so far, give a probability to every token of the vocabulary for what comes next.`,`It is how language models are trained. No labels are needed, the text itself supplies the answers. The output layer has one score per vocabulary token and softmax turns the scores into probabilities.`)]:[])];
   const actLines=(sv,hv,lhs,sym)=>{
     if(cfg.act==='tanh'){const a=Math.exp(sv),b=Math.exp(-sv);return[R`${lhs}=\tanh(${sym})=\dfrac{e^{${sym}}-e^{-${sym}}}{e^{${sym}}+e^{-${sym}}}`,R`=\dfrac{e^{${N(sv)}}-e^{${N(-sv)}}}{e^{${N(sv)}}+e^{${N(-sv)}}}=\dfrac{${N(a)}-${N(b)}}{${N(a)}+${N(b)}}=\dfrac{${N(a-b)}}{${N(a+b)}}=${hl(hv)}`];}
     if(cfg.act==='sigmoid')return[R`${lhs}=\sigma(${sym})=\dfrac{1}{1+e^{-${sym}}}`,R`=\dfrac{1}{1+e^{${N(-sv)}}}=\dfrac{1}{1+${N(Math.exp(-sv))}}=${hl(hv)}`];
@@ -404,10 +427,12 @@ function build(){
       ...L_('timestep','Time step t',`One position in the sequence: the 1st item, the 2nd item, and so on. At every step the **same** network is used again.`,`One small set of weights can then handle sequences of any length.`),
       ...L_('hidden','Hidden state $h_t$',`A vector of numbers that summarises everything the network has seen up to step $t$. It starts as all zeros.`,`It is the network's **memory**. It is handed from each step to the next.`),
       ...L_('unroll','Unrolling',`Drawing the loop as a chain: the same cell copied once per time step (that is what the picture shows).`,`After unrolling, training is ordinary backpropagation on a deep network. This is called backpropagation through time.`),
-      ...L_('shared','Shared weights',`The matrices $W_{xh},W_{hh},b_h,W_{hy},b_y$ are exactly the same at every time step.`,`Far fewer parameters, and what the network learns at one position is automatically used at all positions.`)],
+      ...L_('shared','Shared weights',`The matrices $W_{xh},W_{hh},b_h,W_{hy},b_y$ are exactly the same at every time step.`,`Far fewer parameters, and what the network learns at one position is automatically used at all positions.`),...setupExtra],
     what:[`The sequence has **${T}** time steps. At each step the network reads an input vector of size $${d}$ and updates a hidden state of size $${H}$.`,R`$s_t=W_{xh}x_t+W_{hh}h_{t-1}+b_h,\quad h_t=${A.tex}(s_t)$, with $h_0=\mathbf 0$ (no memory yet).`,
-      cfg.mode==='all'?`An output is produced at **every** step (many-to-many), and the losses add up.`:`One output is produced after the **last** step (many-to-one), like classifying a whole sentence.`,`The picture shows the same network copied $${T}$ times. The weights are **shared** by all copies.`],
-    res:[R`\#\text{parameters}=Hd+H^2+H+CH+C=${H*d}+${H*H}+${H}+${C*H}+${C}=${H*d+H*H+H+C*H+C}`,R`W_{xh}\in\mathbb R^{${H}\times${d}},\ W_{hh}\in\mathbb R^{${H}\times${H}},\ W_{hy}\in\mathbb R^{${C}\times${H}}`],
+      cfg.mode==='all'?`An output is produced at **every** step (many-to-many), and the losses add up.`:`One output is produced after the **last** step (many-to-one), like classifying a whole sentence.`,`The picture shows the same network copied $${T}$ times. The weights are **shared** by all copies.`,
+      ...(cfg.tok?[`Vocabulary: ${cfg.tok.vocab.map((w,i)=>`**${w}** (${i+1})`).join(', ')}. Inputs: ${cfg.tok.seq.slice(0,T).map(i=>`“${cfg.tok.vocab[i]}”`).join(', ')}. ${cfg.mode==='all'?`Targets (the next token at every step): ${cfg.tok.seq.slice(1).map(i=>`“${cfg.tok.vocab[i]}”`).join(', ')}.`:`Target (the token after the last input): “${cfg.tok.vocab[cfg.tok.seq[cfg.tok.seq.length-1]]}”.`}`,cfg.tok.emb?`Every word is replaced by ${d} numbers (an embedding) before it enters the network.`:`Every token is written as a one-hot vector with ${d} slots.`]:[]),
+      `Numbers are computed without rounding and shown with 4 decimals. If you round after every step by hand, the last digits will differ slightly.`],
+    res:[R`\#\text{parameters}=Hd+H^2+H+CH+C=${H*d}+${H*H}+${H}+${C*H}+${C}=${H*d+H*H+H+C*H+C}`,R`\text{Shapes: }W_{xh}x_t:\ (${H}\times${d})(${d}\times1)=(${H}\times1),\quad W_{hh}h_{t-1}:\ (${H}\times${H})(${H}\times1)=(${H}\times1),\quad b_h:\ (${H}\times1)`,R`W_{hy}h_t:\ (${C}\times${H})(${H}\times1)=(${C}\times1)\ \text{ (one score per output)}`],
     say:`Unrolling turns a loop into a deep network whose layers share weights. Backpropagation through time is just ordinary backpropagation on this unrolled picture.`});
   // ---- forward
   for(let t=0;t<T;t++){const tt=t+1,hp=m.h[t],x=cfg.x[t];
@@ -418,7 +443,7 @@ function build(){
       ...L_('bias','Bias $b_h$',`One constant per hidden unit that is simply added to the sum.`,`It shifts the point where the unit switches on, so a unit can be active even when all its inputs are zero.`)];
     const sKey=j=>[[OP.x,`input $x_${tt}$ with **row ${j+1}** of $W_{xh}$`],[OP.h,`previous state $h_${t}$ with **row ${j+1}** of $W_{hh}$`],[OP.b,`bias $b_h$ (element ${j+1})`]];
     if(layerMode){
-      P({ph:'F',title:`Forward t=${tt}: hidden pre-activation vector $s_${tt}$`,path:`x${tt}, h${t}, W, b → s${tt}`,act:[...rowKeys('s',tt,H),`a:xs:${tt}`,`a:hs:${tt}`],gives:rowKeys('s',tt,H),mats:['Wxh','Whh','b'],learn:sLearn,
+      P({ph:'F',title:`Forward t=${tt}${tkTxt(t)}: hidden pre-activation vector $s_${tt}$`,path:`x${tt}, h${t}, W, b → s${tt}`,act:[...rowKeys('s',tt,H),`a:xs:${tt}`,`a:hs:${tt}`],gives:rowKeys('s',tt,H),mats:['Wxh','Whh','b'],learn:sLearn,
         ops:{cells:{...colorCells(xs,OP.x),...colorCells(hprev,OP.h)},mats:{Wxh:{all:1,col:OP.x},Whh:{all:1,col:OP.h},b:{all:1,col:OP.b}},arrows:{[`a:xs:${tt}`]:OP.x,[`a:hs:${tt}`]:OP.h},key:[[OP.x,`input $x_${tt}$ with $W_{xh}$`],[OP.h,`previous state $h_${t}$ with $W_{hh}$`],[OP.b,`bias $b_h$`]]},
         what:[R`$s_${tt}=W_{xh}x_${tt}+W_{hh}h_${t}+b_h$`,t===0?`At the first step there is no memory: $h_0=\\mathbf 0$, so the recurrent term is zero.`:`The previous hidden state $h_${t}$ is the network's memory and enters through $W_{hh}$.`],
         res:[R`s_${tt}=${cc(OP.x,bmM(cfg.Wxh)+bmc(x))}+${cc(OP.h,bmM(cfg.Whh)+bmc(hp))}+${cc(OP.b,bmc(cfg.b))}=${bmc(m.s[t])}`],say:`New information (x) and old memory (h) are mixed in one weighted sum. Orange = the input part, purple = the memory part, green = bias.`});
@@ -426,7 +451,7 @@ function build(){
         what:[R`$h_${tt}=${A.tex}(s_${tt})$ applied to every unit.`],res:[R`h_${tt}=${A.tex}(s_${tt})=${A.tex}\!\left(${bmc(m.s[t])}\right)=${bmc(m.h[t+1])}`,R`\text{Unit 1 in detail:}`,...actLines(m.s[t][0],m.h[t+1][0],tHh(tt,0),tS(tt,0))],say:`This vector is passed to the next time step as memory.`});
     }else for(let j=0;j<H;j++){
       const tx=cfg.Wxh[j].map((w,i)=>cc(OP.x,`${Q(w)}${Q(x[i])}`)),th_=cfg.Whh[j].map((w,k)=>cc(OP.h,`${Q(w)}${Q(hp[k])}`));
-      P({ph:'F',title:`Forward t=${tt}: $${tS(tt,j)}$ of hidden unit ${j+1}`,path:`x${tt}, h${t}, row ${j+1} of the weights → s${tt},${j+1}`,act:[K('s',tt,j),`a:xs:${tt}`,`a:hs:${tt}`],gives:[K('s',tt,j)],mats:['Wxh','Whh','b'],learn:sLearn,
+      P({ph:'F',title:`Forward t=${tt}${tkTxt(t)}: $${tS(tt,j)}$ of hidden unit ${j+1}`,path:`x${tt}, h${t}, row ${j+1} of the weights → s${tt},${j+1}`,act:[K('s',tt,j),`a:xs:${tt}`,`a:hs:${tt}`],gives:[K('s',tt,j)],mats:['Wxh','Whh','b'],learn:sLearn,
         ops:{cells:{...colorCells(xs,OP.x),...colorCells(hprev,OP.h)},mats:{Wxh:{rows:[j],col:OP.x},Whh:{rows:[j],col:OP.h},b:{idx:[j],col:OP.b}},arrows:{[`a:xs:${tt}`]:OP.x,[`a:hs:${tt}`]:OP.h},key:sKey(j)},
         what:[`Hidden unit ${j+1} reads the **input** $x_${tt}$ (orange) and the **previous hidden state** $h_${t}$ (purple). Only **row ${j+1}** of each weight matrix is used, shown with the same colours in the matrices below the picture.`,t===0?R`At $t=1$ the previous state is $h_0=\mathbf 0$, so the purple part contributes nothing.`:`The recurrent weights bring in what the network remembers from step ${t}.`],
         res:[R`${tS(tt,j)}=\sum_i W^{xh}_{${j+1}i}\,x_{${tt},i}+\sum_k W^{hh}_{${j+1}k}\,h_{${t},k}+b^h_{${j+1}}`,R`=${alignLines([...tx,...th_],3)}+${cc(OP.b,Q(cfg.b[j]))}=${hl(m.s[t][j])}`],say:`Same dot-product idea as a feed-forward neuron, with one extra input: the old hidden state.`});
@@ -440,7 +465,7 @@ function build(){
         P({ph:'F',title:`Forward t=${tt}: output vector $u_${tt}$ and prediction $y_${tt}$`,path:`h${tt}, W_hy, b_y → u${tt} → y${tt}`,act:[...rowKeys('u',tt,C),...rowKeys('y',tt,C),`a:hu:${tt}`,`a:uy:${tt}`],gives:[...rowKeys('u',tt,C),...rowKeys('y',tt,C)],mats:['Why','by'],learn:roLearn,
           ops:{cells:colorCells(hn,OP.o),mats:{Why:{all:1,col:OP.o},by:{all:1,col:OP.b}},arrows:{[`a:hu:${tt}`]:OP.o},key:[[OP.o,`hidden state $h_${tt}$ with $W_{hy}$`],[OP.b,`bias $b_y$`]]},
           what:[R`$u_${tt}=W_{hy}h_${tt}+b_y$, then ${cfg.out==='sigmoid'?R`$y_${tt}=\sigma(u_${tt})$`:cfg.out==='linear'?R`$y_${tt}=u_${tt}$ (linear)`:R`$y_${tt}=\mathrm{softmax}(u_${tt})$`}.`],
-          res:[R`u_${tt}=${cc(OP.o,bmM(cfg.Why)+bmc(m.h[t+1]))}+${cc(OP.b,bmc(cfg.by))}=${bmc(m.u[t])}`,R`y_${tt}=${bmc(m.y[t])},\quad t_${tt}=${bmc(tg)}`],say:`The read-out layer is an ordinary output layer applied to the hidden state.`});
+          res:[R`u_${tt}=${cc(OP.o,bmM(cfg.Why)+bmc(m.h[t+1]))}+${cc(OP.b,bmc(cfg.by))}=${bmc(m.u[t])}`,R`y_${tt}=${bmc(m.y[t])},\quad t_${tt}=${bmc(tg)}`,...predLine(t)],say:`The read-out layer is an ordinary output layer applied to the hidden state.`});
       }else{
         for(let c=0;c<C;c++){const terms=cfg.Why[c].map((w,j)=>cc(OP.o,`${Q(w)}${Q(m.h[t+1][j])}`));
           P({ph:'F',title:`Forward t=${tt}: $${tU(tt,c)}$ of output unit ${c+1}`,path:`h${tt}, row ${c+1} of W_hy → u${tt},${c+1}`,act:[K('u',tt,c),`a:hu:${tt}`],gives:[K('u',tt,c)],mats:['Why','by'],learn:roLearn,
@@ -450,10 +475,10 @@ function build(){
             what:[cfg.out==='sigmoid'?R`$${tY(tt,c)}=\sigma(${tU(tt,c)})$ (sigmoid output)`:R`$${tY(tt,c)}=${tU(tt,c)}$ (linear output, no squashing)`,`Target: $t=${N(tg[c])}$.`],
             res:[cfg.out==='sigmoid'?R`${tY(tt,c)}=\sigma(${Q(m.u[t][c])})=\dfrac{1}{1+e^{-${Q(m.u[t][c])}}}=\dfrac{1}{1+${N(Math.exp(-m.u[t][c]))}}=${hl(m.y[t][c])}`:R`${tY(tt,c)}=${tU(tt,c)}=${hl(m.y[t][c])}`],say:`Prediction ${N(m.y[t][c])} against target ${N(tg[c])}.`});}
         if(cfg.out==='softmax')P({ph:'F',title:`Forward t=${tt}: softmax over the outputs`,path:`u${tt} → y${tt}`,act:[...rowKeys('u',tt,C),...rowKeys('y',tt,C),`a:uy:${tt}`],gives:rowKeys('y',tt,C),mats:[],
-          what:[R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$`],res:[R`\sum_j e^{u_j}=${m.u[t].map(v=>`e^{${N(v)}}`).join('+')}=${N(m.u[t].reduce((s,v)=>s+Math.exp(v),0))}`,R`\begin{aligned}${m.y[t].map((v,c)=>`y_{${tt},${c+1}}&=\\frac{e^{${N(m.u[t][c])}}}{${N(m.u[t].reduce((s,q)=>s+Math.exp(q),0))}}=${hl(v)}`).join(R` \\ `)}\end{aligned}`],say:`Class probabilities that sum to 1.`});}
+          what:[R`$y_k=\dfrac{e^{u_k}}{\sum_j e^{u_j}}$`],res:[R`\sum_j e^{u_j}=${m.u[t].map(v=>`e^{${N(v)}}`).join('+')}=${N(m.u[t].reduce((s,v)=>s+Math.exp(v),0))}`,R`\begin{aligned}${m.y[t].map((v,c)=>`y_{${tt},${c+1}}&=\\frac{e^{${N(m.u[t][c])}}}{${N(m.u[t].reduce((s,q)=>s+Math.exp(q),0))}}=${hl(v)}`).join(R` \\ `)}\end{aligned}`,...predLine(t)],say:`Class probabilities that sum to 1.`});}
       const lossLearn=cfg.out==='softmax'?L_('ce','Cross-entropy loss',R`$L=-\sum_k t_k\ln y_k$. With a one-hot target only the true class counts: the loss is $-\ln$ of the probability given to it.`,`It is small when the true class gets a high probability and very large when it gets a low one. Together with softmax it gives the very simple error $y-t$.`):L_('mse','Squared-error loss',R`$L=\tfrac12\sum_k (y_k-t_k)^2$: the squared gap between each prediction $y$ and its target $t$.`,`Training needs **one number** that says how wrong the network is. Squaring makes every error positive and punishes big mistakes more. The $\tfrac12$ only tidies the derivative.`);
       P({ph:'F',title:outs.length>1?`Forward: loss $L_${tt}$ at time step ${tt}`:'Forward: loss $L$',path:`y${tt}, t → L${outs.length>1?tt:''}`,act:[...rowKeys('y',tt,C),`l:${tt}`,`a:yl:${tt}`],gives:[`l:${tt}`,...(outs.length===1?['L']:[])],mats:[],learn:lossLearn,
-        what:cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`],
+        what:[...(cfg.out==='softmax'?[R`$L_${tt}=-\sum_k t_k\ln y_{${tt},k}$ (note the minus sign: $\ln$ of a probability is negative, so the loss is positive)`]:[R`$L_${tt}=\tfrac12\sum_k (y_{${tt},k}-t_k)^2$`]),...interp(t)],
         res:[cfg.out==='softmax'?R`L_${tt}=-\left[${m.y[t].map((v,c)=>`${N(tg[c])}\\ln(${N(v)})`).join('+')}\right]=${hl(m.lt[t])}`:R`L_${tt}=\tfrac12\left[${m.y[t].map((v,c)=>`(${N(v)}-${N(tg[c])})^2`).join('+')}\right]=${hl(m.lt[t])}`],say:`How wrong the network is at this step.`});}
   }
   if(outs.length>1)P({ph:'F',title:'Forward: total loss $L$ (sum over time)',path:'L₁ + … + L_T → L',act:[...outs.map(t=>`l:${t+1}`),'L'],gives:['L'],mats:[],what:[R`$L=\sum_t L_t$: the losses of all output steps add up.`],res:[R`L=${outs.map(t=>N(m.lt[t])).join('+')}=${hl(m.L)}`],say:`Forward pass finished. Backpropagation through time starts from this one number.`});
@@ -480,7 +505,7 @@ function build(){
         what:[R`$\mathrm{d}W_{hy}\mathrel{+}=\delta^u_${tt}\,h_${tt}^{\top}$ and $\mathrm{d}b_y\mathrel{+}=\delta^u_${tt}$`,`Each weight's gradient = (error at the unit it feeds) × (value that went into it). The read-out weights are shared too, so every output step **adds** its contribution.`],res:[R`\small ${colLines(items,2)}`],say:`These weights are used once per output step, so their gradient is a sum over output steps.`});}
     // dh and ds
     const fromOut=outs.includes(t),fromNext=t<T-1;
-    const dhLearn=L_('dhtime','Error through time',`A hidden state affects the loss in **two** ways: through the output at its own step, and through the hidden state of the next step. So its error has **two parts** that add up.`,`The part from the next step is the error travelling backwards through time. This is what makes BPTT special.`);
+    const dhLearn=L_('dhtime','Error through time',`A hidden state affects the loss in **two** ways: through the output at its own step, and through the hidden state of the next step. So its error has **two parts** that add up.`,`The part from the next step is the error travelling backwards through time. This is what makes BPTT special.`).concat(fromNext?vanishL():[]);
     if(layerMode){
       P({ph:'B',title:`Backward t=${tt}: error arriving at $h_${tt}$`,path:`${fromOut?'δu, W_hy':''}${fromOut&&fromNext?' + ':''}${fromNext?`δs${tt+1}, W_hh`:''} → δh${tt}`,act:[...rowKeys('h',tt,H),...(fromOut?[...rowKeys('u',tt,C),`a:hu:${tt}`]:[]),...(fromNext?[...rowKeys('s',tt+1,H),`a:hs:${tt+1}`]:[])],grads:rowKeys('h',tt,H),mats:[...(fromOut?['Why']:[]),...(fromNext?['Whh']:[])],learn:dhLearn,
         ops:{cells:{...(fromOut?colorCells(rowKeys('u',tt,C),OP.o):{}),...(fromNext?colorCells(rowKeys('s',tt+1,H),OP.h):{})},mats:{...(fromOut?{Why:{all:1,col:OP.o}}:{}),...(fromNext?{Whh:{all:1,col:OP.h}}:{})},arrows:{...(fromOut?{[`a:hu:${tt}`]:OP.o}:{}),...(fromNext?{[`a:hs:${tt+1}`]:OP.h}:{})},key:[...(fromOut?[[OP.o,'error from the output through $W_{hy}$']]:[]),...(fromNext?[[OP.h,`error from step ${tt+1} through $W_{hh}$`]]:[])]},
@@ -528,7 +553,7 @@ function makeLayout(){
   const cfg=S.cfg,{T,d,H,C}=cfg,outs=outSteps(cfg),md=Math.max(d,H,C);
   const nCol=T+1+(outs.length>0?1:0);let c=Math.min(36,980/(nCol*(md+1.3)));c=Math.max(14,Math.floor(c));
   const colW=md*c+1.1*c,mx=34,top=58,rs=c+36;
-  const rowY={l:top,y:top+rs,u:top+2*rs,h:top+3*rs,s:top+4*rs,x:top+5*rs};VH=rowY.x+c+26;
+  const rowY={l:top,y:top+rs,u:top+2*rs,h:top+3*rs,s:top+4*rs,x:top+5*rs};VH=rowY.x+c+(cfg.tok&&!cfg.tok.emb?40:26);
   geo={};const texts=[],arrows=[];
   const colX=tt=>mx+tt*colW;
   const place=(p,tt,n,row)=>{const w=n*c,x0=colX(tt)+(md*c-w)/2;for(let i=0;i<n;i++)geo[`${p}:${tt}:${i}`]={x:x0+i*c,y:rowY[row],w:c,h:c,kind:p};return{x:x0,w,cx:x0+w/2};};
@@ -537,7 +562,10 @@ function makeLayout(){
   for(let tt=1;tt<=T;tt++){const o=outs.includes(tt-1);
     box[`x${tt}`]=place('x',tt,d,'x');box[`s${tt}`]=place('s',tt,H,'s');box[`h${tt}`]=place('h',tt,H,'h');
     if(o){box[`u${tt}`]=place('u',tt,C,'u');box[`y${tt}`]=place('y',tt,C,'y');geo[`l:${tt}`]={x:colX(tt)+(md*c-c)/2,y:rowY.l,w:c,h:c,kind:'l'};}
-    texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+16,t:`t = ${tt}`,a:'middle',b:1});}
+    {const tkn=cfg.tok?cfg.tok.vocab[cfg.tok.seq[tt-1]]:null,oh=cfg.tok&&!cfg.tok.emb;
+     if(oh&&c>=16)for(let i=0;i<d;i++)texts.push({x:box[`x${tt}`].x+i*c+c/2,y:rowY.x+c+10,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#8a929a'});
+     if(o&&cfg.tok&&c>=16)for(let i=0;i<C;i++)texts.push({x:box[`y${tt}`].x+i*c+c/2,y:rowY.y-3,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#7C4DDB'});
+     texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+(oh?29:16),t:`t = ${tt}`+(tkn!==null?`  “${tkn}”`:''),a:'middle',b:1});}}
   if(outs.length>0){const xx=colX(T+1)+(md*c-c)/2;geo['L']={x:xx,y:rowY.l,w:c,h:c,kind:'L'};texts.push({x:xx+c/2,y:rowY.l-6,t:outs.length>1?'total L':'L',a:'middle'});}
   const mid=(b)=>b.cx;
   const vert=(id,b1,r1,b2,r2,label)=>{arrows.push({id,x1:mid(b1),y1:rowY[r1]-2,x2:mid(b2),y2:rowY[r2]+c+3,label,lx:mid(b1)+6,ly:(rowY[r1]+rowY[r2]+c)/2+3});};
@@ -548,7 +576,7 @@ function makeLayout(){
   const svg=$('#svg'),VWd=Math.max(1000,colX(T+1)+md*c+mx);svg.setAttribute('viewBox',`0 0 ${VWd} ${VH}`);
   let h=`<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a929a"/></marker></defs>`;
   for(const [row,lab] of [['x','input x'],['s','pre-activation s'],['h','hidden h'],['u','output pre-act u'],['y','prediction y'],['l','loss']])if(row!=='u'&&row!=='y'&&row!=='l'||outs.length)h+=`<text x="3" y="${rowY[row]+c/2+3}" font-size="9" fill="#9aa0a6" transform="rotate(-90 9 ${rowY[row]+c/2})" text-anchor="middle" style="display:none">${lab}</text>`;
-  for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.b?12:10.5}" fill="${t.b?'#444':'#6b7280'}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
+  for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.s||(t.b?12:10.5)}" fill="${t.col||(t.b?'#444':'#6b7280')}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
   h+='<g id="arrg">';for(const a of arrows)h+=`<line class="arr" id="${a.id}" x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#9aa0a6" stroke-width="1.6" stroke-linecap="round" marker-end="url(#ar)"/>${a.label?`<text x="${a.lx}" y="${a.ly}" font-size="10.5" fill="#1E5873" font-weight="700">${a.label.replace('_xh','ₓₕ').replace('_hh','ₕₕ').replace('_hy','ₕᵧ')}</text>`:''}`;h+='</g>';
   for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><title></title><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7.5,c*.32)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.09)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
   svg.innerHTML=h;LAY={c,rowY,md};
@@ -563,7 +591,7 @@ function gradOf(key,G){const [p,t,i]=key.split(':'),T=+t,I=+i;
 function cum(i){const vis=new Set(),gv=new Set();let upd=false,check=false;
   for(let t=0;t<=i;t++){const s=steps[t];(s.gives||[]).forEach(x=>vis.add(x));(s.grads||[]).forEach(x=>gv.add(x));if(s.upd)upd=true;if(s.check)check=true;}
   return{vis,gv,upd,check};}
-const cellName=key=>{const [p,t,i]=key.split(':');return p==='l'?`L at t=${t}`:p==='L'?'total loss L':`${p}(t=${t})[${+i+1}]`;};
+let cellName=key=>{const [p,t,i]=key.split(':');return p==='l'?`L at t=${t}`:p==='L'?'total loss L':`${p}(t=${t})[${+i+1}]`;};
 let lastI=-1;
 function paint(){
   const cfg=S.cfg,i=S.i,cur=steps[i],cs=cum(i),back=cur.ph==='B';
@@ -588,11 +616,11 @@ function paint(){
     const used=(r,c)=>sp&&(sp.all||(sp.rows&&sp.rows.includes(r))||(sp.cols&&sp.cols.includes(c))||(sp.idx&&sp.idx.includes(r)));
     const cells=rows.map((row,r)=>row.map((v,c)=>{const u=used(r,c);return`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`};${u?`outline:3px solid ${sp.col};outline-offset:-1px;font-weight:800`:(om?'opacity:.3':'')}">${v.toFixed(3)}</i>`;}).join('')).join('');
     return`<div class="mat ${(om?!!sp:hi.has(n))?'hi':''}" style="${om&&!sp?'opacity:.55':''}"><div class="mk">${K(tex)} · ${sh}</div><div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${cells}</div></div>`;}).join('');
-  $('#learn').innerHTML=(cur.learn||[]).map(l=>`<div class="learn"><div class="lt">New idea · ${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('');
+  $('#learn').innerHTML=(cur.learn||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
   $('#opkey').innerHTML=(cur.ops&&cur.ops.key||[]).map(([c,t])=>`<span><i style="background:${c}"></i>${rt(t)}</span>`).join('');
   // panel
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
-  $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}${(cur.learn&&cur.learn.length)?` · <span style="color:#8a6500">${cur.learn.length} new idea${cur.learn.length>1?'s':''} ↓ (scroll down)</span>`:''}`;
+  $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}`;
   $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);
   $('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
   const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');
@@ -616,8 +644,8 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
     h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  const gl=(steps.gloss||[]).map(l=>`<div class="learn"><div class="lt">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('');
-  $('#p-all').innerHTML=`<details class="gl" open><summary style="cursor:pointer;font-weight:700;font-size:16px;margin:4px 0 6px">Glossary: every new idea in this lab, in plain words</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  const gl=(steps.gloss||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
+  $('#p-all').innerHTML=`<details class="gl"><summary style="cursor:pointer;font-weight:700;font-size:16px;margin:4px 0 6px">Concepts used in this lab (tap to open)</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;
@@ -718,6 +746,95 @@ fhead.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;co
 addEventListener('resize',()=>{placeFab();if(!panelOpen)return;const r=panel.getBoundingClientRect();
   if(r.right>innerWidth)panel.style.left=Math.max(8,innerWidth-r.width-8)+'px';if(r.top>innerHeight-44)panel.style.top=Math.max(8,innerHeight-120)+'px';});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panelOpen&&tab==='step'&&panel.style.display!=='none')closePanel();});
+/* ================= words / letters examples, extras (included after the core RNN code) ================= */
+const oneHot=(n,i)=>Array.from({length:n},(_,k)=>k===i?1:0);
+const tokVec=(cfg,i)=>cfg.tok.emb?cfg.tok.emb[i].slice():oneHot(cfg.tok.vocab.length,i);
+const safeTok=s=>String(s).replace(/[^A-Za-z0-9]/g,'');
+function tokSync(cfg){const tk=cfg.tok,V=tk.vocab.length;cfg.C=V;cfg.out='softmax';
+  const inputs=tk.seq.slice(0,-1);cfg.T=inputs.length;cfg.d=tk.emb?tk.emb[0].length:V;
+  cfg.x=inputs.map(i=>tokVec(cfg,i));
+  cfg.t=cfg.mode==='all'?tk.seq.slice(1).map(i=>oneHot(V,i)):[oneHot(V,tk.seq[tk.seq.length-1])];return cfg;}
+function randWeights(cfg,seed){const r=mulberry(seed),rn=a=>+((r()*2-1)*a).toFixed(2),{d,H,C}=cfg;
+  cfg.Wxh=Array.from({length:H},()=>Array.from({length:d},()=>rn(.7)));cfg.Whh=Array.from({length:H},()=>Array.from({length:H},()=>rn(.5)));cfg.b=Array(H).fill(0);
+  cfg.Why=Array.from({length:C},()=>Array.from({length:H},()=>rn(.7)));cfg.by=Array(C).fill(0);return cfg;}
+const hashStr=s=>[...s].reduce((a,ch)=>(a*31+ch.charCodeAt(0))|0,7)>>>0;
+function wordCfg(o){const c=Object.assign(defaultCfg(),{act:'tanh',gran:'neuron',eta:.5,mode:'all',H:3},o);
+  c.tok={vocab:o.vocab.slice(),seq:o.seq.map(w=>o.vocab.indexOf(w)),emb:o.emb||null};delete c.vocab;delete c.seq;delete c.emb;
+  tokSync(c);if(!o.Wxh)randWeights(c,hashStr(o.vocab.join('')+o.seq.join('')));return c;}
+const WORD_PRESETS={
+  'Slides example: letters d-o-g (one-hot, 3 hidden units, predict the next letter at every step)':()=>wordCfg({vocab:['d','o','g','s'],seq:['d','o','g'],mode:'all',H:3,
+    Wxh:[[.6,.8,.4,.8],[.2,.2,.8,.7],[.9,.8,.1,.2]],Whh:[[.1,.5,.1],[.5,.9,.3],[.3,.2,.1]],b:[0,0,0],Why:[[.9,.8,.3],[.2,.3,.4],[.6,.9,.1],[.5,0,.3]],by:[0,0,0,0]}),
+  'Next word: "I love" → AI (7 words, 2-number embeddings, 2 hidden units)':()=>wordCfg({vocab:['I','love','AI','and','learning','is','useful'],seq:['I','love','AI'],mode:'last',H:2,
+    emb:[[1,0],[0,1],[1,1],[.5,.5],[.5,.5],[.5,.5],[.5,.5]],Wxh:[[.5,.2],[.1,.4]],Whh:[[.3,.1],[.2,.2]],b:[0,0],Why:[[.1,.1],[.2,.1],[1,1.2],[.3,.2],[.5,.4],[.1,.3],[.4,.5]],by:[0,0,0,0,0,0,0]}),
+  'Memory demo: pattern 1 1 0 1 1 (press Train: the hidden state must tell the first 1 from the second)':()=>wordCfg({vocab:['0','1'],seq:['1','1','0','1','1'],mode:'all',H:3,eta:.5})};
+/* ---------- tooltips / labels ---------- */
+const _cellName=cellName;
+cellName=function(key){const cfg=S.cfg;if(cfg.tok){const [p,t,i]=key.split(':');if(p==='x'&&!cfg.tok.emb)return`x(t=${t}) “${cfg.tok.vocab[+i]}” slot`;if(p==='y'||p==='u')return`${p}(t=${t}) for “${cfg.tok.vocab[+i]}”`;}return _cellName(key);};
+function updateVocabline(){const el=$('#vocabline'),cfg=S.cfg;if(!cfg.tok){el.innerHTML='';return;}
+  const cs=cum(S.i),{m}=backward(cfg),outs=outSteps(cfg),tk=cfg.tok;
+  let h=`<b>Vocabulary</b> (position in the input and output rows): `+tk.vocab.map((w,i)=>`<span class="tkn">${i+1}·${esc(w)}</span>`).join('');
+  const lines=[];outs.forEach((t,k)=>{if(!cs.vis.has(`y:${t+1}:0`))return;const y=m.y[t],pi=y.indexOf(Math.max(...y)),ti=cfg.t[k].indexOf(1);
+    lines.push(`step ${t+1}: input <b>${esc(tk.vocab[tk.seq[t]])}</b> → predicts <b>${esc(tk.vocab[pi])}</b> (${(y[pi]*100).toFixed(1)}%), target <b>${esc(tk.vocab[ti])}</b> gets ${(y[ti]*100).toFixed(1)}%`);});
+  el.innerHTML=h+(lines.length?`<div class="vl2">${lines.join('<br>')}</div>`:'');}
+const _paint=paint;paint=function(){_paint();updateVocabline();};
+/* ---------- training extras ---------- */
+function rollout(cfg,tokens,n){const tk=cfg.tok,A=ACTS[cfg.act];let h=Array(cfg.H).fill(0),seq=tokens.slice(),probs=null;
+  const step=i=>{const a=mv(cfg.Wxh,tokVec(cfg,i)),r=mv(cfg.Whh,h);h=a.map((v,j)=>A.f(v+r[j]+cfg.b[j]));const u=mv(cfg.Why,h).map((v,c)=>v+cfg.by[c]),mx=Math.max(...u),e=u.map(v=>Math.exp(v-mx)),s=e.reduce((p,q)=>p+q,0);probs=e.map(v=>v/s);return probs;};
+  for(const i of tokens)step(i);const gen=[];for(let q=0;q<n;q++){const pi=probs.indexOf(Math.max(...probs));gen.push([pi,probs[pi]]);step(pi);}return{gen};}
+const hv=(v)=>`(${v.map(x=>x.toFixed(3)).join(', ')})`;
+function trainExtra(){const el=$('#textra'),cfg=S.cfg;if(!TR.cfg||!TR.start){el.innerHTML='';return;}
+  const m0=forward(TR.start),m1=forward(TR.cfg),outs=outSteps(cfg),tk=cfg.tok;
+  const inTok=t=>tk?esc(tk.vocab[tk.seq[t]]):`x${t+1}`;
+  let h=`<h3 style="font-size:15px;margin:18px 0 6px">Hidden state after each step: start → now</h3><div class="note">Different inputs, or the same input at a different position, should leave different hidden states if the network has learned to remember.</div><table class="t"><tr><th>step</th><th>input</th><th>h at start</th><th>h now</th></tr>`
+    +Array.from({length:cfg.T},(_,t)=>`<tr><td>${t+1}</td><td>${inTok(t)}</td><td>${hv(m0.h[t+1])}</td><td><b>${hv(m1.h[t+1])}</b></td></tr>`).join('')+'</table>';
+  if(cfg.out==='softmax'){const nm=i=>tk?esc(tk.vocab[i]):`class ${i+1}`;
+    const row=(t,k)=>{const f=m=>{const y=m.y[t],pi=y.indexOf(Math.max(...y)),ti=cfg.t[k].indexOf(1);return{pi,ti,py:y[pi],pt:y[ti]};},a=f(m0),b=f(m1);return`<tr><td>${t+1}</td><td>${inTok(t)}</td><td>${nm(a.ti)}</td><td>${nm(a.pi)} (${(a.py*100).toFixed(1)}%) · target ${(a.pt*100).toFixed(1)}%</td><td><b>${nm(b.pi)} (${(b.py*100).toFixed(1)}%)</b> · target ${(b.pt*100).toFixed(1)}%</td></tr>`;};
+    h+=`<h3 style="font-size:15px;margin:18px 0 6px">Predictions: untrained → trained</h3><table class="t"><tr><th>step</th><th>input</th><th>target</th><th>at start</th><th>now</th></tr>${outs.map((t,k)=>row(t,k)).join('')}</table>`;}
+  if(tk){const toks=tk.seq.slice(0,cfg.T),a=rollout(TR.start,toks,5).gen,b=rollout(TR.cfg,toks,5).gen,nm=i=>esc(tk.vocab[i]);
+    h+=`<h3 style="font-size:15px;margin:18px 0 6px">Generate text: feed each prediction back as the next input</h3><div class="note">Start with “${toks.map(i=>esc(tk.vocab[i])).join(' ')}” and always take the most likely next token (greedy). This is exactly how a language model writes text, one token at a time.</div>
+      <table class="t"><tr><th></th><th style="text-align:left">generated continuation</th></tr><tr><td>start</td><td style="text-align:left">${toks.map(nm).join(' ')} <span style="color:#7C4DDB">→ ${a.map(([i,p])=>nm(i)).join(' ')}</span></td></tr><tr><td>now</td><td style="text-align:left">${toks.map(nm).join(' ')} <b style="color:#7C4DDB">→ ${b.map(([i,p])=>nm(i)).join(' ')}</b></td></tr></table>`;}
+  el.innerHTML=h;}
+const _renderTrain=renderTrain;renderTrain=function(){_renderTrain();const cfg=S.cfg;
+  if(cfg.tok){const m=forward(TR.cfg),outs=outSteps(cfg);$('#tbars').innerHTML=outs.map((t,k)=>`<div style="font-size:12px;margin:6px 0 2px;color:#6b7280">step ${t+1}: input “${esc(cfg.tok.vocab[cfg.tok.seq[t]])}”, next token should be “${esc(cfg.tok.vocab[cfg.t[k].indexOf(1)])}”</div>`+m.y[t].map((v,c)=>`<div class="b"><span style="width:54px;font-size:12px">${esc(cfg.tok.vocab[c])}</span><div class="track"><div class="fill" style="width:${Math.max(0,Math.min(100,v*100)).toFixed(1)}%"></div>${cfg.t[k][c]===1?`<div class="tg" style="left:98.5%"></div>`:''}</div><span style="width:70px;text-align:right">${v.toFixed(4)}</span></div>`).join('')).join('');}
+  trainExtra();};
+/* ---------- gradient check extras: influence of every input ---------- */
+const _renderCheck=renderCheck;renderCheck=function(){_renderCheck();const cfg=S.cfg,{g}=backward(cfg),nrm=v=>Math.sqrt(v.reduce((s,x)=>s+x*x,0));
+  const dx=g.ds.map(ds=>cfg.Wxh[0].map((_,i)=>cfg.Wxh.reduce((s,row,j)=>s+row[i]*ds[j],0))),vals=dx.map(nrm),mx=Math.max(1e-12,...vals);
+  $('#influence').innerHTML=vals.map((v,t)=>`<div class="b"><span style="width:150px">${cfg.tok?`input ${t+1}: “${esc(cfg.tok.vocab[cfg.tok.seq[t]])}”`:`input $x_${t+1}$`}</span><div class="tr"><div class="fl" style="width:${(v/mx*100).toFixed(1)}%;background:#2B7A9B"></div></div><span style="width:92px;text-align:right">${v.toExponential(2)}</span></div>`).join('');
+  document.querySelectorAll('#influence span').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});};
+/* ---------- custom editor: words / letters ---------- */
+function setMsg(t,bad){$('#cmsg').innerHTML=bad?`<span class="warn">${esc(t)}</span>`:`<span class="okk">${esc(t)}</span>`;}
+function buildWords(){const cfg=S.cfg,tk=cfg.tok,el=$('#c-words');
+  const vocab=tk?tk.vocab.join(' '):'d o g s',seq=tk?tk.seq.map(i=>tk.vocab[i]).join(' '):'d o g',emb=tk&&tk.emb?String(tk.emb[0].length):'onehot',mode=tk?cfg.mode:'all',H=tk?cfg.H:3;
+  el.innerHTML=`<div class="fbox"><div class="k">Your own words or letters</div><div class="row">
+    <label>Vocabulary (space separated)<input type="text" id="wv" value="${esc(vocab)}" style="width:300px"></label>
+    <label>Sequence (space separated, last token = the answer)<input type="text" id="ws" value="${esc(seq)}" style="width:260px"></label></div><div class="row">
+    <label>The network predicts<select id="wm"><option value="all" ${mode==='all'?'selected':''}>the next token at every step</option><option value="last" ${mode==='last'?'selected':''}>only the token after the last input</option></select></label>
+    <label>Numbers per word<select id="we"><option value="onehot" ${emb==='onehot'?'selected':''}>one-hot (one slot per vocabulary word)</option><option value="2" ${emb==='2'?'selected':''}>2 numbers (embedding)</option><option value="3" ${emb==='3'?'selected':''}>3 numbers (embedding)</option></select></label>
+    <label>Hidden units<input type="number" id="wh" min="1" max="5" value="${H}"></label>
+    <button class="btn pri" id="wbuild">Build this example</button></div>
+    <div class="note">Example: vocabulary “d o g s”, sequence “d o g” gives inputs d, o and targets o, g (the slides' example). Sequence “I love AI” with “only the token after the last input” asks: after “I love”, what comes next? (2–8 words, letters or digits only, sequence of 2–6 tokens.)</div></div>
+    <div id="wemb"></div>`;
+  $('#wbuild').onclick=()=>{const tokens=s=>s.trim().split(/[\s,]+/).filter(Boolean);const vocab=tokens($('#wv').value),seq=tokens($('#ws').value),modeV=$('#wm').value,embV=$('#we').value,Hn=parseInt($('#wh').value);
+    if(vocab.length<2||vocab.length>8)return setMsg('Vocabulary needs 2 to 8 different words.',1);
+    if(vocab.some(w=>!/^[A-Za-z0-9'-]+$/.test(w)))return setMsg('Use only letters, digits, apostrophes or hyphens in words.',1);
+    if(new Set(vocab).size!==vocab.length)return setMsg('Every word in the vocabulary must be different.',1);
+    if(seq.length<2||seq.length>6)return setMsg('The sequence needs 2 to 6 tokens (the last one is the answer).',1);
+    const bad=seq.find(w=>!vocab.includes(w));if(bad)return setMsg(`“${bad}” is not in the vocabulary.`,1);
+    if(!(Hn>=1&&Hn<=5))return setMsg('Hidden units: 1 to 5.',1);
+    const old=S.cfg.tok&&S.cfg.tok.emb&&S.cfg.tok.vocab.length===vocab.length&&String(S.cfg.tok.emb[0].length)===embV?S.cfg.tok.emb:null;
+    const r=mulberry(hashStr(vocab.join('')+'e'));const emb=embV==='onehot'?null:(old||vocab.map(()=>Array.from({length:+embV},()=>+((r()*2-1)).toFixed(1))));
+    const c=wordCfg({vocab,seq,mode:modeV,emb,H:Hn,eta:S.cfg.eta||.5,act:S.cfg.act||'tanh',gran:S.cfg.gran});
+    applyCfg(c,`Built: ${vocab.length} words, ${c.T} input step${c.T>1?'s':''}, ${Hn} hidden units. Weights are random: edit them below, or press Train to see the network learn.`);buildCustom();};
+  const em=$('#wemb');if(tk&&tk.emb)em.innerHTML=`<div class="fbox"><div class="k">Embedding table: numbers for every word</div><div class="mgrid" style="grid-template-columns:auto repeat(${tk.emb[0].length},auto)">${tk.vocab.map((w,i)=>`<b style="align-self:center;padding-right:6px">${esc(w)}</b>`+tk.emb[i].map((v,j)=>`<input type="number" step="0.1" data-emb="${i},${j}" value="${v}">`).join('')).join('')}</div></div>`;else em.innerHTML='';
+  em.querySelectorAll('input[data-emb]').forEach(inp=>inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;const [i,j]=inp.dataset.emb.split(',').map(Number);S.cfg.tok.emb[i][j]=v;tokSync(S.cfg);TR.cfg=null;rebuild(false);});}
+const _buildCustom=buildCustom;buildCustom=function(){_buildCustom();buildWords();const cfg=S.cfg;
+  if(cfg.tok){['cT','cd','cH','cC','cout','cmode'].forEach(id=>{const e=$('#'+id);if(e)e.disabled=true;});
+    const rows=cfg.x.map((r,t)=>`<tr><td>${t+1}</td><td><b>${esc(cfg.tok.vocab[cfg.tok.seq[t]])}</b></td><td>${hv(r)}</td></tr>`).join('');
+    const trows=cfg.t.map((r,k)=>{const t=cfg.mode==='all'?k:cfg.T-1;return`<tr><td>${t+1}</td><td><b>${esc(cfg.tok.vocab[r.indexOf(1)])}</b></td><td>${hv(r)}</td></tr>`;}).join('');
+    $('#c-io').innerHTML=`<div class="note" style="margin-bottom:6px">Inputs and targets come from your words. Sizes and the softmax output are fixed by the vocabulary. <button class="btn" id="tonum">Switch to numeric mode</button></div><div class="fbox"><div class="k">Inputs x</div><table class="t"><tr><th>step</th><th>token</th><th>numbers</th></tr>${rows}</table></div><div class="fbox"><div class="k">Targets (next token)</div><table class="t"><tr><th>after step</th><th>token</th><th>one-hot</th></tr>${trows}</table></div>`;
+    $('#tonum').onclick=()=>{const c=clone(S.cfg);delete c.tok;applyCfg(c,'Numeric mode: x and t are now plain numbers you can edit.');buildCustom();};}};
+
 /* ================= wiring ================= */
 function init(){
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
@@ -739,7 +856,8 @@ function init(){
   $('#teta').oninput=e=>{S.cfg.eta=parseFloat(e.target.value);rebuild(false);renderTrain();};
   $('#tlog').onchange=drawChart;
   $('#creset').onclick=()=>{applyCfg(defaultCfg(),'Back to the default example.');buildCustom();};
-  $('#crand').onclick=()=>{const o=S.cfg,c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;c.eta=o.eta;c.gran=o.gran;applyCfg(c,'Random weights.');buildCustom();};
+  {const rest=Object.assign({},PRESETS);for(const k of Object.keys(PRESETS))delete PRESETS[k];Object.assign(PRESETS,WORD_PRESETS,rest);}
+  $('#crand').onclick=()=>{const o=S.cfg;if(o.tok){const c=clone(o);randWeights(c,Date.now()%100000);applyCfg(c,'Random weights.');buildCustom();return;}const c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;c.eta=o.eta;c.gran=o.gran;applyCfg(c,'Random weights.');buildCustom();};
   $('#cgo').onclick=()=>{setTab('step');go(0);};
   $('#cpre').onchange=e=>{const f=PRESETS[e.target.value];if(!f)return;applyCfg(f(),`Loaded: ${e.target.value}`);buildCustom();};
   window.__app={S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,defaultCfg,randCfg,PRESETS,trainN,trainReset,TR:()=>TR};

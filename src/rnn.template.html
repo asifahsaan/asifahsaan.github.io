@@ -29,8 +29,14 @@ body{padding-top:10px}
 .mat .mg{display:inline-grid;gap:2px}
 .mat .mg i{display:block;min-width:46px;padding:2px 3px;font:600 11px/16px "IBM Plex Sans",sans-serif;text-align:center;font-style:normal;border-radius:3px}
 .mat.hi .mk{color:var(--acc)}
-.learn{background:#FFF7E0;border:1px solid #F0D68A;border-left:5px solid #E0A100;border-radius:10px;padding:8px 12px;margin:8px 0}
-.learn .lt{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:#8a6500;margin-bottom:2px}
+details.learn{background:#FAF6EA;border:1px solid #EADFB8;border-radius:8px;padding:5px 10px;margin:5px 0}
+details.learn summary{cursor:pointer;font-weight:600;font-size:13px;color:#6b5200;list-style:none}
+details.learn summary::-webkit-details-marker{display:none}
+details.learn summary:before{content:"▸ ";color:#B58B00}
+details.learn[open] summary:before{content:"▾ "}
+.tkn{display:inline-block;background:#EBE3FA;border-radius:99px;padding:1px 9px;margin:0 4px 2px 0;font-weight:600;color:#5b2fa0;font-size:12.5px}
+.vocabline{margin:8px 2px 0;font-size:13px;color:#444;line-height:1.7}
+.vocabline .vl2{margin-top:4px;color:#333}
 .learn p{margin:3px 0;font-size:13.5px;line-height:1.5}
 .opkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 2px;font-size:12.5px}
 .opkey span{display:inline-flex;align-items:center;gap:6px}
@@ -79,6 +85,7 @@ body{padding-top:10px}
         <span>The <b>same</b> weights are reused at every time step.</span>
       </div>
       <div class="mats" id="mats"></div>
+      <div class="vocabline" id="vocabline"></div>
     </div>
     <aside class="panel floating" id="panel">
       <div class="fhead" id="fhead"><span class="grip">⋮⋮</span><span class="ft">Explainer · drag me anywhere</span>
@@ -120,6 +127,9 @@ body{padding-top:10px}
   <h2 style="font-size:18px;margin:26px 0 4px">How does the error signal change as it travels back in time?</h2>
   <div class="note">Length of the error vector at each time step. If it shrinks towards earlier steps the gradient is <b>vanishing</b>; if it grows it is <b>exploding</b>. Try a sigmoid hidden layer with small recurrent weights in the Custom tab.</div>
   <div class="gf" id="gflow"></div>
+  <h2 style="font-size:18px;margin:26px 0 4px">How much does each input influence the loss?</h2>
+  <div class="note">Length of $\partial L/\partial x_t$ for every input. This is the idea of the “connectivity” plot used to compare memory in RNNs: an input far in the past with a tiny bar is hardly used. Accuracy alone cannot show this, two models can have the same accuracy and look back very differently.</div>
+  <div class="gf" id="influence"></div>
 </section>
 
 <section id="p-train" class="hide">
@@ -137,11 +147,14 @@ body{padding-top:10px}
       <div class="card" style="margin-top:12px"><div class="k">Parameters (start → now)</div><div class="vscroll" id="tpar"></div></div>
     </div>
   </div>
+  <div id="textra"></div>
 </section>
 
 <section id="p-cust" class="hide cust">
   <div class="row"><h2 style="margin:0;font-size:20px">Build your own recurrent network</h2><span class="note">Change the sequence, the sizes, the activation, the numbers. Everything recomputes. Then open <b>Step by step</b>.</span></div>
   <div class="row"><button class="btn" id="creset">Reset to the default example</button><button class="btn" id="crand">Randomise weights</button><button class="btn pri" id="cgo">▶ See it step by step</button><span id="cmsg"></span></div>
+  <h3>0 · Words or letters (your own example, like the slides' d-o-g)</h3>
+  <div id="c-words"></div>
   <h3>1 · Architecture</h3>
   <div class="row"><label>Ready-made examples<select id="cpre"></select></label></div>
   <div class="row" id="c-arch"></div>
@@ -209,7 +222,7 @@ function makeLayout(){
   const cfg=S.cfg,{T,d,H,C}=cfg,outs=outSteps(cfg),md=Math.max(d,H,C);
   const nCol=T+1+(outs.length>0?1:0);let c=Math.min(36,980/(nCol*(md+1.3)));c=Math.max(14,Math.floor(c));
   const colW=md*c+1.1*c,mx=34,top=58,rs=c+36;
-  const rowY={l:top,y:top+rs,u:top+2*rs,h:top+3*rs,s:top+4*rs,x:top+5*rs};VH=rowY.x+c+26;
+  const rowY={l:top,y:top+rs,u:top+2*rs,h:top+3*rs,s:top+4*rs,x:top+5*rs};VH=rowY.x+c+(cfg.tok&&!cfg.tok.emb?40:26);
   geo={};const texts=[],arrows=[];
   const colX=tt=>mx+tt*colW;
   const place=(p,tt,n,row)=>{const w=n*c,x0=colX(tt)+(md*c-w)/2;for(let i=0;i<n;i++)geo[`${p}:${tt}:${i}`]={x:x0+i*c,y:rowY[row],w:c,h:c,kind:p};return{x:x0,w,cx:x0+w/2};};
@@ -218,7 +231,10 @@ function makeLayout(){
   for(let tt=1;tt<=T;tt++){const o=outs.includes(tt-1);
     box[`x${tt}`]=place('x',tt,d,'x');box[`s${tt}`]=place('s',tt,H,'s');box[`h${tt}`]=place('h',tt,H,'h');
     if(o){box[`u${tt}`]=place('u',tt,C,'u');box[`y${tt}`]=place('y',tt,C,'y');geo[`l:${tt}`]={x:colX(tt)+(md*c-c)/2,y:rowY.l,w:c,h:c,kind:'l'};}
-    texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+16,t:`t = ${tt}`,a:'middle',b:1});}
+    {const tkn=cfg.tok?cfg.tok.vocab[cfg.tok.seq[tt-1]]:null,oh=cfg.tok&&!cfg.tok.emb;
+     if(oh&&c>=16)for(let i=0;i<d;i++)texts.push({x:box[`x${tt}`].x+i*c+c/2,y:rowY.x+c+10,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#8a929a'});
+     if(o&&cfg.tok&&c>=16)for(let i=0;i<C;i++)texts.push({x:box[`y${tt}`].x+i*c+c/2,y:rowY.y-3,t:cfg.tok.vocab[i],a:'middle',s:9,col:'#7C4DDB'});
+     texts.push({x:box[`x${tt}`].cx,y:rowY.x+c+(oh?29:16),t:`t = ${tt}`+(tkn!==null?`  “${tkn}”`:''),a:'middle',b:1});}}
   if(outs.length>0){const xx=colX(T+1)+(md*c-c)/2;geo['L']={x:xx,y:rowY.l,w:c,h:c,kind:'L'};texts.push({x:xx+c/2,y:rowY.l-6,t:outs.length>1?'total L':'L',a:'middle'});}
   const mid=(b)=>b.cx;
   const vert=(id,b1,r1,b2,r2,label)=>{arrows.push({id,x1:mid(b1),y1:rowY[r1]-2,x2:mid(b2),y2:rowY[r2]+c+3,label,lx:mid(b1)+6,ly:(rowY[r1]+rowY[r2]+c)/2+3});};
@@ -229,7 +245,7 @@ function makeLayout(){
   const svg=$('#svg'),VWd=Math.max(1000,colX(T+1)+md*c+mx);svg.setAttribute('viewBox',`0 0 ${VWd} ${VH}`);
   let h=`<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a929a"/></marker></defs>`;
   for(const [row,lab] of [['x','input x'],['s','pre-activation s'],['h','hidden h'],['u','output pre-act u'],['y','prediction y'],['l','loss']])if(row!=='u'&&row!=='y'&&row!=='l'||outs.length)h+=`<text x="3" y="${rowY[row]+c/2+3}" font-size="9" fill="#9aa0a6" transform="rotate(-90 9 ${rowY[row]+c/2})" text-anchor="middle" style="display:none">${lab}</text>`;
-  for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.b?12:10.5}" fill="${t.b?'#444':'#6b7280'}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
+  for(const t of texts)h+=`<text x="${t.x}" y="${t.y}" text-anchor="${t.a}" font-size="${t.s||(t.b?12:10.5)}" fill="${t.col||(t.b?'#444':'#6b7280')}" font-weight="${t.b?700:400}">${esc(t.t)}</text>`;
   h+='<g id="arrg">';for(const a of arrows)h+=`<line class="arr" id="${a.id}" x1="${a.x1}" y1="${a.y1}" x2="${a.x2}" y2="${a.y2}" stroke="#9aa0a6" stroke-width="1.6" stroke-linecap="round" marker-end="url(#ar)"/>${a.label?`<text x="${a.lx}" y="${a.ly}" font-size="10.5" fill="#1E5873" font-weight="700">${a.label.replace('_xh','ₓₕ').replace('_hh','ₕₕ').replace('_hy','ₕᵧ')}</text>`:''}`;h+='</g>';
   for(const [key,r] of Object.entries(geo))h+=`<g class="cell" data-k="${key}"><title></title><rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"/><text class="tv" x="${r.x+r.w/2}" y="${r.y+r.h/2}" text-anchor="middle" font-size="${Math.max(7.5,c*.32)}"></text><text class="tg" x="${r.x+r.w/2}" y="${r.y+r.h-Math.max(2,c*.09)}" text-anchor="middle" font-size="${Math.max(6.5,c*.25)}" fill="#C0392B" font-weight="700"></text></g>`;
   svg.innerHTML=h;LAY={c,rowY,md};
@@ -244,7 +260,7 @@ function gradOf(key,G){const [p,t,i]=key.split(':'),T=+t,I=+i;
 function cum(i){const vis=new Set(),gv=new Set();let upd=false,check=false;
   for(let t=0;t<=i;t++){const s=steps[t];(s.gives||[]).forEach(x=>vis.add(x));(s.grads||[]).forEach(x=>gv.add(x));if(s.upd)upd=true;if(s.check)check=true;}
   return{vis,gv,upd,check};}
-const cellName=key=>{const [p,t,i]=key.split(':');return p==='l'?`L at t=${t}`:p==='L'?'total loss L':`${p}(t=${t})[${+i+1}]`;};
+let cellName=key=>{const [p,t,i]=key.split(':');return p==='l'?`L at t=${t}`:p==='L'?'total loss L':`${p}(t=${t})[${+i+1}]`;};
 let lastI=-1;
 function paint(){
   const cfg=S.cfg,i=S.i,cur=steps[i],cs=cum(i),back=cur.ph==='B';
@@ -269,11 +285,11 @@ function paint(){
     const used=(r,c)=>sp&&(sp.all||(sp.rows&&sp.rows.includes(r))||(sp.cols&&sp.cols.includes(c))||(sp.idx&&sp.idx.includes(r)));
     const cells=rows.map((row,r)=>row.map((v,c)=>{const u=used(r,c);return`<i style="background:${v>=0?`rgba(43,122,155,${.1+.5*Math.abs(v)/mx})`:`rgba(224,123,57,${.1+.5*Math.abs(v)/mx})`};${u?`outline:3px solid ${sp.col};outline-offset:-1px;font-weight:800`:(om?'opacity:.3':'')}">${v.toFixed(3)}</i>`;}).join('')).join('');
     return`<div class="mat ${(om?!!sp:hi.has(n))?'hi':''}" style="${om&&!sp?'opacity:.55':''}"><div class="mk">${K(tex)} · ${sh}</div><div class="mg" style="grid-template-columns:repeat(${rows[0].length},auto)">${cells}</div></div>`;}).join('');
-  $('#learn').innerHTML=(cur.learn||[]).map(l=>`<div class="learn"><div class="lt">New idea · ${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('');
+  $('#learn').innerHTML=(cur.learn||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
   $('#opkey').innerHTML=(cur.ops&&cur.ops.key||[]).map(([c,t])=>`<span><i style="background:${c}"></i>${rt(t)}</span>`).join('');
   // panel
   const names={S:'Setup',F:'Forward',B:'Backward',U:'Update',C:'Check'};
-  $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}${(cur.learn&&cur.learn.length)?` · <span style="color:#8a6500">${cur.learn.length} new idea${cur.learn.length>1?'s':''} ↓ (scroll down)</span>`:''}`;
+  $('#kick').innerHTML=`Step <b class="${back?'B':''}">${i+1}</b> of ${steps.length} · ${names[cur.ph]}`;
   $('#title').innerHTML=rt(cur.title);$('#path').innerHTML='Path: '+esc(cur.path);
   $('#what').innerHTML=cur.what.map(w=>`<li>${rt(w)}</li>`).join('');
   const res=$('#res');res.className='res'+(back?' B':'');res.innerHTML=cur.res.map(r=>K(r,true)).join('');
@@ -297,8 +313,8 @@ function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySe
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}
     h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
-  const gl=(steps.gloss||[]).map(l=>`<div class="learn"><div class="lt">${rt(l.title)}</div><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></div>`).join('');
-  $('#p-all').innerHTML=`<details class="gl" open><summary style="cursor:pointer;font-weight:700;font-size:16px;margin:4px 0 6px">Glossary: every new idea in this lab, in plain words</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
+  const gl=(steps.gloss||[]).map(l=>`<details class="learn"><summary>${rt(l.title)}</summary><p><b>What it is:</b> ${rt(l.what)}</p><p><b>Why we use it:</b> ${rt(l.why)}</p></details>`).join('');
+  $('#p-all').innerHTML=`<details class="gl"><summary style="cursor:pointer;font-weight:700;font-size:16px;margin:4px 0 6px">Concepts used in this lab (tap to open)</summary><div class="cards">${gl}</div></details><div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
   $('#p-all').querySelectorAll('.card').forEach((c,i)=>{c.style.cursor='pointer';c.onclick=()=>{setTab('step');go(i);}});}
 function renderCheck(){const eps=parseFloat($('#eps').value),an=analytic(S.cfg),ng=numgrad(S.cfg,eps);let mx=0;
   $('#gcform').innerHTML=K(R`\dfrac{\partial L}{\partial\theta}\;\approx\;\dfrac{L(\theta+\epsilon)-L(\theta-\epsilon)}{2\epsilon}`,true)+`<div>Nudge one shared weight up and down by ε, re-run the whole unrolled forward pass, and compare with the BPTT value.</div>`;
@@ -370,6 +386,7 @@ function wireCustom(){const cfg=S.cfg;
   num('#c-w input[data-w]',(i,v)=>{const [n,a,b]=i.dataset.w.split(',');if(Array.isArray(S.cfg[n][0]))S.cfg[n][+a][+b]=v;else S.cfg[n][+b]=v;});}
 /* ================= floating explainer + book icon ================= */
 /*PANEL_JS*/
+/*INCLUDE:rnn_words.js*/
 /* ================= wiring ================= */
 function init(){
   document.querySelectorAll('.fnote,.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
@@ -391,7 +408,8 @@ function init(){
   $('#teta').oninput=e=>{S.cfg.eta=parseFloat(e.target.value);rebuild(false);renderTrain();};
   $('#tlog').onchange=drawChart;
   $('#creset').onclick=()=>{applyCfg(defaultCfg(),'Back to the default example.');buildCustom();};
-  $('#crand').onclick=()=>{const o=S.cfg,c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;c.eta=o.eta;c.gran=o.gran;applyCfg(c,'Random weights.');buildCustom();};
+  {const rest=Object.assign({},PRESETS);for(const k of Object.keys(PRESETS))delete PRESETS[k];Object.assign(PRESETS,WORD_PRESETS,rest);}
+  $('#crand').onclick=()=>{const o=S.cfg;if(o.tok){const c=clone(o);randWeights(c,Date.now()%100000);applyCfg(c,'Random weights.');buildCustom();return;}const c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;c.eta=o.eta;c.gran=o.gran;applyCfg(c,'Random weights.');buildCustom();};
   $('#cgo').onclick=()=>{setTab('step');go(0);};
   $('#cpre').onchange=e=>{const f=PRESETS[e.target.value];if(!f)return;applyCfg(f(),`Loaded: ${e.target.value}`);buildCustom();};
   window.__app={S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,defaultCfg,randCfg,PRESETS,trainN,trainReset,TR:()=>TR};
