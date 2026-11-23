@@ -286,27 +286,87 @@ body{padding-top:10px}
 .gf .tr{flex:1;height:16px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
 .archbar{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;margin:4px 0 8px}
 .archbar .seg button.on{background:var(--acc);color:#fff}
+#a-run button{font-weight:700}
 .zoomb{display:inline-flex;gap:4px;margin-left:auto}.zoomb .btn{padding:6px 11px}
 .archcap{background:var(--card);border-radius:10px;padding:8px 12px;font-size:14px;margin-bottom:8px;min-height:20px}
-.archgrid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
-@media(max-width:1000px){.archgrid{grid-template-columns:1fr}}
-.archwrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;max-height:78vh}
+.gbarx{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;background:linear-gradient(90deg,#EEF6FB,#F4F0FD);border:1px solid #DCE6F0;border-radius:12px}
+.gbarx .btn[disabled]{opacity:.4;cursor:default}
+.gdots{display:flex;gap:6px;flex:1;min-width:160px;justify-content:center}.gdots i{width:11px;height:11px;border-radius:50%;background:#D5DCE5;cursor:pointer;transition:all .25s}.gdots i.d{background:#7FB6CC}.gdots i.a{background:var(--acc);transform:scale(1.5)}
+.archgrid{display:grid;grid-template-columns:minmax(0,52fr) minmax(0,48fr);gap:16px;align-items:start}
+@media(max-width:1100px){.archgrid{grid-template-columns:1fr}}
+.archwrap{overflow:auto;background:radial-gradient(circle at 20% 0,#fff,#F6F9FC);border:1px solid var(--line);border-radius:16px;padding:6px}
 .archwrap svg{display:block;font-family:inherit}
-.archinfo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;position:sticky;top:8px;max-height:78vh;overflow:auto}
-.archinfo h3{margin:0 0 6px;font-size:17px}.tbadge{font-size:11px;background:var(--card);border-radius:6px;padding:2px 6px;color:var(--mut);vertical-align:middle}
+.archinfo{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 18px;font-size:14.5px;position:sticky;top:8px;max-height:calc(100vh - 24px);overflow:auto;box-shadow:0 6px 24px rgba(15,23,42,.06)}
+.archinfo h3{margin:0 0 6px;font-size:18px}.archinfo h4.ih{margin:2px 0 4px;font-size:15px;color:#1E5873}.tbadge{font-size:11px;background:var(--card);border-radius:6px;padding:2px 6px;color:var(--mut);vertical-align:middle}
 .archinfo .read{background:#EAF4F8;border-radius:8px;padding:6px 9px;margin:6px 0;font-size:13px}.archinfo .why{font-size:13px;color:#33414d}
-.archinfo .katex-display{overflow-x:auto;overflow-y:hidden;margin:.5em 0}
+.archinfo .katex-display{overflow-x:auto;overflow-y:hidden;margin:.45em 0;font-size:.94em}
+.archinfo hr.sep{border:0;border-top:1px dashed #D5DCE5;margin:12px 0}
+.gstep .gk{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:700}
+.gstep h3{font-size:21px;margin:2px 0 8px}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.flow .fb{background:#EEF2F7;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}.flow .fb.to{background:#E3F4EA;color:#14532D}.flow .fa{color:#1E5873;font-size:18px}
+.gstep .gsay{font-size:15.5px;background:#FFF8E6;border-left:4px solid #F5B50A;border-radius:6px;padding:8px 12px}
 .archleg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mut);margin-top:8px}.archleg i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
-#a-svg .cellbox{fill:#F3F4F6;stroke:#DADDE2;stroke-width:1.5}
+#archroot.guided .gbarx{display:flex}
+#a-svg .cellbox{fill:url(#none);fill:#F4F7FB;stroke:#D6DEE9;stroke-width:1.5}
+#a-svg .zone{fill:#fff;stroke:#E1E7EF;stroke-width:1.2}#a-svg .zf{fill:#FFF8E6}#a-svg .zi{fill:#EEF9F3}#a-svg .zo{fill:#F3EFFD}
+#a-svg .zl{font-size:10px;letter-spacing:.16em;font-weight:700;fill:#8A97A8}
 #a-svg .cap{font-size:13px;fill:#6b7480;font-weight:600}
-#a-svg .chip{font-size:11.5px;fill:#1f2937;stroke:#fff;stroke-width:3.5;paint-order:stroke;font-weight:600}
-#a-svg .gl{font-size:13px;font-style:italic;fill:#6b7480}
+#a-svg .chipbg{fill:#fff;stroke:#CFD8E3;stroke-width:1}
+#a-svg .chip{font-size:11px;fill:#1f2937;font-weight:600;font-variant-numeric:tabular-nums;dominant-baseline:auto}
+#a-svg .ntag{font-size:11px;font-weight:700;fill:#64748B}
+#a-svg .nd{filter:drop-shadow(0 2px 3px rgba(15,23,42,.28))}
 #a-svg .dim{opacity:.14}
+#a-svg .hid{opacity:0;pointer-events:none}
+#a-svg g,#a-svg path{transition:opacity .7s}
 #a-svg .part{cursor:pointer}
-#a-svg .part:hover{filter:brightness(.93) drop-shadow(0 0 3px rgba(30,88,115,.5))}
+#a-svg .part:hover{filter:drop-shadow(0 0 4px rgba(30,88,115,.55))}
 #a-svg .part.sel{filter:drop-shadow(0 0 5px #1E5873) drop-shadow(0 0 2px #1E5873)}
 #a-svg .part.cmp .cellbox{fill:#E7EEF3;stroke:#9DB8C8}
 #a-svg .shrinkbtn{cursor:pointer}#a-svg .shrinkbtn rect{fill:#fff;stroke:#9DB8C8}#a-svg .shrinkbtn text{font-size:12px;fill:#1E5873;font-weight:600}
+@keyframes popin{0%{opacity:0;transform:scale(.3)}70%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+@keyframes drawln{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes flowd{to{stroke-dashoffset:-1}}
+#archroot.guided #a-svg g.enter{animation:popin 1.2s ease both;transform-box:fill-box;transform-origin:center}
+#archroot.guided #a-svg .nd.enter{filter:drop-shadow(0 0 7px rgba(245,181,10,.95)) drop-shadow(0 2px 3px rgba(15,23,42,.28))}
+#archroot.guided #a-svg path.ln.enter{stroke-dasharray:1;animation:drawln 2.6s ease-in-out both}
+#archroot.guided #a-svg .flowdash{stroke:#fff;stroke-opacity:.85;stroke-dasharray:.018 .05;animation:flowd 3.6s linear infinite;pointer-events:none}
+.storytop{margin:4px 0 8px}.storytop .seg button.on{background:var(--acc);color:#fff}
+.story-sent{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.wchip{font:600 18px inherit;font-family:inherit;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 16px;cursor:pointer}
+.wchip.on{background:var(--acc);color:#fff;border-color:var(--acc)}.wchip.fut{opacity:.45}
+.story-ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+details.edit{background:var(--card);border-radius:8px;padding:6px 10px;font-size:13px}details.edit .sel{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}details.edit select{font:inherit;padding:3px}
+.verdict{background:#FFF7E6;border:1px solid #F0D9A8;border-radius:12px;padding:10px 14px;margin:8px 0;font-size:15px}.verdict .vh{font-weight:700;margin-bottom:4px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.slot{background:#fff;border:2px solid var(--line);border-top:5px solid var(--sc);border-radius:12px;padding:8px 10px;font-size:12.5px}.slot.chg{box-shadow:0 0 0 2px var(--sc) inset}
+.slot .sh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}.slot .sh b{font-size:17px;color:var(--sc)}.slot .sh span{color:var(--mut)}
+.srow{display:grid;grid-template-columns:118px 1fr 62px;align-items:center;gap:6px;margin:3px 0}.srow em{font-style:normal;font-weight:600;text-align:right}.srow.fin span{font-weight:700}
+.sbar,.gbar{position:relative;height:12px;background:#F1F2F4;border-radius:6px;overflow:hidden}.sbar b,.gbar b{position:absolute;top:0;bottom:0}.gbar b{left:0}.sbar .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#9aa}
+.sh3{font-size:16px;margin:16px 0 4px}.tline{border-collapse:collapse;font-size:13px;width:100%;max-width:760px}.tline th,.tline td{border:1px solid #fff;padding:6px 8px;text-align:center;cursor:pointer}.tline th{background:var(--card);font-weight:600}.tline th.on,.tline td.on{outline:3px solid #1E5873;outline-offset:-3px}
+.predrow{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}.pbars{display:grid;grid-template-columns:80px 1fr 56px;gap:6px 8px;align-items:center;max-width:520px;margin-top:6px}.pbars em{font-style:normal;font-weight:600}.ans{margin-top:8px;font-size:17px}
+.slot{cursor:pointer}.slot.pick{outline:3px solid var(--sc);outline-offset:1px}
+.ops{list-style:none;padding:0;margin:6px 0;display:grid;gap:6px}.ops li{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 10px}.ops .oe{font-size:26px;width:40px;text-align:center}.ops .on{font-size:13px;color:#33414d;font-variant-numeric:tabular-nums}
+details.cast{margin:10px 0;background:var(--card);border-radius:12px;padding:8px 12px}details.cast summary{font-weight:700;cursor:pointer}.castg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-top:8px}.cc{display:flex;gap:10px;background:#fff;border-radius:10px;padding:8px 10px;font-size:13px}.cc .ce{font-size:28px}.cc .cf{color:#1E5873;font-weight:600}
+.archstage{position:relative}
+.lookb{margin:8px 0 4px;background:#EEF6FB;border-color:#9DB8C8;font-weight:700}
+#a-svg.zooming .part{opacity:.12;transition:opacity .6s}#a-svg.zooming .part.focus{opacity:1}
+.insideov{position:absolute;inset:0;display:none;align-items:flex-start;justify-content:center;background:rgba(238,243,249,.9);backdrop-filter:blur(3px);border-radius:16px;z-index:5;padding:12px;overflow:auto}
+.insideov.on{display:flex}
+.insidecard{position:relative;background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(15,23,42,.22);padding:16px 18px;width:min(100%,820px);margin:auto 0;transform-origin:center}
+.ix{position:absolute;right:12px;top:10px;font:600 12px inherit;font-family:inherit;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;cursor:pointer}
+.ihead{display:flex;gap:12px;align-items:center;margin-bottom:10px;padding-right:80px}.ihead h3{margin:0;font-size:18px}.ilede{font-size:13.5px;color:#33414d;margin-top:2px}
+.isym{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.25);border:3px solid #fff}
+.iflow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}.ibox{flex:1 1 170px;background:#F6F9FC;border:1px solid #E1E7EF;border-radius:12px;padding:8px 10px;min-width:150px}.ibox.mid{flex:1.3 1 220px;background:#FFF8E6;border-color:#F0D9A8}
+.ik{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--mut);margin-bottom:4px}.iarr{align-self:center;color:#1E5873;font-size:20px}
+.ibox .vl{display:block;font-size:11px;font-weight:700;color:#64748B;margin-top:4px}
+.uv{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;border-left:4px solid var(--uc);padding:1px 8px;margin:2px 0;background:#fff;border-radius:4px}.uv i{font-style:normal;font-weight:500;color:var(--mut);font-size:11px}
+.ibox .katex-display{margin:.3em 0;font-size:.95em;overflow-x:auto}
+.icwrap{margin:10px 0 2px;text-align:center}.icurve{width:min(100%,420px);height:auto;background:#fff;border:1px solid #E1E7EF;border-radius:10px}.icurve .tk{font-size:10px;fill:#64748B}.icurve .gl2{stroke:#E5EAF1}.icurve .ax{stroke:#94A3B8;stroke-width:1.2}
+.itw{overflow-x:auto;margin-top:8px}.itab{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}.itab th{background:#EEF2F7;padding:5px 8px;font-size:11px;text-align:left}.itab td{border-top:1px solid #E8ECF2;padding:6px 8px;vertical-align:top}
+.itab tr[style]{animation:rowin .7s ease both;animation-delay:calc(var(--i)*.5s + 1s)}
+@keyframes rowin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ud{display:inline-flex;width:20px;height:20px;border-radius:50%;color:#fff;align-items:center;justify-content:center;font-size:11px}
+.mbar{display:block;height:6px;background:#EEF1F5;border-radius:3px;margin-top:3px;overflow:hidden}.mbar i{display:block;height:100%}
 .gf .fl{position:absolute;left:0;top:0;bottom:0;background:var(--err);opacity:.75}
 </style>
 </head>
@@ -319,6 +379,7 @@ body{padding-top:10px}
     <div class="tabs" id="tabs">
       <button class="tab on" data-t="step">Step by step</button>
       <button class="tab" data-t="arch">Architecture</button>
+      <button class="tab" data-t="story">Story</button>
       <button class="tab" data-t="all">Show all</button>
       <button class="tab" data-t="check">Gradient check</button>
       <button class="tab" data-t="train">Training</button>
@@ -369,6 +430,8 @@ body{padding-top:10px}
   <div class="jump" id="jump"></div>
   <div class="note" style="margin-top:6px">Tip: use the ← → keys, and switch between <b>LSTM</b> and <b>GRU</b> at the top right. Want the cell drawn as in the lecture slides, with clickable gates? Open the <b>Architecture</b> tab. Own sequence or sizes? Open <b>Custom</b>.</div>
 </section>
+
+<section id="p-story" class="hide"><div id="storyroot"></div></section>
 
 <section id="p-arch" class="hide"><div id="archroot"></div></section>
 
@@ -827,10 +890,10 @@ function paint(){
 let playTimer=null;
 function go(i){S.i=Math.max(0,Math.min(steps.length-1,i));paint();}
 function stopPlay(){if(playTimer){clearInterval(playTimer);playTimer=null;$('#play').textContent='▶ Play';}}
-function rebuild(relayout=true){document.querySelectorAll('#cellsel button').forEach(b=>b.classList.toggle('on',b.dataset.c===S.cfg.cell));steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='arch')renderArch();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
+function rebuild(relayout=true){document.querySelectorAll('#cellsel button').forEach(b=>b.classList.toggle('on',b.dataset.c===S.cfg.cell));steps=build();S.i=Math.min(S.i,steps.length-1);if(relayout)makeLayout();if(tab==='step')paint();renderJump();if(tab==='story')renderStory();if(tab==='arch')renderArch();if(tab==='all')renderAll();if(tab==='check')renderCheck();if(tab==='train'){trainResetIfNeeded();renderTrain();}}
 function renderJump(){const first=ph=>steps.findIndex(s=>s.ph===ph);const L=[['Setup','S'],['Forward','F'],['Backward','B'],['Update','U'],['Check','C']];$('#jump').innerHTML=L.map(([n,p])=>`<button class="btn" data-i="${first(p)}">⏭ ${n}</button>`).join('');$('#jump').querySelectorAll('button').forEach(b=>b.onclick=()=>{stopPlay();go(+b.dataset.i)});}
-function setTab(t){tab=t;stopPlay();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));for(const id of ['step','arch','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
-  if(t==='arch')renderArch();if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
+function setTab(t){tab=t;stopPlay();stopStory();stopTrainPlay();syncPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));for(const id of ['step','story','arch','all','check','train','cust'])$('#p-'+id).classList.toggle('hide',id!==t);
+  if(t==='story')renderStory();if(t==='arch')renderArch();if(t==='all')renderAll();if(t==='check')renderCheck();if(t==='train'){trainResetIfNeeded();renderTrain();}if(t==='step')paint();if(t==='cust')buildCustom();}
 function renderAll(){const names={S:['Setup',''],F:['Forward pass (through time)',''],B:['Backward pass: backpropagation through time','B'],U:['Update',''],C:['Check','']};let h='',last='';
   steps.forEach((s,i)=>{if(s.ph!==last){last=s.ph;const nm=names[s.ph];h+=(i?'</div>':'')+`<div class="sec ${nm[1]}">${nm[0]}</div><div class="cards">`;}h+=`<div class="card"><div class="k">Step ${i+1} of ${steps.length}</div><h4>${rt(s.title)}</h4>${s.res.map(r=>K(r,true)).join('')}</div>`;});
   $('#p-all').innerHTML=glossBlock(steps.gloss)+`<div class="row" style="margin-top:14px"><h2 style="margin:0;font-size:20px">Every calculation of one training step, on one screen</h2><span class="note">Click a card to jump to it in Step by step.</span></div>`+h+'</div>';
@@ -895,64 +958,69 @@ function wireCustom(){const cfg=S.cfg;
   num('#c-io input[data-x]',(i,v)=>{const [t,k]=i.dataset.x.split(',').map(Number);S.cfg.x[t][k]=v;});num('#c-io input[data-t]',(i,v)=>{const [t,k]=i.dataset.t.split(',').map(Number);S.cfg.t[t][k]=v;});
   num('#c-w input[data-w]',(i,v)=>{const parts=i.dataset.w.split(',');const path=parts[0].split('.');const ix=parts.slice(1).map(Number);const o=path.reduce((a,k)=>a[k],S.cfg);if(Array.isArray(o[0]))o[ix[0]][ix[1]]=v;else o[ix[1]]=v;});}
 /* ================= floating explainer + book icon ================= */
-/* ================= Architecture tab: deck-style clickable LSTM cell ================= */
-const AC={cin:'#8FD0E8',h:'#F5A862',x:'#3E3A3B',out:'#F26B5B',cell:'#8DA35A',sig:'#EBD96B',tan:'#80858B',op:'#7DBDEB',box:'#DDEBF3',bias:'#F57C89',edge:'#3E3A3B'};
-const A={mode:'cell',t:0,open:new Set(),sel:null,focus:'all',zoom:null,vals:true,peep:false,m:null};
+/* ================= Architecture tab: our own modern LSTM cell, clickable + guided ================= */
+const AC={belt:'#0891B2',h:'#F59E0B',x:'#475569',out:'#7C3AED',sig:'#F5B50A',tan:'#10B981',op:'#3B82F6',box:'#E8EEF6',bias:'#F472B6',edge:'#334155'};
+const A={mode:'cell',t:0,open:new Set(),sel:null,focus:'all',zoom:null,vals:true,peep:false,m:null,g:{on:false,s:0,play:null}};
 const FOC={forget:'f',input:'i',cell:'u',output:'o'};
 const FCAP={all:'Every part of the cell. Click any shape to see what it is and its live numbers.',
  forget:'**Forget gate.** Controls what information to throw away from memory: $f_t=\\sigma(W_f[h_{t-1},x_t]+b_f)$.',
  input:'**Input gate + candidate.** How much of the new information is written: $i_t=\\sigma(W_i[h_{t-1},x_t]+b_i)$ and $\\tilde c_t=\\tanh(W_c[h_{t-1},x_t]+b_c)$.',
  cell:'**Memory (cell state) update.** The cell state forgets some information, then is updated by adding new information: $c_t=f_t\\odot c_{t-1}+i_t\\odot\\tilde c_t$.',
  output:'**Output gate + hidden state.** A filtered version of the cell state becomes the new output: $o_t=\\sigma(W_o[h_{t-1},x_t]+b_o)$, $h_t=o_t\\odot\\tanh(c_t)$.'};
-const MK={h:AC.h,x:AC.x,c:AC.cin,g:AC.cell,e:AC.edge,o:AC.out};
+const MK={h:AC.h,x:AC.x,c:AC.belt,g:AC.belt,e:AC.edge,o:AC.out};
 const CXG={f:190,i:330,g:470,o:560},GI=['f','i','g','o'];
 const vs=v=>'['+v.slice(0,3).map(f2).join(', ')+(v.length>3?', …':'')+']';
-const dm=tags=>(A.focus==='all'||tags.split(' ').includes(FOC[A.focus]))?'':'dim';
-const Ln=(pts,mk,tags,arrow=true,w=3)=>`<path class="${dm(tags)}" d="M${pts.map(p=>p.join(' ')).join(' L')}" fill="none" stroke="${MK[mk]}" stroke-width="${w}" stroke-linejoin="round"${arrow?` marker-end="url(#ah-${mk})"`:''}/>`;
+const GS=()=>A.g.on&&A.mode==='cell';
+const dm=tags=>(GS()||A.focus==='all'||tags.split(' ').includes(FOC[A.focus]))?'':'dim';
+const V=rv=>GS()&&rv!=null?(rv>A.g.s?'hid':rv===A.g.s?'enter':''):'';
+const cls=(tags,rv)=>(dm(tags)+' '+V(rv)).trim();
+const Ln=(pts,mk,tags,rv,arrow=true,w=3)=>{const d=`M${pts.map(p=>p.join(' ')).join(' L')}`,c=cls(tags,rv);
+  return `<path class="ln ${c}" pathLength="1" d="${d}" fill="none" stroke="${MK[mk]}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${arrow?` marker-end="url(#ah-${mk})"`:''}/>`+(V(rv)==='enter'?`<path class="flowdash" pathLength="1" d="${d}" fill="none" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`:'');};
 const lab=(b,s)=>`${b}<tspan dy="3" font-size="9">${s}</tspan>`;
-const circ=(x,y,r,fill,tags,txt,col='#fff',fs=13)=>`<g class="${dm(tags)}"><circle cx="${x}" cy="${y}" r="${r}" fill="${fill}"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="${fs}" font-weight="600" fill="${col}">${txt}</text></g>`;
-const chip=(t,x,y,anc='middle')=>A.vals?`<text class="chip" x="${x}" y="${y}" text-anchor="${anc}">${t}</text>`:'';
-const PT=(nm,t,title,inner)=>`<g class="part${A.sel===nm&&A.t===t?' sel':''}" data-p="${nm}" data-t="${t}"><title>${title}</title>${inner}</g>`;
-const sigNode=(x,y,tags)=>`<g class="${dm(tags)}"><circle cx="${x}" cy="${y}" r="22" fill="${AC.sig}"/><path d="M${x+22} ${y} A22 22 0 0 0 ${x+6} ${y-21} L${x+22} ${y-21}Z" fill="#fff" opacity=".0"/><text x="${x}" y="${y+8}" text-anchor="middle" font-size="24" font-family="Georgia,serif" font-style="italic" fill="#3b3b3b">σ</text></g>`;
-const tanNode=(x,y,tags)=>{const p=[[0,-25],[24,-8],[15,20],[-15,20],[-24,-8]].map(q=>`${x+q[0]},${y+q[1]}`).join(' ');return`<g class="${dm(tags)}"><polygon points="${p}" fill="${AC.tan}"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">tanh</text></g>`;};
-const mulNode=(x,y,tags)=>`<g class="${dm(tags)}"><circle cx="${x}" cy="${y}" r="13" fill="${AC.op}"/><text x="${x}" y="${y+6}" text-anchor="middle" font-size="19" fill="#1f3b52">×</text></g>`;
-const addBox=(x,y,w,tags)=>`<g class="${dm(tags)}"><rect x="${x-w/2}" y="${y-13}" width="${w}" height="26" rx="4" fill="${AC.box}" stroke="#9DB8C8"/><text x="${x}" y="${y+7}" text-anchor="middle" font-size="20" fill="#4a5b66">+</text></g>`;
+const circ=(x,y,r,fill,tags,rv,txt,col='#fff',fs=13)=>`<g class="nd ${cls(tags,rv)}"><circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="${col}">${txt}</text></g>`;
+const chip=(t,x,y,anc,rv)=>{if(!A.vals)return'';const w=t.length*6.3+12,x0=anc==='start'?x:anc==='end'?x-w:x-w/2;return`<g class="${V(rv)}"><rect class="chipbg" x="${x0}" y="${y-13}" width="${w}" height="19" rx="9.5"/><text class="chip" x="${x0+w/2}" y="${y}" text-anchor="middle">${t}</text></g>`;};
+const tag=(t,x,y,anc,rv)=>`<text class="ntag ${V(rv)}" x="${x}" y="${y}" text-anchor="${anc||'middle'}">${t}</text>`;
+const PT=(nm,t,title,inner)=>`<g class="part${A.sel===nm&&A.t===t&&!GS()?' sel':''}" data-p="${nm}" data-t="${t}"><title>${title}</title>${inner}</g>`;
+const sigNode=(x,y,tags,rv)=>`<g class="nd ${cls(tags,rv)}"><circle cx="${x}" cy="${y}" r="23" fill="${AC.sig}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y+8}" text-anchor="middle" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#3b2f00">σ</text></g>`;
+const tanNode=(x,y,tags,rv)=>`<g class="nd ${cls(tags,rv)}"><rect x="${x-25}" y="${y-21}" width="50" height="42" rx="14" fill="${AC.tan}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">tanh</text></g>`;
+const mulNode=(x,y,tags,rv)=>`<g class="nd ${cls(tags,rv)}"><circle cx="${x}" cy="${y}" r="14" fill="${AC.op}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y+6}" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">×</text></g>`;
+const addBox=(x,y,w,tags,rv,sym='+')=>`<g class="nd ${cls(tags,rv)}"><rect x="${x-w/2}" y="${y-14}" width="${w}" height="28" rx="9" fill="${AC.box}" stroke="#A9BBD0" stroke-width="1.5"/><text x="${x}" y="${y+7}" text-anchor="middle" font-size="20" font-weight="700" fill="#3C5068">${sym}</text></g>`;
+const GRV={f:{cat:1,sg:2},i:{cat:4,sg:5},g:{cat:6,sg:7},o:{cat:10,sg:11}};
 
 function expCell(t,ox,left,right,showShrink){
-  const cfg=S.cfg,M=A.m,xl=left?45:0,xr=right?850:880,G=M.G[t],xv=cfg.x[t],hp=M.h[t],cp=M.c[t],ct=M.c[t+1],ht=M.h[t+1],tn=ct.map(Math.tanh);
-  const tt=t+1;let s=`<g transform="translate(${ox},0)">`;
-  s+=`<rect class="cellbox" x="100" y="40" width="700" height="360" rx="38"/>`;
+  const cfg=S.cfg,M=A.m,G=M.G[t],xv=cfg.x[t],hp=M.h[t],cp=M.c[t],ct=M.c[t+1],ht=M.h[t+1],tt=t+1,gd=GS();let s=`<g transform="translate(${ox},0)">`;
+  s+=`<rect class="cellbox" x="100" y="40" width="700" height="360" rx="34"/>`;
+  s+=`<rect class="zone zf" x="140" y="96" width="102" height="224" rx="18"/><rect class="zone zi" x="282" y="96" width="240" height="224" rx="18"/><rect class="zone zo" x="534" y="96" width="198" height="224" rx="18"/>`;
+  s+=`<text class="zl" x="191" y="112" text-anchor="middle">FORGET</text><text class="zl" x="402" y="112" text-anchor="middle">INPUT</text><text class="zl" x="633" y="112" text-anchor="middle">OUTPUT</text>`;
   s+=`<text class="cap" x="120" y="388">LSTM cell · t = ${tt}</text>`;
   if(showShrink)s+=`<g class="shrinkbtn" data-act="shrink" data-t="${t}"><rect x="690" y="368" width="94" height="22" rx="11"/><text x="737" y="383" text-anchor="middle">– shrink</text></g>`;
-  /* peepholes (optional) */
-  if(A.peep){s+=`<g class="peep">`+Ln([[120,70],[120,262],[583,262]],'c','peep',false,2)+GI.map(k=>Ln([[CXG[k]-20,262],[CXG[k]-20,277]],'c','peep',true,2)).join('')+`<text x="126" y="256" font-size="10" fill="#4a7b8c">peephole links (not used in this lab's maths)</text></g>`;}
-  /* hidden-state bus + arrows into the four combiners */
-  s+=PT('hprev',t,'h(t-1): previous output',Ln([[left?61:0,345],[583,345]],'h','f i u o',false)+GI.map(k=>Ln([[CXG[k]-24,345],[CXG[k]-24,303]],'h','f i u o')).join('')+(left?circ(45,345,16,AC.h,'f i u o',lab('h','t-1')):'')+(left?chip(vs(hp),45,375):''));
-  /* input bus */
-  s+=PT('x',t,'x(t): current input',Ln([[330,422],[330,372]],'x','f i u o',false)+Ln([[190,372],[560,372]],'x','f i u o',false)+GI.map(k=>Ln([[CXG[k],372],[CXG[k],303]],'x','f i u o')).join('')+circ(330,440,18,AC.x,'f i u o',lab('x','t'))+chip(vs(xv),358,444,'start'));
-  /* four combiners + biases */
-  GI.forEach((k,n)=>{const tg=k==='f'?'f u':k==='o'?'o':'i u',cx=CXG[k];
-    s+=PT('cat'+n,t,`W·[h(t-1), x(t)] for the ${GN[k]}`,addBox(cx,290,66,tg));
-    s+=PT('b'+n,t,`bias b of the ${GN[k]}`,Ln([[cx+24,312],[cx+24,303]],'e',tg,true,2)+circ(cx+24,322,10,AC.bias,tg,n,'#fff',11));});
-  /* cell-state highway */
-  s+=PT('cprev',t,'c(t-1): memory from the previous step',Ln([[left?61:0,70],[177,70]],'c','f u',true)+(left?circ(45,70,16,AC.cin,'f u',lab('c','t-1'),'#1f3b52')+chip(vs(cp),45,42):''));
-  s+=PT('cline',t,'cell state: the conveyor belt',Ln([[203,70],[441,70]],'g','u',true)+Ln([[499,70],[right?832:xr,70]],'g','u o',!right||true));
-  s+=PT('mulf',t,'forget: f ⊙ c(t-1)',mulNode(190,70,'f u'));
-  s+=PT('addc',t,'add new memory: + i ⊙ c̃',addBox(470,70,54,'u'));
+  if(A.peep&&!gd)s+=`<g class="peep">`+Ln([[120,70],[120,262],[583,262]],'c','peep',null,false,2)+GI.map(k=>Ln([[CXG[k]-20,262],[CXG[k]-20,277]],'c','peep',null,true,2)).join('')+`<text x="126" y="256" font-size="10" fill="#4a7b8c">peephole links (not used in this lab's maths)</text></g>`;
+  /* inputs */
+  s+=PT('x',t,'x(t): current input',circ(330,440,19,AC.x,'f i u o',0,lab('x','t'))+chip(vs(xv),360,444,'start',0));
+  s+=PT('hprev',t,'h(t-1): previous output',circ(45,345,17,AC.h,'f i u o',0,lab('h','t-1'))+chip(vs(hp),45,378,'middle',0));
+  s+=PT('cprev',t,'c(t-1): memory from the previous step',circ(45,70,17,AC.belt,'f u',0,lab('c','t-1'))+chip(vs(cp),45,42,'middle',0));
+  /* four mixers with their wires and biases */
+  GI.forEach((k,n)=>{const tg=k==='f'?'f u':k==='o'?'o':'i u',cx=CXG[k],r=GRV[k].cat;
+    s+=PT('cat'+n,t,`W·[h(t-1), x(t)] for the ${GN[k]}`,
+      Ln([[62,345],[cx-24,345],[cx-24,303]],'h',tg,r)+Ln([[330,421],[330,372],[cx,372],[cx,303]],'x',tg,r)+addBox(cx,290,66,tg,r));
+    s+=PT('b'+n,t,`bias b of the ${GN[k]}`,Ln([[cx+24,312],[cx+24,303]],'e',tg,r,true,2)+circ(cx+24,323,10,AC.bias,tg,r,n,'#fff',11));});
+  /* memory belt */
+  s+=PT('cline',t,'cell state: the conveyor belt',Ln([[62,70],[175,70]],'c','f u',3)+Ln([[205,70],[441,70]],'g','u',9)+Ln([[499,70],[right?830:880,70]],'g','u o',9));
+  s+=PT('mulf',t,'forget: f ⊙ c(t-1)',mulNode(190,70,'f u',3)+tag('Forget Guard',190,50,'middle',3));
+  s+=PT('addc',t,'add new memory: + i ⊙ c̃',addBox(470,70,54,'u',9)+tag('Basket',470,50,'middle',9)+chip('c = '+vs(ct),504,98,'start',9));
   /* forget path */
-  s+=PT('sf',t,'forget gate σ',Ln([[190,277],[190,239]],'e','f u')+sigNode(190,215,'f u')+Ln([[190,193],[190,85]],'e','f u')+chip('f = '+vs(G.f),198,178,'start'));
+  s+=PT('sf',t,'forget gate σ',Ln([[190,277],[190,240]],'e','f u',2)+sigNode(190,215,'f u',2)+Ln([[190,191],[190,86]],'e','f u',3)+chip('f = '+vs(G.f),198,180,'start',2));
   /* input path */
-  s+=PT('si',t,'input gate σ',Ln([[330,277],[330,239]],'e','i u')+sigNode(330,215,'i u')+Ln([[330,193],[330,140],[455,140]],'e','i u')+chip('i = '+vs(G.i),338,178,'start'));
-  s+=PT('tg',t,'candidate tanh',Ln([[470,277],[470,243]],'e','i u')+tanNode(470,215,'i u')+Ln([[470,190],[470,155]],'e','i u')+chip('c̃ = '+vs(G.g),478,178,'start'));
-  s+=PT('muli',t,'i ⊙ c̃',mulNode(470,140,'i u')+Ln([[470,127],[470,85]],'e','i u'));
+  s+=PT('si',t,'input gate σ',Ln([[330,277],[330,240]],'e','i u',5)+sigNode(330,215,'i u',5)+Ln([[330,191],[330,140],[454,140]],'e','i u',8)+chip('i = '+vs(G.i),338,180,'start',5));
+  s+=PT('tg',t,'candidate tanh',Ln([[470,277],[470,238]],'e','i u',7)+tanNode(470,215,'i u',7)+Ln([[470,193],[470,156]],'e','i u',8)+chip('c̃ = '+vs(G.g),478,180,'start',7));
+  s+=PT('muli',t,'i ⊙ c̃',mulNode(470,140,'i u',8)+tag('Scribe',490,136,'start',8)+Ln([[470,126],[470,86]],'e','i u',9));
   /* output path */
-  s+=PT('so',t,'output gate σ',Ln([[560,277],[560,239]],'e','o')+sigNode(560,215,'o')+Ln([[582,215],[665,215]],'e','o')+chip('o = '+vs(G.o),568,178,'start'));
-  s+=PT('tanhc',t,'tanh(c(t))',Ln([[680,70],[680,117]],'g','o',false)+tanNode(680,140,'o')+Ln([[680,165],[680,201]],'e','o')+chip('tanh(c)',715,140,'start'));
-  s+=PT('mulh',t,'h = o ⊙ tanh(c)',mulNode(680,215,'o'));
-  s+=PT('hup',t,'h(t) goes up to the output layer',Ln([[680,228],[680,345],[740,345],[740,43]],'o','o',true)+circ(740,25,16,AC.out,'o',lab('h','t'))+chip(vs(ht),770,28,'start'));
-  s+=PT('hout',t,'h(t): output to the next step',(right?Ln([[740,345],[832,345]],'o','o',true)+circ(850,345,16,AC.out,'o',lab('h','t'))+chip(vs(ht),850,375):Ln([[740,345],[880,345]],'o','o',true)));
-  s+=PT('ct',t,'c(t): new memory',right?circ(850,70,16,AC.cell,'u o',lab('c','t'))+chip(vs(ct),850,42):'');
-  if(!right)s+=chip('c'+tt+' = '+vs(ct),860,56,'end');
+  s+=PT('so',t,'output gate σ',Ln([[560,277],[560,240]],'e','o',11)+sigNode(560,215,'o',11)+Ln([[583,215],[664,215]],'e','o',13)+chip('o = '+vs(G.o),568,262,'start',11));
+  s+=PT('tanhc',t,'tanh(c(t))',Ln([[680,70],[680,118]],'g','o',12,false)+tanNode(680,140,'o',12)+Ln([[680,162],[680,200]],'e','o',12)+chip('tanh(c)',652,146,'end',12));
+  s+=PT('mulh',t,'h = o ⊙ tanh(c)',mulNode(680,215,'o',13)+tag('Speaker',698,232,'start',13));
+  s+=PT('hup',t,'h(t) goes up to the output layer',Ln([[680,229],[680,345],[740,345],[740,44]],'o','o',14)+circ(740,25,17,AC.out,'o',14,lab('h','t'))+chip(vs(ht),772,28,'start',14));
+  s+=PT('hout',t,'h(t): output to the next step',(right?Ln([[740,345],[830,345]],'o','o',14)+circ(850,345,17,AC.out,'o',14,lab('h','t'))+chip(vs(ht),850,378,'middle',14):Ln([[740,345],[880,345]],'o','o',14)));
+  s+=PT('ct',t,'c(t): new memory',right?circ(850,70,17,AC.belt,'u o',14,lab('c','t'))+chip(vs(ct),850,42,'middle',14):'');
   return s+'</g>';
 }
 function cmpCell(t,ox,left,right){
@@ -960,11 +1028,11 @@ function cmpCell(t,ox,left,right){
   s+=`<g class="part cmp${A.t===t?' sel':''}" data-act="expand" data-t="${t}"><title>Click to expand this cell</title><rect class="cellbox" x="50" y="40" width="140" height="360" rx="26"/>`+
    `<text x="120" y="190" text-anchor="middle" font-size="24" font-weight="700" fill="#33414d">LSTM</text><text x="120" y="218" text-anchor="middle" font-size="16" fill="#51606c">t = ${tt}</text>`+
    `<text x="120" y="262" text-anchor="middle" font-size="12" fill="#1E5873">▸ click to expand</text></g>`;
-  s+=Ln([[left?36:0,70],[50,70]],'c','f u',false,3)+Ln([[190,70],[right?204:240,70]],'g','u o',true,3)+(left?circ(20,70,16,AC.cin,'f u',lab('c','t-1'),'#1f3b52')+chip(vs(cp),20,42):'');
-  s+=Ln([[left?36:0,345],[50,345]],'h','f i u o',true,3)+Ln([[190,345],[right?204:240,345]],'o','o',true,3)+(left?circ(20,345,16,AC.h,'f i u o',lab('h','t-1'))+chip(vs(hp),20,375):'');
-  s+=Ln([[120,422],[120,400]],'x','f i u o',true,3)+circ(120,440,18,AC.x,'f i u o',lab('x','t'))+chip(vs(xv),146,444,'start');
-  s+=Ln([[150,40],[150,43]],'o','o',false,3)+Ln([[150,40],[150,43]],'o','o',false,3)+circ(150,25,16,AC.out,'o',lab('h','t'))+chip(vs(ht),176,28,'start');
-  if(right)s+=circ(220,70,16,AC.cell,'u o',lab('c','t'))+chip(vs(ct),220,42)+circ(220,345,16,AC.out,'o',lab('h','t'))+chip(vs(ht),220,375);
+  s+=Ln([[left?36:0,70],[50,70]],'c','f u',null,false,3)+Ln([[190,70],[right?204:240,70]],'g','u o',null,true,3)+(left?circ(20,70,16,AC.belt,'f u',null,lab('c','t-1'))+chip(vs(cp),20,42,'middle'):'');
+  s+=Ln([[left?36:0,345],[50,345]],'h','f i u o',null,true,3)+Ln([[190,345],[right?204:240,345]],'o','o',null,true,3)+(left?circ(20,345,16,AC.h,'f i u o',null,lab('h','t-1'))+chip(vs(hp),20,378,'middle'):'');
+  s+=Ln([[120,422],[120,400]],'x','f i u o',null,true,3)+circ(120,440,18,AC.x,'f i u o',null,lab('x','t'))+chip(vs(xv),146,444,'start');
+  s+=Ln([[150,40],[150,43]],'o','o',null,false,3)+circ(150,25,16,AC.out,'o',null,lab('h','t'))+chip(vs(ht),176,28,'start');
+  if(right)s+=circ(220,70,16,AC.belt,'u o',null,lab('c','t'))+chip(vs(ct),220,42,'middle')+circ(220,345,16,AC.out,'o',null,lab('h','t'))+chip(vs(ht),220,378,'middle');
   else s+=chip('c'+tt+' = '+vs(ct),230,56,'end');
   return s+'</g>';
 }
@@ -972,11 +1040,11 @@ function archSVG(){
   const cfg=S.cfg,T=cfg.T,times=A.mode==='cell'?[A.t]:[...Array(T).keys()];let off=30,body='';
   times.forEach((t,n)=>{const exp=A.mode==='cell'||A.open.has(t),left=n===0,right=n===times.length-1,w=exp?880:240;
     body+=exp?expCell(t,off,left,right,A.mode==='time'):cmpCell(t,off,left,right);off+=w;});
-  const W=off+40,Hh=485;
-  const defs=`<defs>${Object.entries(MK).map(([k,c])=>`<marker id="ah-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker>`).join('')}</defs>`;
+  const W=off+50,Hh=470;
+  const defs=`<defs>${Object.entries(MK).map(([k,c])=>`<marker id="ah-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,0L10,5L0,10z" fill="${c}"/></marker>`).join('')}</defs>`;
   return{W,H:Hh,html:`${defs}${body}`};
 }
-function archInfo(nm,t){
+function archInfo(nm,t,noHead){
   const cfg=S.cfg,M=A.m,P=cfg.p,x=cfg.x[t],hp=M.h[t],cp=M.c[t],G=M.G[t],ct=M.c[t+1],ht=M.h[t+1],tt=t+1,th=ct.map(Math.tanh);
   const had=(a,b)=>a.map((v,j)=>v*b[j]);const D=s=>K(s,true);
   const gk=nm.startsWith('cat')||nm.startsWith('b')&&nm.length===2?GI[+nm.slice(nm.startsWith('cat')?3:1)]:nm==='sf'?'f':nm==='si'?'i':nm==='tg'?'g':nm==='so'?'o':null;
@@ -999,39 +1067,244 @@ function archInfo(nm,t){
   else if(nm==='tanhc'){title='tanh of the cell state';what='The cell state can grow large, so it is squashed with tanh to the range −1 to 1 before it is revealed.';tex=[R`\tanh(c_t)=\tanh${bmc(ct)}=${bmc(th)}`];}
   else if(nm==='mulh'||nm==='hout'||nm==='hup'){title='Hidden state (output of this step)';what=nm==='hup'?'The same $h_t$ also goes **up** to the output layer, where the prediction $y_t$ is computed.':'The output gate filters the squashed memory. The result $h_t$ is sent to the next step and to the output layer.';tex=[R`h_t=o_t\odot\tanh(c_t)=${bmc(G.o)}\odot${bmc(th)}=${bmc(ht)}`];}
   else{title='Cell';what='Click a shape in the diagram.';}
-  return`<h3>${rt(title)} <span class="tbadge">t = ${tt}</span></h3><p>${rt(what)}</p>${tex.map(D).join('')}${read?`<div class="read">${esc(read)}</div>`:''}${why?`<p class="why"><b>Why it exists:</b> ${rt(why)}</p>`:''}`;
+  return`${noHead?`<h4 class="ih">${rt(title)}</h4>`:`<h3>${rt(title)} <span class="tbadge">t = ${tt}</span></h3>`}<p>${rt(what)}</p>${tex.map(D).join('')}${read?`<div class="read">${esc(read)}</div>`:''}${why?`<p class="why"><b>Why it exists:</b> ${rt(why)}</p>`:''}`;
 }
+const GSTEPS=[
+ {t:'The three inputs arrive',from:'the previous step and the new word',to:'the LSTM cell',k:['x','hprev','cprev'],say:'**x** is the new word. **h(t−1)** is what the cell said last time. **c(t−1)** is its long-term memory. Nothing has happened yet.'},
+ {t:'Forget gate: the Mixer',from:'x and h(t−1)',to:'Mixer 0',k:['cat0'],say:'The Mixer blends the new word with the last output, using the forget gate\'s own weights and bias.'},
+ {t:'Forget gate: the Dimmer switch',from:'Mixer 0',to:'Dimmer σ',k:['sf'],say:'The Dimmer turns the mixed number into a dial **f** between 0 and 1.'},
+ {t:'The Forget Guard meets the old memory',from:'c(t−1) and dial f',to:'kept memory',k:['mulf'],say:'The guard multiplies the old memory by f. If f is near 0 the memory is wiped, near 1 it passes.'},
+ {t:'Input gate: the Mixer',from:'x and h(t−1)',to:'Mixer 1',k:['cat1'],say:'A second Mixer, with different weights, prepares the input gate.'},
+ {t:'Input gate: the Dimmer switch',from:'Mixer 1',to:'Dimmer σ',k:['si'],say:'Dial **i** (0 to 1) says how much of the new idea may be written.'},
+ {t:'Candidate: the Mixer',from:'x and h(t−1)',to:'Mixer 2',k:['cat2'],say:'A third Mixer prepares the new content.'},
+ {t:'Candidate: the Dreamer',from:'Mixer 2',to:'Dreamer (tanh)',k:['tg'],say:'The Dreamer proposes new content **c̃** between −1 and 1.'},
+ {t:'The Scribe writes the dream',from:'dial i and the dream c̃',to:'written content',k:['muli'],say:'The Scribe multiplies the dream by the input dial: only the allowed amount gets written.'},
+ {t:'The Basket makes the new memory',from:'kept memory + written content',to:'c(t) on the belt',k:['addc'],say:'The Basket **adds** the kept memory and the new writing. This is the new long-term memory.'},
+ {t:'Output gate: the Mixer',from:'x and h(t−1)',to:'Mixer 3',k:['cat3'],say:'The fourth Mixer prepares the output gate.'},
+ {t:'Output gate: the Dimmer switch',from:'Mixer 3',to:'Dimmer σ',k:['so'],say:'Dial **o** (0 to 1) says how much memory may be said out loud.'},
+ {t:'The Squeezer calms the memory',from:'c(t) from the belt',to:'tanh(c)',k:['tanhc'],say:'The Squeezer tanh squashes the memory to −1…1 so it is safe to reveal.'},
+ {t:'The Speaker says it',from:'dial o and tanh(c)',to:'h(t)',k:['mulh'],say:'The Speaker multiplies: only the allowed part of the memory becomes the output **h**.'},
+ {t:'The outputs leave the cell',from:'the cell',to:'the next step and the output layer',k:['ct','hup'],say:'**c(t)** and **h(t)** travel on to the next word. **h(t)** also goes up to the output layer. One step of the LSTM is complete.'}];
+function gStop(){if(A.g.play){clearInterval(A.g.play);A.g.play=null;}}
+function gGo(s){A.g.s=Math.max(0,Math.min(GSTEPS.length-1,s));renderArch();}
+function guidedHTML(){const g=GSTEPS[A.g.s],n=A.g.s;
+  const dots=GSTEPS.map((_,i)=>`<i class="${i<n?'d':i===n?'a':''}" data-i="${i}"></i>`).join('');
+  const body=g.k.map(k=>archInfo(k,A.t,true)).join('<hr class="sep">');
+  return`<div class="gstep"><div class="gk">Step ${n+1} of ${GSTEPS.length} · time step t = ${A.t+1}</div><h3>${rt(g.t)}</h3>
+   <div class="flow"><span class="fb">${esc(g.from)}</span><span class="fa">➜</span><span class="fb to">${esc(g.to)}</span></div>
+   <p class="gsay">${rt(g.say)}</p>${INSIDE.has(g.k[0])?`<button class="btn lookb" data-look="${g.k[0]}">🔍 Look inside this part</button>`:''}${body}</div>`;}
 function renderArch(){
   const root=$('#archroot');
-  if(S.cfg.cell!=='lstm'){root.innerHTML=`<div class="note" style="padding:18px">The Architecture tab draws the <b>LSTM</b> cell exactly as in the lecture slides. You are on GRU. <button class="btn pri" id="archgo">Switch to LSTM</button></div>`;$('#archgo').onclick=()=>$('#cellsel button[data-c=lstm]').click();return;}
+  if(S.cfg.cell!=='lstm'){root.dataset.ready='';root.innerHTML=`<div class="note" style="padding:18px">The Architecture tab draws the <b>LSTM</b> cell. You are on GRU. <button class="btn pri" id="archgo">Switch to LSTM</button></div>`;$('#archgo').onclick=()=>$('#cellsel button[data-c=lstm]').click();return;}
   if(!root.dataset.ready){root.dataset.ready='1';
-    root.innerHTML=`<div class="archbar"><div class="seg" id="a-mode"><button data-m="cell">Inside one cell</button><button data-m="time">Unrolled in time</button></div>
+    root.innerHTML=`<div class="archbar"><div class="seg" id="a-run"><button data-r="0">Explore all</button><button data-r="1">▶ Step by step</button></div>
+      <div class="seg" id="a-mode"><button data-m="cell">Inside one cell</button><button data-m="time">Unrolled in time</button></div>
       <div class="seg" id="a-t"></div>
       <div class="seg" id="a-foc"><button data-f="all">Everything</button><button data-f="forget">Forget</button><button data-f="input">Input</button><button data-f="cell">Memory update</button><button data-f="output">Output</button></div>
-      <button class="btn" id="a-all">Expand all</button><label class="note"><input type="checkbox" id="a-vals" checked> numbers</label><label class="note"><input type="checkbox" id="a-peep"> peepholes</label>
+      <button class="btn" id="a-all">Expand all</button><label class="note" id="a-vl"><input type="checkbox" id="a-vals" checked> numbers</label><label class="note" id="a-pl"><input type="checkbox" id="a-peep"> peepholes</label>
       <span class="zoomb"><button class="btn" id="a-zm">−</button><button class="btn" id="a-fit">Fit</button><button class="btn" id="a-zp">+</button></span></div>
+      <div class="gbarx" id="a-gbar"><button class="btn" id="g-prev">◀ Back</button><button class="btn pri" id="g-next">Next ▶</button><button class="btn" id="g-play">▶ Play</button><div class="gdots" id="g-dots"></div><button class="btn" id="g-reset">↺ Restart</button></div>
       <div class="archcap" id="a-cap"></div>
-      <div class="archgrid"><div class="archwrap" id="a-wrap"><svg id="a-svg"></svg></div><aside class="archinfo" id="a-info"></aside></div>
-      <div class="archleg"><span><i style="background:${AC.x}"></i>Input x</span><span><i style="background:${AC.cin}"></i>Memory c (cell state)</span><span><i style="background:${AC.h}"></i>Previous output h</span><span><i style="background:${AC.out}"></i>Output h</span><span><i style="background:${AC.sig}"></i>σ sigmoid (0 to 1)</span><span><i style="background:${AC.tan}"></i>tanh (−1 to 1)</span><span><i style="background:${AC.op}"></i>× multiply</span><span><i style="background:${AC.box}"></i>+ add / combine</span><span><i style="background:${AC.bias}"></i>bias</span></div>`;
-    $('#a-mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;A.mode=b.dataset.m;A.sel=null;A.zoom=null;renderArch();};
+      <div class="archgrid"><div class="archstage" id="a-stage"><div class="archwrap" id="a-wrap"><svg id="a-svg"></svg></div><div class="insideov" id="a-ov"></div></div><aside class="archinfo" id="a-info"></aside></div>
+      <div class="archleg"><span><i style="background:${AC.x}"></i>Input x</span><span><i style="background:${AC.belt}"></i>Memory c (the belt)</span><span><i style="background:${AC.h}"></i>Previous output h</span><span><i style="background:${AC.out}"></i>Output h</span><span><i style="background:${AC.sig}"></i>σ dimmer (0 to 1)</span><span><i style="background:${AC.tan}"></i>tanh (−1 to 1)</span><span><i style="background:${AC.op}"></i>× multiply</span><span><i style="background:${AC.box}"></i>+ mix / add</span><span><i style="background:${AC.bias}"></i>bias</span></div>`;
+    $('#a-run').onclick=e=>{const b=e.target.closest('button');if(!b)return;gStop();A.g.on=b.dataset.r==='1';if(A.g.on){A.mode='cell';A.g.s=0;A.sel=null;}A.zoom=null;renderArch();};
+    $('#a-mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;A.mode=b.dataset.m;if(A.mode==='time'){gStop();A.g.on=false;}A.sel=null;A.zoom=null;renderArch();};
     $('#a-t').onclick=e=>{const b=e.target.closest('button');if(!b)return;A.t=+b.dataset.t;renderArch();};
     $('#a-foc').onclick=e=>{const b=e.target.closest('button');if(!b)return;A.focus=b.dataset.f;renderArch();};
     $('#a-all').onclick=()=>{const T=S.cfg.T;if(A.open.size>=T)A.open.clear();else for(let t=0;t<T;t++)A.open.add(t);A.zoom=null;renderArch();};
     $('#a-vals').onchange=e=>{A.vals=e.target.checked;renderArch();};$('#a-peep').onchange=e=>{A.peep=e.target.checked;renderArch();};
     $('#a-zp').onclick=()=>{A.zoom=(A.zoom||archFit())*1.2;renderArch();};$('#a-zm').onclick=()=>{A.zoom=(A.zoom||archFit())/1.2;renderArch();};$('#a-fit').onclick=()=>{A.zoom=null;renderArch();};
+    $('#g-prev').onclick=()=>{gStop();gGo(A.g.s-1);};$('#g-next').onclick=()=>{gStop();gGo(A.g.s+1);};$('#g-reset').onclick=()=>{gStop();gGo(0);};
+    $('#g-play').onclick=()=>{if(A.g.play){gStop();renderArch();return;}if(A.g.s>=GSTEPS.length-1)A.g.s=0;A.g.play=setInterval(()=>{if(A.g.s>=GSTEPS.length-1){gStop();renderArch();return;}gGo(A.g.s+1);},6500);gGo(A.g.s);};
+    $('#g-dots').onclick=e=>{const d=e.target.closest('i');if(d){gStop();gGo(+d.dataset.i);}};
+    document.addEventListener('keydown',e=>{if(tab!=='arch'||!A.g.on||/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight'){gStop();gGo(A.g.s+1);}if(e.key==='ArrowLeft'){gStop();gGo(A.g.s-1);}});
     $('#a-svg').addEventListener('click',e=>{const sb=e.target.closest('[data-act="shrink"]');if(sb){A.open.delete(+sb.dataset.t);A.zoom=null;renderArch();return;}
-      const g=e.target.closest('.part');if(!g)return;const t=+g.dataset.t;if(g.dataset.act==='expand'){A.open.add(t);A.t=t;A.zoom=null;renderArch();return;}A.t=t;A.sel=g.dataset.p;renderArch();});
+      const g=e.target.closest('.part');if(!g)return;const t=+g.dataset.t;if(g.dataset.act==='expand'){A.open.add(t);A.t=t;A.zoom=null;renderArch();return;}const nm=g.dataset.p;if(!GS()){A.t=t;A.sel=nm;renderArch();}if(INSIDE.has(nm)){const el=document.querySelector(`#a-svg [data-p="${nm}"]`);openInside(nm,A.t,el);}});
+    $('#a-ov').addEventListener('click',e=>{if(e.target.id==='a-ov')closeInside();});
+    $('#a-info').addEventListener('click',e=>{const b=e.target.closest('[data-look]');if(b){const nm=b.dataset.look;openInside(nm,A.t,document.querySelector(`#a-svg [data-p="${nm}"]`));}});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&A.inside)closeInside();});
     window.addEventListener('resize',()=>{if(tab==='arch'&&A.zoom==null)renderArch();});}
-  A.m=forward(S.cfg);const T=S.cfg.T;if(A.t>=T)A.t=T-1;
+  A.m=forward(S.cfg);const T=S.cfg.T;if(A.t>=T)A.t=T-1;const gd=GS();const sg=[A.g.s,A.g.on,A.mode,A.t,A.focus,A.vals].join();if(A._sg!==sg){closeInside();A._sg=sg;}
+  document.querySelectorAll('#a-run button').forEach(b=>b.classList.toggle('on',(b.dataset.r==='1')===A.g.on));
   document.querySelectorAll('#a-mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===A.mode));
   document.querySelectorAll('#a-foc button').forEach(b=>b.classList.toggle('on',b.dataset.f===A.focus));
   $('#a-t').style.display=A.mode==='cell'?'':'none';$('#a-all').style.display=A.mode==='time'?'':'none';$('#a-all').textContent=A.open.size>=T?'Shrink all':'Expand all';
+  $('#a-foc').style.display=gd?'none':'';$('#a-mode').style.display=gd?'none':'';$('#a-vl').style.display=$('#a-pl').style.display=gd?'none':'';
+  $('#a-gbar').style.display=gd?'':'none';
   $('#a-t').innerHTML=[...Array(T).keys()].map(t=>`<button data-t="${t}" class="${t===A.t?'on':''}">t = ${t+1}</button>`).join('');
-  $('#a-cap').innerHTML=rt(FCAP[A.focus]);
-  const g=archSVG(),svg=$('#a-svg'),z=A.zoom||archFit(g.W);svg.setAttribute('viewBox',`0 0 ${g.W} ${g.H}`);svg.style.width=Math.round(g.W*z)+'px';svg.style.height=Math.round(g.H*z)+'px';svg.innerHTML=g.html;A._W=g.W;
-  $('#a-info').innerHTML=A.sel?archInfo(A.sel,A.t):`<h3>Click any part</h3><p class="note">Every shape in the diagram is clickable: the inputs, the four gates, the × and + operations, the memory line and the outputs. You will see what it is, why it exists and its numbers for the chosen time step.</p><p class="note">Use <b>Unrolled in time</b> to see the cell as a block repeated over the sequence. Click a block to expand it and <b>– shrink</b> to fold it back.</p>`;
+  $('#a-cap').style.display=gd?'none':'';$('#a-cap').innerHTML=rt(FCAP[A.focus]);
+  if(gd){$('#g-dots').innerHTML=GSTEPS.map((_,i)=>`<i class="${i<A.g.s?'d':i===A.g.s?'a':''}" data-i="${i}" title="${esc(GSTEPS[i].t)}"></i>`).join('');$('#g-play').textContent=A.g.play?'⏸ Pause':'▶ Play';$('#g-prev').disabled=A.g.s===0;$('#g-next').disabled=A.g.s===GSTEPS.length-1;}
+  const g=archSVG(),svg=$('#a-svg'),z=A.zoom||archFit(g.W,g.H);svg.setAttribute('viewBox',`0 0 ${g.W} ${g.H}`);svg.style.width=Math.round(g.W*z)+'px';svg.style.height=Math.round(g.H*z)+'px';svg.innerHTML=g.html;A._W=g.W;A._H=g.H;
+  $('#a-info').innerHTML=gd?guidedHTML():(A.sel?archInfo(A.sel,A.t)+(INSIDE.has(A.sel)?`<button class="btn lookb" data-look="${A.sel}">🔍 Look inside this part</button>`:''):`<h3>Click any part</h3><p class="note">Every shape in the diagram is clickable: the inputs, the four mixers, the gates, the × and + operations, the memory belt and the outputs. You will see what it is, why it exists and its numbers for the chosen time step.</p><p class="note">Press <b>▶ Step by step</b> to watch the cell being built one operation at a time. Use <b>Unrolled in time</b> to see the cell repeated over the sequence.</p>`);
+  document.querySelector('#archroot').classList.toggle('guided',gd);
 }
-function archFit(W){W=W||A._W||960;const w=($('#a-wrap')&&$('#a-wrap').clientWidth)||900;return Math.max(.3,Math.min(1.25,(w-6)/W));}
+/* ---------- "Look inside" view: what really happens inside a node ---------- */
+const INSIDE=new Set(['cat0','cat1','cat2','cat3','sf','si','tg','so','mulf','muli','addc','tanhc','mulh']);
+const UC=['#D9730D','#7C3AED','#16A34A','#0E7490','#B7791F','#C0392B'];
+const uvec=v=>v.map((x,j)=>`<span class="uv" style="--uc:${UC[j%6]}"><i>unit ${j+1}</i>${N(x)}</span>`).join('');
+function inCurve(kind,zs,ys){const W=360,Hh=200,p=34,xr=kind==='sig'?[-6,6]:[-3,3],yr=kind==='sig'?[0,1]:[-1,1];
+  const X=z=>p+(Math.max(xr[0],Math.min(xr[1],z))-xr[0])/(xr[1]-xr[0])*(W-2*p),Y=y=>Hh-p-(y-yr[0])/(yr[1]-yr[0])*(Hh-2*p);
+  const f=kind==='sig'?z=>1/(1+Math.exp(-z)):Math.tanh;let d='';for(let i=0;i<=120;i++){const z=xr[0]+(xr[1]-xr[0])*i/120;d+=(i?'L':'M')+X(z).toFixed(1)+' '+Y(f(z)).toFixed(1);}
+  const y0=Y(kind==='sig'?0:0),ticks=(kind==='sig'?[-6,-3,0,3,6]:[-3,-1.5,0,1.5,3]).map(z=>`<text x="${X(z)}" y="${Hh-p+16}" text-anchor="middle" class="tk">${z}</text>`).join('');
+  const yt=(kind==='sig'?[0,.5,1]:[-1,0,1]).map(y=>`<line x1="${p}" x2="${W-p}" y1="${Y(y)}" y2="${Y(y)}" class="gl2"/><text x="${p-6}" y="${Y(y)+4}" text-anchor="end" class="tk">${y}</text>`).join('');
+  const dots=zs.map((z,j)=>{const c=UC[j%6],x=X(z),yy=Y(ys[j]),b=Y(0);return`<line x1="${x}" x2="${x}" y1="${b}" y2="${b}" stroke="${c}" stroke-width="2" stroke-dasharray="4 3"><animate attributeName="y2" from="${b}" to="${yy}" dur="1.6s" begin=".9s" fill="freeze"/></line>
+   <line x1="${x}" x2="${x}" y1="${yy}" y2="${yy}" stroke="${c}" stroke-width="2" stroke-dasharray="4 3"><animate attributeName="x2" from="${x}" to="${p}" dur="1.2s" begin="2.5s" fill="freeze"/></line>
+   <circle cx="${x}" cy="${b}" r="6.5" fill="${c}" stroke="#fff" stroke-width="2"><animate attributeName="cy" from="${b}" to="${yy}" dur="1.6s" begin=".9s" fill="freeze"/></circle>
+   <circle cx="${p}" cy="${yy}" r="0" fill="${c}" stroke="#fff" stroke-width="2"><animate attributeName="r" from="0" to="6.5" dur=".4s" begin="3.7s" fill="freeze"/></circle>`}).join('');
+  return`<svg class="icurve" viewBox="0 0 ${W} ${Hh}">${yt}<line x1="${p}" x2="${W-p}" y1="${Hh-p}" y2="${Hh-p}" class="ax"/><line x1="${p}" x2="${p}" y1="${p-8}" y2="${Hh-p}" class="ax"/>${ticks}<path d="${d}" fill="none" stroke="#475569" stroke-width="2.5"/>${dots}<text x="${W-p}" y="${p-12}" text-anchor="end" class="tk">number in (bottom) → number out (left)</text></svg>`;}
+function insideHTML(nm,t){
+  const cfg=S.cfg,M=A.m,P=cfg.p,x=cfg.x[t],hp=M.h[t],cp=M.c[t],G=M.G[t],ct=M.c[t+1],H=cfg.H;
+  const gi=nm.startsWith('cat')?GI[+nm[3]]:nm==='sf'?'f':nm==='si'?'i':nm==='tg'?'g':nm==='so'?'o':null;
+  let title,sym,symc,lede,inL,inV,outL,outV,fn,curve='',head,rows;
+  const T=(h,r)=>`<table class="itab"><tr>${h.map(c=>`<th>${c}</th>`).join('')}</tr>${r.map((row,i)=>`<tr style="--i:${i}">${row.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
+  const dot=j=>`<b class="ud" style="background:${UC[j%6]}">${j+1}</b>`;
+  if(nm.startsWith('cat')){const k=gi,w=WS[k],Pk=P[k],z=preAct(P,k,x,hp);
+    title=`Inside the Mixer of the ${GN[k]}`;sym='+';symc=AC.box;lede='Each memory unit has its own row of weights. It multiplies every input number by its weight, adds everything up, then adds its bias.';
+    inL='x(t) and h(t−1)';inV=null;outL=`z for the ${GN[k]}`;outV=z;
+    fn=K(R`z_j=\sum_i W_{ji}x_i+\sum_i U_{ji}h_i+b_j`,true);
+    head=['unit','weights × x','weights × h(t−1)','+ bias','= z'];
+    rows=[...Array(H).keys()].map(j=>{const a=Pk.W[j].map((v,i)=>`${f2(v)}×${f2(x[i])}`).join(' + '),sa=Pk.W[j].reduce((s,v,i)=>s+v*x[i],0),b2=Pk.U[j].map((v,i)=>`${f2(v)}×${f2(hp[i])}`).join(' + '),sb=Pk.U[j].reduce((s,v,i)=>s+v*hp[i],0);
+      return[dot(j),`${a}<br><b>= ${N(sa)}</b>`,`${b2}<br><b>= ${N(sb)}</b>`,N(Pk.b[j]),`<b>${N(z[j])}</b>`];});
+    const xin=`<span class="vl">x(t)</span>${uvec(x)}<span class="vl">h(t−1)</span>${uvec(hp)}`;
+    return card(title,sym,symc,lede,xin,fn,`<span class="vl">z</span>${uvec(z)}`,'',T(head,rows));}
+  if(gi&&(nm==='sf'||nm==='si'||nm==='so')){const k=gi,z=preAct(P,k,x,hp),o=G[k];
+    title=`Inside the Dimmer switch (σ) of the ${GN[k]}`;sym='σ';symc=AC.sig;lede='The dimmer takes any number and turns it into a dial between 0 (off) and 1 (fully on). The curve shows how: small numbers go near 0, big numbers go near 1.';
+    fn=K(R`\sigma(z)=\dfrac{1}{1+e^{-z}}`,true);
+    head=['unit','z (came in)','e<sup>−z</sup>','1 + e<sup>−z</sup>','1 ÷ that = dial'];
+    rows=z.map((v,j)=>[dot(j),N(v),N(Math.exp(-v)),N(1+Math.exp(-v)),`<b>${N(o[j])}</b>`]);
+    return card(title,sym,symc,lede,`<span class="vl">z from the Mixer</span>${uvec(z)}`,fn,`<span class="vl">${k} (dial)</span>${uvec(o)}`,inCurve('sig',z,o),T(head,rows));}
+  if(nm==='tg'||nm==='tanhc'){const isg=nm==='tg',z=isg?preAct(P,'g',x,hp):ct,o=z.map(Math.tanh);
+    title=isg?'Inside the Dreamer (tanh): the new idea':'Inside the Squeezer (tanh): calming the memory';sym='tanh';symc=AC.tan;lede=isg?'tanh squeezes any number into the range −1 to 1. Here it turns the mixed numbers into the content to remember.':'The memory can grow big. tanh squeezes it into the range −1 to 1 before it is revealed.';
+    fn=K(R`\tanh(z)=\dfrac{e^{z}-e^{-z}}{e^{z}+e^{-z}}`,true);
+    head=['unit',isg?'z (came in)':'c(t) (came in)','e<sup>z</sup>','e<sup>−z</sup>','(e<sup>z</sup>−e<sup>−z</sup>) ÷ (e<sup>z</sup>+e<sup>−z</sup>)'];
+    rows=z.map((v,j)=>[dot(j),N(v),N(Math.exp(v)),N(Math.exp(-v)),`<b>${N(o[j])}</b>`]);
+    return card(title,sym,symc,lede,`<span class="vl">${isg?'z from the Mixer':'c(t) from the belt'}</span>${uvec(z)}`,fn,`<span class="vl">${isg?'c̃':'tanh(c)'}</span>${uvec(o)}`,inCurve('tanh',z,o),T(head,rows));}
+  if(nm==='mulf'||nm==='muli'||nm==='mulh'){const a=nm==='mulf'?G.f:nm==='muli'?G.i:G.o,b=nm==='mulf'?cp:nm==='muli'?G.g:ct.map(Math.tanh),an=nm==='mulf'?'f':nm==='muli'?'i':'o',bn=nm==='mulf'?'c(t−1)':nm==='muli'?'c̃':'tanh(c)',r=a.map((v,j)=>v*b[j]);
+    title=nm==='mulf'?'Inside the Forget Guard (×)':nm==='muli'?'Inside the Scribe (×)':'Inside the Speaker (×)';sym='×';symc=AC.op;
+    lede=nm==='mulf'?'For every memory unit, the guard multiplies the old memory by its dial. Dial 0 wipes it, dial 1 keeps it.':nm==='muli'?'The Scribe multiplies the new idea by the input dial: only the allowed amount is written.':'The Speaker multiplies the squeezed memory by the output dial: only the allowed part is said out loud.';
+    fn=K((nm==='mulf'?R`\text{result}_j=f_j\times c_{t-1,j}`:nm==='muli'?R`\text{result}_j=i_j\times\tilde c_j`:R`\text{result}_j=o_j\times\tanh(c_j)`),true);
+    const bar=(v,c)=>`<span class="mbar"><i style="width:${Math.min(1,Math.abs(v))*100}%;background:${c};${v<0?'opacity:.55':''}"></i></span>`;
+    head=['unit',`${an} (dial)`,bn,`${an} × ${bn} = result`];
+    rows=a.map((v,j)=>[dot(j),`${N(v)}${bar(v,'#F5B50A')}`,`${N(b[j])}${bar(b[j],AC.belt)}`,`<b>${N(r[j])}</b>${bar(r[j],AC.op)}`]);
+    return card(title,sym,symc,lede,`<span class="vl">${an} (dial)</span>${uvec(a)}<span class="vl">${bn}</span>${uvec(b)}`,fn,`<span class="vl">result</span>${uvec(r)}`,'',T(head,rows));}
+  if(nm==='addc'){const kp=G.f.map((v,j)=>v*cp[j]),wr=G.i.map((v,j)=>v*G.g[j]);
+    title='Inside the Basket (+): the new memory';sym='+';symc=AC.box;lede='For every memory unit, the Basket adds what the guard kept to what the Scribe wrote. The sum is the new long-term memory.';
+    fn=K(R`c_t=\underbrace{f_t\odot c_{t-1}}_{\text{kept}}+\underbrace{i_t\odot\tilde c_t}_{\text{written}}`,true);
+    head=['unit','kept','+ written','= new memory c(t)'];
+    rows=kp.map((v,j)=>[dot(j),N(v),N(wr[j]),`<b>${N(ct[j])}</b>`]);
+    return card(title,sym,symc,lede,`<span class="vl">kept</span>${uvec(kp)}<span class="vl">written</span>${uvec(wr)}`,fn,`<span class="vl">c(t)</span>${uvec(ct)}`,'',T(head,rows));}
+  return null;
+}
+function card(title,sym,symc,lede,inHTML,fn,outHTML,curve,table){
+  return`<div class="ihead"><span class="isym" style="background:${symc};color:${symc===AC.box?'#3C5068':'#fff'}">${sym}</span><div><h3>${title}</h3><div class="ilede">${esc(lede)}</div></div></div>
+  <div class="iflow"><div class="ibox"><div class="ik">What came in</div>${inHTML}</div><div class="iarr">➜</div><div class="ibox mid"><div class="ik">What happens inside</div>${fn}</div><div class="iarr">➜</div><div class="ibox"><div class="ik">What came out</div>${outHTML}</div></div>
+  ${curve?`<div class="icwrap">${curve}</div>`:''}<div class="itw">${table}</div>`;
+}
+function openInside(nm,t,src){
+  const html=insideHTML(nm,t);if(!html)return;const ov=$('#a-ov'),svg=$('#a-svg');
+  ov.innerHTML=`<div class="insidecard"><button class="ix" id="a-ox">✕ Close</button>${html}</div>`;ov.classList.add('on');A.inside=nm;
+  svg.classList.add('zooming');svg.querySelectorAll('.part.focus').forEach(e=>e.classList.remove('focus'));if(src)src.classList.add('focus');
+  const card=ov.querySelector('.insidecard');
+  if(src){const sr=src.getBoundingClientRect(),cr=card.getBoundingClientRect(),dx=sr.left+sr.width/2-(cr.left+cr.width/2),dy=sr.top+sr.height/2-(cr.top+cr.height/2),sc=Math.max(.06,Math.min(sr.width/cr.width,sr.height/cr.height));
+    card.style.transition='none';card.style.transform=`translate(${dx}px,${dy}px) scale(${sc})`;card.style.opacity='0';card.offsetWidth;
+    card.style.transition='transform 1.1s cubic-bezier(.2,.8,.2,1),opacity .7s ease';card.style.transform='none';card.style.opacity='1';}
+  $('#a-ox').onclick=closeInside;
+}
+function closeInside(){const ov=$('#a-ov');if(!ov)return;ov.classList.remove('on');ov.innerHTML='';A.inside=null;const svg=$('#a-svg');if(svg){svg.classList.remove('zooming');svg.querySelectorAll('.part.focus').forEach(e=>e.classList.remove('focus'));}}
+
+function archFit(W,H){W=W||A._W||960;H=H||A._H||470;const w=($('#a-wrap')&&$('#a-wrap').clientWidth)||900,hh=Math.max(360,innerHeight-250);return Math.max(.3,Math.min(1.25,(w-8)/W,hh/H));}
+
+/* ================= Story tab: biryani -> pasta, memory slots with real LSTM gates ================= */
+const SV=['Asif','Ahmed','eats','loves','biryani','pasta','daily','?'];
+const SU=[{n:'Biryani',s:'Pakistani food',c:'#D9730D'},{n:'Pasta',s:'Italian food',c:'#7C3AED'},{n:'Asif',s:'who is talking',c:'#0E7490'},{n:'Ahmed',s:'who is talking',c:'#16A34A'}];
+const STORIES={'Deck story: Asif eats biryani… Ahmed loves pasta… ?':['Asif','eats','biryani','Ahmed','loves','pasta','?'],
+ 'Only Asif: biryani every day':['Asif','eats','biryani','daily','eats','biryani','?'],
+ 'Reverse: Ahmed first, then Asif':['Ahmed','loves','pasta','Asif','eats','biryani','?'],
+ 'Ahmed never gets a dish':['Asif','eats','biryani','Ahmed','loves','daily','?']};
+let ST={u:null,words:[...STORIES[Object.keys(STORIES)[0]]],t:0,play:null,m:null,cfg:null};
+function storyCfg(words){const T=words.length,d=SV.length,H=4,ix=w=>SV.indexOf(w),Z=()=>Array.from({length:H},()=>Array(d).fill(0)),U0=()=>Array.from({length:H},()=>Array(H).fill(0));
+  const W={f:Z(),i:Z(),g:Z(),o:Z()},b={f:[6,6,6,6],i:[-6,-6,-6,-6],g:[0,0,0,0],o:[-5,-5,-5,-5]};
+  W.f[0][ix('Ahmed')]=-12;W.f[2][ix('Ahmed')]=-12;W.f[1][ix('Asif')]=-12;W.f[3][ix('Asif')]=-12;
+  W.i[0][ix('biryani')]=12;W.i[1][ix('pasta')]=12;W.i[2][ix('Asif')]=12;W.i[3][ix('Ahmed')]=12;
+  W.g[0][ix('biryani')]=3;W.g[1][ix('pasta')]=3;W.g[2][ix('Asif')]=3;W.g[3][ix('Ahmed')]=3;
+  for(let u=0;u<H;u++)W.o[u][ix('?')]=10;
+  const p={};for(const k of GI)p[k]={W:W[k],U:U0(),b:b[k]};
+  return{cell:'lstm',T,d,H,C:2,out:'softmax',mode:'last',eta:0.5,p,Why:[[3,-3,0,0],[-3,3,0,0]],by:[0,0],x:words.map(w=>SV.map((_,j)=>j===ix(w)?1:0)),t:[[0,1]],gran:'vector'};}
+const CAST=[
+ {e:'🧺',n:'Mixer',f:'W·[h, x] + b',d:'Mixes the new word with what was just said and adds a bias, one mixer per gate.'},
+ {e:'🎚️',n:'Dimmer switch (σ)',f:'σ(z)',d:'Turns any number into a dial between 0 (off) and 1 (fully on). Used by the three gates.'},
+ {e:'💭',n:'Dreamer (tanh)',f:'c̃ = tanh(z)',d:'Dreams up new content to remember, as a number between −1 and 1.'},
+ {e:'💂',n:'Forget Guard (×f)',f:'f ⊙ c',d:'Stands on the belt. Multiplies old memory by f: 0 wipes it, 1 lets it pass.'},
+ {e:'✍️',n:'Scribe (×i)',f:'i ⊙ c̃',d:'Writes the dream onto the belt, but only as much as the input dial i allows.'},
+ {e:'🧺➕',n:'Basket (+)',f:'c = kept + written',d:'Puts the kept memory and the new writing together on the belt.'},
+ {e:'🚚',n:'Conveyor belt',f:'c(t−1) → c(t)',d:'The long-term memory. It carries everything from word to word.'},
+ {e:'🗜️',n:'Squeezer (tanh)',f:'tanh(c)',d:'Squashes the memory into −1…1 before anyone looks at it.'},
+ {e:'📢',n:'Speaker (×o)',f:'h = o ⊙ tanh(c)',d:'Decides how much of the memory is said out loud as the answer h.'}];
+function storyOps(t,j){const m=ST.m,cfg=ST.cfg,P=cfg.p,x=cfg.x[t],hp=m.h[t],G=m.G[t],cp=m.c[t][j],ct=m.c[t+1][j],z={};GI.forEach(k=>z[k]=preAct(P,k,x,hp)[j]);
+  const th=Math.tanh(ct),kept=G.f[j]*cp,wr=G.i[j]*G.g[j];
+  return[[0,`Mixes “${ST.words[t]}” and the last output for each gate`,`z_f=${f2(z.f)}, z_i=${f2(z.i)}, z_c=${f2(z.g)}, z_o=${f2(z.o)}`],
+   [1,`Turns the three gate numbers into dials`,`f=σ(${f2(z.f)})=${f2(G.f[j])}, i=σ(${f2(z.i)})=${f2(G.i[j])}, o=σ(${f2(z.o)})=${f2(G.o[j])}`],
+   [2,`Dreams up new content`,`c̃=tanh(${f2(z.g)})=${f2(G.g[j])}`],
+   [3,G.f[j]<.2?`Wipes the old memory!`:G.f[j]>.8?`Lets the old memory pass`:`Lets part of the old memory pass`,`${f2(G.f[j])} × ${f2(cp)} = ${f2(kept)}`],
+   [4,G.i[j]>.8?`Writes the new idea`:`Writes almost nothing`,`${f2(G.i[j])} × ${f2(G.g[j])} = ${f2(wr)}`],
+   [5,`Puts kept + written together on the belt`,`${f2(kept)} + ${f2(wr)} = ${f2(ct)}`],
+   [7,`Squashes the new memory`,`tanh(${f2(ct)}) = ${f2(th)}`],
+   [8,G.o[j]>.5?`Speaks!`:`Stays quiet`,`${f2(G.o[j])} × ${f2(th)} = ${f2(G.o[j]*th)}`]];}
+function storyRun(){ST.cfg=storyCfg(ST.words);ST.m=forward(ST.cfg);const m=ST.m,cfg=ST.cfg;
+  ST.pred=m.h.slice(1).map(h=>{const u=mv(cfg.Why,h).map((v,q)=>v+cfg.by[q]),mx=Math.max(...u),e=u.map(v=>Math.exp(v-mx)),s=e[0]+e[1];return e.map(v=>v/s);});}
+const sbar=(v,col)=>{const w=Math.min(1,Math.abs(v))*50;return`<div class="sbar"><i class="mid"></i><b style="${v>=0?`left:50%;width:${w}%`:`right:50%;width:${w}%`};background:${col}"></b></div>`;};
+const gbar=(v,col)=>`<div class="gbar"><b style="width:${Math.round(v*100)}%;background:${col}"></b></div>`;
+function storyVerdict(t){const m=ST.m,G=m.G[t],w=ST.words[t],L=[];
+  SU.forEach((u,j)=>{const before=m.c[t][j],f=G.f[j],i=G.i[j],g=G.g[j];
+    if(before>0.3&&f<0.2)L.push(`The forget gate **closes** on **${u.n}** (f = ${f2(f)}): the memory of ${u.n} (${f2(before)}) is erased.`);
+    if(i>0.8&&Math.abs(g)>0.5)L.push(`The input gate **opens** for **${u.n}** (i = ${f2(i)}) and writes ${f2(i*g)} into that slot.`);});
+  if(Math.max(...G.o)>0.8)L.push(`The output gate **opens** (o ≈ ${f2(Math.max(...G.o))}): the memory is revealed as the hidden state and the network answers.`);
+  if(!L.length)L.push(`“${w}” changes nothing important: gates stay as they are, so the memory is **kept** (forget ≈ 1, input ≈ 0).`);return L;}
+function renderStory(){
+  const root=$('#storyroot');
+  if(S.cfg.cell!=='lstm'){root.innerHTML=`<div class="note" style="padding:18px">The story uses the <b>LSTM</b> memory cell. You are on GRU. <button class="btn pri" id="storygo">Switch to LSTM</button></div>`;$('#storygo').onclick=()=>$('#cellsel button[data-c=lstm]').click();return;}
+  storyRun();const m=ST.m,T=ST.cfg.T,t=Math.min(ST.t,T-1);ST.t=t;const G=m.G[t],pr=ST.pred[t],fin=t===T-1;const ch=SU.map((u,j)=>Math.abs(m.c[t+1][j]-m.c[t][j]));const er=SU.map((u,j)=>m.c[t][j]>.3&&G.f[j]<.2?j:-1).filter(j=>j>=0);const uj=ST.u!=null?ST.u:er.length?er[0]:ch.indexOf(Math.max(...ch));const ops=storyOps(t,uj);
+  const hasMemory=j=>true;
+  const sent=ST.words.map((w,k)=>`<button class="wchip${k===t?' on':''}${k>t?' fut':''}" data-k="${k}">${esc(w)}</button>`).join('');
+  const sel=ST.words.map((w,k)=>`<select data-k="${k}">${SV.map(v=>`<option${v===w?' selected':''}>${v}</option>`).join('')}</select>`).join('');
+  const slots=SU.map((u,j)=>{const c0=m.c[t][j],f=G.f[j],i=G.i[j],g=G.g[j],kept=f*c0,wr=i*g,c1=m.c[t+1][j],chg=Math.abs(c1-c0)>0.05;
+    return`<div class="slot${chg?' chg':''}${j===uj?' pick':''}" data-j="${j}" style="--sc:${u.c}"><div class="sh"><b>${u.n}</b><span>${u.s}</span></div>
+      <div class="srow"><span>memory before</span>${sbar(c0,u.c)}<em>${f2(c0)}</em></div>
+      <div class="srow"><span>× forget f</span>${gbar(f,'#E0A100')}<em>${f2(f)}</em></div>
+      <div class="srow"><span>= kept</span>${sbar(kept,u.c)}<em>${f2(kept)}</em></div>
+      <div class="srow"><span>+ input i × new g̃</span>${gbar(i,'#E0A100')}<em>${f2(i)}×${f2(g)}</em></div>
+      <div class="srow"><span>= written</span>${sbar(wr,u.c)}<em>${f2(wr)}</em></div>
+      <div class="srow fin"><span>memory after</span>${sbar(c1,u.c)}<em>${f2(c1)}</em></div>
+      <div class="srow"><span>output gate o</span>${gbar(G.o[j],'#E0A100')}<em>${f2(G.o[j])}</em></div></div>`;}).join('');
+  const tl=`<table class="tline"><tr><th></th>${ST.words.map((w,k)=>`<th class="${k===t?'on':''}" data-k="${k}">${esc(w)}</th>`).join('')}</tr>${SU.map((u,j)=>`<tr><th style="color:${u.c}">${u.n}</th>${ST.words.map((w,k)=>{const v=m.c[k+1][j],a=Math.min(1,Math.abs(v));return`<td class="${k===t?'on':''}" data-k="${k}" style="background:${v>=0?`rgba(${hex(u.c)},${a*.85})`:`rgba(120,120,120,${a*.6})`};color:${a>.55?'#fff':'#222'}">${f2(v)}</td>`}).join('')}</tr>`).join('')}</table>`;
+  const ans=pr[1]>pr[0]?'Italian cuisine':'Pakistani cuisine';
+  root.innerHTML=`<div class="storytop"><div class="seg" id="s-pre">${Object.keys(STORIES).map((n,k)=>`<button data-n="${esc(n)}">${esc(n.split(':')[0])}</button>`).join('')}</div></div>
+   <div class="story-sent">${sent}</div>
+   <div class="story-ctrl"><button class="btn" id="s-prev">◀ Prev</button><button class="btn pri" id="s-next">Next ▶</button><button class="btn" id="s-play">▶ Play</button>
+     <details class="edit"><summary>Edit the sentence</summary><div class="sel">${sel}</div></details>
+     <button class="btn" id="s-arch">See this step in the Architecture tab</button></div>
+   <div class="verdict"><div class="vh">Step ${t+1} of ${T}: reading “${esc(ST.words[t])}”</div>${storyVerdict(t).map(l=>`<div>${rt(l)}</div>`).join('')}</div>
+   <div class="slots">${slots}</div>
+   <h3 class="sh3">Who did what at this step? <span class="note">Following the <b style="color:${SU[uj].c}">${SU[uj].n}</b> slot (click another slot to follow it)</span></h3>
+   <ol class="ops">${ops.map(([c,a,nu],n)=>`<li><span class="oe">${CAST[c].e}</span><div><b>${n+1}. ${CAST[c].n}</b>: ${esc(a)}<div class="on">${esc(nu)}</div></div></li>`).join('')}</ol>
+   <details class="cast" open><summary>The cast: every part of the LSTM as a character</summary><div class="castg">${CAST.map(c=>`<div class="cc"><div class="ce">${c.e}</div><div><b>${c.n}</b><div class="cf">${esc(c.f)}</div><div>${esc(c.d)}</div></div></div>`).join('')}</div></details>
+   <h3 class="sh3">Memory over the whole sentence</h3>${tl}
+   <div class="predrow"><div><b>Prediction if asked now</b> <span class="note">(${Math.max(...G.o)>0.5?'output gate open':'output gate closed, so the answer is not meaningful yet'})</span></div>
+     <div class="pbars"><span>Pakistani</span>${gbar(pr[0],'#D9730D')}<em>${(pr[0]*100).toFixed(1)}%</em><span>Italian</span>${gbar(pr[1],'#7C3AED')}<em>${(pr[1]*100).toFixed(1)}%</em></div>
+     ${fin?`<div class="ans">Answer: <b>${ans}</b></div>`:''}</div>
+   <div class="note" style="margin-top:10px">All numbers are real LSTM gates ($f,i,\\tilde c,o$) computed in your browser. The weights are <b>set by hand</b> to teach the idea (Ahmed makes the Biryani slot forget, pasta writes the Pasta slot), not trained. The story slides from the lecture are shown with real arithmetic.</div>`;
+  root.querySelectorAll('.note').forEach(el=>{if(el.textContent.includes('$'))el.innerHTML=rt(el.textContent);});
+  root.querySelectorAll('#s-pre button').forEach(b=>{b.classList.toggle('on',JSON.stringify(STORIES[b.dataset.n])===JSON.stringify(ST.words));b.onclick=()=>{ST.words=[...STORIES[b.dataset.n]];ST.t=0;stopStory();renderStory();};});
+  root.querySelectorAll('.slot').forEach(el=>el.onclick=()=>{ST.u=+el.dataset.j;renderStory();});
+  root.querySelectorAll('.wchip,.tline th[data-k],.tline td').forEach(el=>el.onclick=()=>{ST.t=+el.dataset.k;ST.u=null;stopStory();renderStory();});
+  root.querySelectorAll('.sel select').forEach(s=>s.onchange=()=>{ST.words[+s.dataset.k]=s.value;renderStory();root.querySelector('details.edit').open=true;});
+  $('#s-prev').onclick=()=>{stopStory();ST.t=Math.max(0,ST.t-1);ST.u=null;renderStory();};$('#s-next').onclick=()=>{stopStory();ST.t=Math.min(T-1,ST.t+1);ST.u=null;renderStory();};
+  $('#s-play').textContent=ST.play?'⏸ Pause':'▶ Play';
+  $('#s-play').onclick=()=>{if(ST.play){stopStory();renderStory();return;}if(ST.t>=T-1)ST.t=0;ST.play=setInterval(()=>{if(ST.t>=T-1){stopStory();renderStory();return;}ST.t++;ST.u=null;renderStory();},1800);renderStory();};
+  $('#s-arch').onclick=()=>{const keep=ST.t;S.cfg=clone(ST.cfg);S.i=0;TR.cfg=null;A.open.clear();A.t=keep;A.sel=null;A.zoom=null;rebuild(true);setTab('arch');};
+}
+function stopStory(){if(ST.play){clearInterval(ST.play);ST.play=null;}}
+function hex(h){return[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)).join(',');}
 
 /* ---------- floating explainer + draggable book icon ---------- */
 const panel=$('#panel'),fhead=$('#fhead'),fab=$('#fab');
@@ -1083,7 +1356,7 @@ function init(){initConcepts();
   $('#crand').onclick=()=>{const o=S.cfg,c=randCfg(o,Date.now()%100000);c.x=o.x;c.t=o.t;applyCfg(c,'Random weights.');buildCustom();};
   $('#cgo').onclick=()=>{setTab('step');go(0);};
   $('#cpre').onchange=e=>{const f=PRESETS[e.target.value];if(!f)return;applyCfg(f(),`Loaded: ${e.target.value}`);buildCustom();};
-  window.__app={A,renderArch,S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,randCfg,PRESETS,DEFAULTS,trainN,trainReset,TR:()=>TR};
+  window.__app={ST,renderStory,A,renderArch,S,steps:()=>steps,forward,backward,apply,numgrad,analytic,paramList,go,setTab,openPanel,closePanel,rebuild,applyCfg,randCfg,PRESETS,DEFAULTS,trainN,trainReset,TR:()=>TR};
 }
 init();
 </script>
